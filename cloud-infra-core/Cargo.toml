@@ -1,0 +1,11 @@
+[package]
+name = "cloud-infra-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cloud-infra-macros = { path = "../cloud-infra-macros" }
+serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
+
+[dev-dependencies]
+trybuild = "1.0.110"

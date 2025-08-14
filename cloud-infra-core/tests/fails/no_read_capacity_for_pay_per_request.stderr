@@ -1,0 +1,13 @@
+error[E0599]: no method named `read_capacity` found for struct `DynamoDBTableBuilder<PayPerRequestState>` in the current scope
+  --> tests/fails/no_read_capacity_for_pay_per_request.rs:11:10
+   |
+9  |       DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING))
+   |       -----------------------------------------------------------------------
+   |       |
+   |  _____method `read_capacity` is available on `DynamoDBTableBuilder<StartState>`
+   | |
+10 | |         .pay_per_request_billing()
+11 | |         .read_capacity(5)
+   | |         -^^^^^^^^^^^^^ private field, not a method
+   | |_________|
+   |

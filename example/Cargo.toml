@@ -1,0 +1,9 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cloud-infra = { path = "../cloud-infra"}
+cloud-infra-core = { path = "../cloud-infra-core"}
+cloud-infra-macros = { path = "../cloud-infra-macros"}
