@@ -4,7 +4,7 @@ use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_macros::create_alphanumeric_underscore_string;
 
-async fn do_call() {
+fn example() {
     let key = create_alphanumeric_underscore_string!("test");
     DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING))
         .pay_per_request_billing()
