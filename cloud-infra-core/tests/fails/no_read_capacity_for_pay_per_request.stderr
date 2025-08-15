@@ -11,3 +11,8 @@ error[E0599]: no method named `read_capacity` found for struct `DynamoDBTableBui
    | |         -^^^^^^^^^^^^^ private field, not a method
    | |_________|
    |
+   |
+help: there is a method `max_read_capacity` with a similar name
+   |
+11 |         .max_read_capacity(5)
+   |          ++++

@@ -166,6 +166,20 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
 }
 
 impl DynamoDBTableBuilder<PayPerRequestState> {
+    pub fn max_read_capacity(self, capacity: u32) -> Self {
+        Self {
+            max_read_capacity: Some(capacity),
+            ..self
+        }
+    }
+
+    pub fn max_write_capacity(self, capacity: u32) -> Self {
+        Self {
+            max_write_capacity: Some(capacity),
+            ..self
+        }
+    }
+
     pub fn build(self) -> Resource {
         self.build_internal()
     }
@@ -179,23 +193,9 @@ impl DynamoDBTableBuilder<ProvisionedState> {
         }
     }
 
-    pub fn max_read_capacity(self, capacity: u32) -> Self {
-        Self {
-            max_read_capacity: Some(capacity),
-            ..self
-        }
-    }
-
     pub fn write_capacity(self, capacity: u32) -> Self {
         Self {
             write_capacity: Some(capacity),
-            ..self
-        }
-    }
-
-    pub fn max_write_capacity(self, capacity: u32) -> Self {
-        Self {
-            max_write_capacity: Some(capacity),
             ..self
         }
     }
