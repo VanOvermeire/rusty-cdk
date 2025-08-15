@@ -56,7 +56,8 @@ fn iac() {
 Partition keys can only contain alphanumeric characters and underscores, so they can only be created through a macro that validates this at compile time.
 And (max) read capacity can only be set when you choose the correct billing mode.
 
-With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible. 
+With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible.
+Currently, it does require you to be somewhat more explicit at times. For example, you have to pick a billing mode, as well as read and write capacity for provisioned. The CDK 'helps' you by setting sensible defaults (of `5` in this particular case). Which helps you get up and running quickly, but is probably not what you want for any real application!
  
 ## Approach
 

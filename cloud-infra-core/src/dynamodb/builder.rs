@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use crate::dynamodb::dto::{AttributeDefinition, DynamoDBTable, DynamoDBTableProperties, KeySchema};
+use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput};
 use crate::stack::Resource;
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 
@@ -51,15 +52,16 @@ impl DynamoDBKey {
 pub trait DynamoDBTableBuilderState {}
 
 pub struct StartState {}
-
 impl DynamoDBTableBuilderState for StartState {}
 
-pub struct ProvisionedState {}
-
-impl DynamoDBTableBuilderState for ProvisionedState {}
+pub struct ProvisionedStateStart {}
+impl DynamoDBTableBuilderState for ProvisionedStateStart {}
+pub struct ProvisionedStateReadSet {}
+impl DynamoDBTableBuilderState for ProvisionedStateReadSet {}
+pub struct ProvisionedStateWriteSet {}
+impl DynamoDBTableBuilderState for ProvisionedStateWriteSet {}
 
 pub struct PayPerRequestState {}
-
 impl DynamoDBTableBuilderState for PayPerRequestState {}
 
 pub struct DynamoDBTableBuilder<T: DynamoDBTableBuilderState> {
@@ -112,24 +114,24 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
-            max_write_capacity: None,
-            read_capacity: None,
-            write_capacity: None,
-            max_read_capacity: None,
+            read_capacity: self.read_capacity,
+            write_capacity: self.write_capacity,
+            max_read_capacity: self.max_read_capacity,
+            max_write_capacity: self.max_write_capacity,
         }
     }
 
-    pub fn provisioned_billing(self) -> DynamoDBTableBuilder<ProvisionedState> {
+    pub fn provisioned_billing(self) -> DynamoDBTableBuilder<ProvisionedStateStart> {
         DynamoDBTableBuilder {
             billing_mode: Some(BillingMode::Provisioned),
             state: Default::default(),
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
-            max_write_capacity: None,
-            read_capacity: None,
-            write_capacity: None,
-            max_read_capacity: None,
+            read_capacity: self.read_capacity,
+            write_capacity: self.write_capacity,
+            max_read_capacity: self.max_read_capacity,
+            max_write_capacity: self.max_write_capacity,
         }
     }
 
@@ -150,15 +152,33 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             key_schema.push(sort_key);
             key_attributes.push(sort_key_attributes);
         }
+
+        let billing_mode = self.billing_mode.expect("billing mode should be set, as this is enforced by the builder");
         
+        let provisioned_throughput = if billing_mode == BillingMode::Provisioned {
+            Some(ProvisionedThroughput {
+                read_capacity: self.read_capacity.expect("for provisioned billing mode, read capacity should be set"),
+                write_capacity: self.write_capacity.expect("for provisioned billing mode, write capacity should be set"),
+            })
+        } else {
+            None
+        };
+        
+        let on_demand_throughput = if billing_mode == BillingMode::PayPerRequest {
+            Some(OnDemandThroughput {
+                max_read_capacity: self.max_read_capacity,
+                max_write_capacity: self.max_write_capacity,
+            })
+        } else {
+            None
+        };
+
         let properties = DynamoDBTableProperties {
             key_schema,
             attribute_definitions: key_attributes,
-            billing_mode: self.billing_mode.unwrap().into(),
-            read_capacity: self.read_capacity,
-            write_capacity: self.write_capacity,
-            max_read_capacity: self.max_read_capacity,
-            max_write_capacity: self.max_write_capacity,
+            billing_mode: billing_mode.into(),
+            provisioned_throughput,
+            on_demand_throughput,
         };
 
         Resource::DynamoDBTable(DynamoDBTable::new(Resource::generate_id("DynamoDBTable"), properties))
@@ -185,21 +205,39 @@ impl DynamoDBTableBuilder<PayPerRequestState> {
     }
 }
 
-impl DynamoDBTableBuilder<ProvisionedState> {
-    pub fn read_capacity(self, capacity: NonZeroNumber) -> Self {
-        Self {
+impl DynamoDBTableBuilder<ProvisionedStateStart> {
+    pub fn read_capacity(self, capacity: NonZeroNumber) -> DynamoDBTableBuilder<ProvisionedStateReadSet> {
+        DynamoDBTableBuilder {
             read_capacity: Some(capacity.0),
-            ..self
+            state: Default::default(),
+            table_name: self.table_name,
+            partition_key: self.partition_key,
+            sort_key: self.sort_key,
+            billing_mode: self.billing_mode,
+            write_capacity: self.write_capacity,
+            max_read_capacity: self.read_capacity,
+            max_write_capacity: self.max_write_capacity,
         }
     }
+}
 
-    pub fn write_capacity(self, capacity: NonZeroNumber) -> Self {
-        Self {
+impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
+    pub fn write_capacity(self, capacity: NonZeroNumber) -> DynamoDBTableBuilder<ProvisionedStateWriteSet> {
+        DynamoDBTableBuilder {
             write_capacity: Some(capacity.0),
-            ..self
+            state: Default::default(),
+            table_name: self.table_name,
+            partition_key: self.partition_key,
+            sort_key: self.sort_key,
+            billing_mode: self.billing_mode,
+            read_capacity: self.read_capacity,
+            max_read_capacity: self.max_read_capacity,
+            max_write_capacity: self.max_write_capacity,
         }
     }
-    
+}
+
+impl DynamoDBTableBuilder<ProvisionedStateWriteSet> {
     pub fn build(self) -> Resource {
         self.build_internal()
     }

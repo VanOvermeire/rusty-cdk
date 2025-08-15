@@ -32,14 +32,10 @@ pub struct DynamoDBTableProperties {
     pub(crate) attribute_definitions: Vec<AttributeDefinition>,
     #[serde(rename = "BillingMode")]
     pub(crate) billing_mode: String,
-    #[serde(rename = "ReadCapacityUnits")]
-    pub(crate) read_capacity: Option<u32>,
-    #[serde(rename = "WriteCapacityUnits")]
-    pub(crate) write_capacity: Option<u32>,
-    #[serde(rename = "MaxReadRequestUnits")]
-    pub(crate) max_read_capacity: Option<u32>,
-    #[serde(rename = "MaxWriteRequestUnits")]
-    pub(crate) max_write_capacity: Option<u32>,
+    #[serde(rename = "ProvisionedThroughput", skip_serializing_if = "Option::is_none")]
+    pub(crate) provisioned_throughput: Option<ProvisionedThroughput>,
+    #[serde(rename = "OnDemandThroughput", skip_serializing_if = "Option::is_none")]
+    pub(crate) on_demand_throughput: Option<OnDemandThroughput>,
 }
 
 #[derive(Serialize)]
@@ -56,4 +52,20 @@ pub struct KeySchema {
     pub(crate) attribute_name: String,
     #[serde(rename = "KeyType")]
     pub(crate) key_type: String,
+}
+
+#[derive(Serialize)]
+pub struct ProvisionedThroughput {
+    #[serde(rename = "ReadCapacityUnits")]
+    pub(crate) read_capacity: u32,
+    #[serde(rename = "WriteCapacityUnits")]
+    pub(crate) write_capacity: u32,
+}
+
+#[derive(Serialize)]
+pub struct OnDemandThroughput {
+    #[serde(rename = "MaxReadRequestUnits", skip_serializing_if = "Option::is_none")]
+    pub(crate) max_read_capacity: Option<u32>,
+    #[serde(rename = "MaxWriteRequestUnits", skip_serializing_if = "Option::is_none")]
+    pub(crate) max_write_capacity: Option<u32>,
 }
