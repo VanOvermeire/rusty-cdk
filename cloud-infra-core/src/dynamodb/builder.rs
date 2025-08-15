@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use crate::dynamodb::dto::{AttributeDefinition, DynamoDBTable, DynamoDBTableProperties, KeySchema};
 use crate::stack::Resource;
-use crate::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
+use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 
 #[derive(PartialEq)]
 pub enum BillingMode {
@@ -161,21 +161,21 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             max_write_capacity: self.max_write_capacity,
         };
 
-        Resource::DynamoDBTable(DynamoDBTable::new(properties))
+        Resource::DynamoDBTable(DynamoDBTable::new(Resource::generate_id("DynamoDBTable"), properties))
     }
 }
 
 impl DynamoDBTableBuilder<PayPerRequestState> {
-    pub fn max_read_capacity(self, capacity: u32) -> Self {
+    pub fn max_read_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
-            max_read_capacity: Some(capacity),
+            max_read_capacity: Some(capacity.0),
             ..self
         }
     }
 
-    pub fn max_write_capacity(self, capacity: u32) -> Self {
+    pub fn max_write_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
-            max_write_capacity: Some(capacity),
+            max_write_capacity: Some(capacity.0),
             ..self
         }
     }
@@ -186,16 +186,16 @@ impl DynamoDBTableBuilder<PayPerRequestState> {
 }
 
 impl DynamoDBTableBuilder<ProvisionedState> {
-    pub fn read_capacity(self, capacity: u32) -> Self {
+    pub fn read_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
-            read_capacity: Some(capacity),
+            read_capacity: Some(capacity.0),
             ..self
         }
     }
 
-    pub fn write_capacity(self, capacity: u32) -> Self {
+    pub fn write_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
-            write_capacity: Some(capacity),
+            write_capacity: Some(capacity.0),
             ..self
         }
     }

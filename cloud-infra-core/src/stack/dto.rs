@@ -1,5 +1,6 @@
 use serde::Serialize;
 use std::collections::HashMap;
+use rand::Rng;
 use crate::dynamodb::DynamoDBTable;
 
 #[derive(Serialize)]
@@ -26,8 +27,13 @@ pub enum Resource {
 impl Resource {
     fn get_id(&self) -> String {
         match self {
-            // TODO real id
-            Resource::DynamoDBTable(table) => "dynamoTableId".to_string()
+            Resource::DynamoDBTable(table) => table.get_id()
         }
+    }
+    
+    pub fn generate_id(resource_name: &str) -> String {
+        let mut rng = rand::rng();
+        let random_suffix: u32 = rng.random();
+        format!("{resource_name}{random_suffix}")
     }
 }

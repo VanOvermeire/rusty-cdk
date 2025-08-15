@@ -2,6 +2,8 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct DynamoDBTable {
+    #[serde(skip)]
+    pub id: String,
     #[serde(rename = "Type")]
     r#type: String,
     #[serde(rename = "Properties")]
@@ -9,11 +11,16 @@ pub struct DynamoDBTable {
 }
 
 impl DynamoDBTable {
-    pub(crate) fn new(properties: DynamoDBTableProperties) -> Self {
+    pub(crate) fn new(id: String, properties: DynamoDBTableProperties) -> Self {
         Self {
+            id,
             r#type: "AWS::DynamoDB::Table".to_string(),
             properties,
         }
+    }
+    
+    pub(crate) fn get_id(&self) -> String {
+        self.id.to_string()
     }
 }
 

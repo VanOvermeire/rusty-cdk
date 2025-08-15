@@ -24,7 +24,8 @@ export class CdkStack extends cdk.Stack {
             type: AttributeType.BINARY
         },
         billingMode: BillingMode.PAY_PER_REQUEST,
-        maxReadRequestUnits: -1,       
+        maxReadRequestUnits: -1,
+        maxWriteRequestUnits: 0,
     })
   }
 }
@@ -35,9 +36,10 @@ But the code will fail at compile time, because it contains various errors:
 - a partition key name cannot be empty
 - you cannot set `maxReadRequestUnits` when billing mode is `PAY_PER_REQUEST`
 - a `maxReadRequestUnits` of `-1` does not make sense
+- `maxWriteRequestUnits` is similarly not allowed in this situation, and a value of `0` is a bit special. You're not actually allowed to set this property to zero, but because this is Typescript, the value is interpreted as a falsy and ignored
 
 Fixing these errors will cost you a lot of time because CloudFormation will only notice these issues when creating the change set or deploying the template.
-That leads to a slow feedback loop, where you're constantly fixing errors and going through synth and deploy steps, waiting for AWS to tell you where the next issue might be. In other cases, you might not be notified at all, and everything will deploy, but it won't work.
+That leads to a slow feedback loop, where you're constantly fixing errors and going through synth and deploy steps, waiting for AWS to tell you where the next issue might be. In other cases, you might not be notified at all, and everything will deploy, but it won't work. In the above example, you do not want to allow writes, but your value of `0` is not valid and simply ignored.
 
 Compare the above with this example:
 
