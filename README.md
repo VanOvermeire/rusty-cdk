@@ -57,7 +57,8 @@ Partition keys can only contain alphanumeric characters and underscores, so they
 And (max) read capacity can only be set when you choose the correct billing mode.
 
 With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible.
-Currently, it does require you to be somewhat more explicit at times. For example, you have to pick a billing mode, as well as read and write capacity for provisioned. The CDK 'helps' you by setting sensible defaults (of `5` in this particular case). Which helps you get up and running quickly, but is probably not what you want for any real application!
+
+The library does require you to be somewhat more explicit at times. For example, you have to pick a billing mode, as well as read and write capacity for provisioned. The CDK 'helps' you by setting sensible defaults (of `5` in this particular case). Which helps you get up and running quickly, but is probably not what you want for any real application!
  
 ## Approach
 
@@ -79,3 +80,7 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 Currently only a limited number of AWS services are supported, with more on the way:
 - DynamoDB
+
+## TODO
+
+- support tags

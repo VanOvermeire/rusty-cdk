@@ -11,7 +11,7 @@ pub struct Stack {
 
 impl Stack {
     pub fn new(resources: Vec<Resource>) -> Self {
-        let resources = resources.into_iter().map(|r| (r.get_id(), r)).collect();
+        let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
         Self {
             resources
         }
@@ -25,7 +25,7 @@ pub enum Resource {
 }
 
 impl Resource {
-    fn get_id(&self) -> String {
+    fn get_id(&self) -> &str {
         match self {
             Resource::DynamoDBTable(table) => table.get_id()
         }

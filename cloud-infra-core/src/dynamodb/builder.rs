@@ -20,17 +20,17 @@ impl From<BillingMode> for String {
 }
 
 pub enum AttributeType {
-    STRING,
-    NUMBER,
-    BINARY,
+    String,
+    Number,
+    Binary,
 }
 
 impl From<AttributeType> for String {
     fn from(value: AttributeType) -> Self {
         match value {
-            AttributeType::STRING => "S".to_string(),
-            AttributeType::NUMBER => "N".to_string(),
-            AttributeType::BINARY => "B".to_string()
+            AttributeType::String => "S".to_string(),
+            AttributeType::Number => "N".to_string(),
+            AttributeType::Binary => "B".to_string()
         }
     }
 }

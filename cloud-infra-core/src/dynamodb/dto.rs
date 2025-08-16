@@ -3,7 +3,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub struct DynamoDBTable {
     #[serde(skip)]
-    pub id: String,
+    id: String,
     #[serde(rename = "Type")]
     r#type: String,
     #[serde(rename = "Properties")]
@@ -18,9 +18,9 @@ impl DynamoDBTable {
             properties,
         }
     }
-    
-    pub(crate) fn get_id(&self) -> String {
-        self.id.to_string()
+
+    pub(crate) fn get_id(&self) -> &str {
+        self.id.as_str()
     }
 }
 
@@ -36,6 +36,14 @@ pub struct DynamoDBTableProperties {
     pub(crate) provisioned_throughput: Option<ProvisionedThroughput>,
     #[serde(rename = "OnDemandThroughput", skip_serializing_if = "Option::is_none")]
     pub(crate) on_demand_throughput: Option<OnDemandThroughput>,
+
+    // "GlobalSecondaryIndexes" : [ GlobalSecondaryIndex, ... ],
+    // "LocalSecondaryIndexes" : [ LocalSecondaryIndex, ... ],
+    // "PointInTimeRecoverySpecification" : PointInTimeRecoverySpecification,
+    // "ResourcePolicy" : ResourcePolicy,
+    // "SSESpecification" : SSESpecification,
+    // "StreamSpecification" : StreamSpecification,
+    // "TimeToLiveSpecification" : TimeToLiveSpecification,
 }
 
 #[derive(Serialize)]

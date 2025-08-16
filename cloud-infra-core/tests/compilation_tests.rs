@@ -7,7 +7,7 @@ use cloud_infra_macros::create_alphanumeric_underscore_string;
 #[test]
 fn dynamodb_builder_should_compile() {
     let key = create_alphanumeric_underscore_string!("test");
-    DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING))
+    DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
         .pay_per_request_billing()
         .build();
 }
