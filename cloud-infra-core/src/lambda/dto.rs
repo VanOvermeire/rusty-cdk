@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use serde::Serialize;
 use serde_json::Value;
+use crate::stack::Asset;
 
 #[derive(Serialize)]
 pub struct LambdaFunction {
     #[serde(skip)]
     id: String,
+    #[serde(skip)]
+    pub(crate) asset: Asset,
     #[serde(rename = "Type")]
     r#type: String,
     #[serde(rename = "Properties")]
@@ -13,9 +16,10 @@ pub struct LambdaFunction {
 }
 
 impl LambdaFunction {
-    pub(crate) fn new(id: String, properties: LambdaFunctionProperties) -> Self {
+    pub(crate) fn new(id: String, asset: Asset, properties: LambdaFunctionProperties) -> Self {
         Self {
             id,
+            asset,
             r#type: "AWS::Lambda::Function".to_string(),
             properties,
         }

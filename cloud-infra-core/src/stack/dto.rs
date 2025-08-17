@@ -5,6 +5,13 @@ use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::LambdaFunction;
 
+#[derive(Clone)]
+pub struct Asset {
+    pub s3_bucket: String,
+    pub s3_key: String,
+    pub path: String
+}
+
 #[derive(Serialize)]
 pub struct Stack {
     #[serde(rename = "Resources")]
@@ -17,6 +24,14 @@ impl Stack {
         Self {
             resources
         }
+    }
+    
+    pub fn get_assets(&self) -> Vec<Asset> {
+        self.resources.iter().flat_map(|r| match r.1 {
+            Resource::DynamoDBTable(_) => vec![],
+            Resource::IamRole(_) => vec![],
+            Resource::LambdaFunction(l) => vec![l.asset.clone()] // see if we can avoid the clone
+        }).collect()
     }
 }
 

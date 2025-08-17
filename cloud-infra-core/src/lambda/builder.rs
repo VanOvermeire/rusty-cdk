@@ -1,6 +1,3 @@
-// TODO set rights
-//  link Env var
-
 use std::marker::PhantomData;
 use std::vec;
 use serde_json::Value;
@@ -8,7 +5,8 @@ use crate::dynamodb::DynamoDBTable;
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Principal, Statement};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
-use crate::stack::Resource;
+use crate::stack::{Asset, Resource};
+use crate::wrappers::ZipFile;
 
 pub enum Runtime {
     NodeJs22,
@@ -56,17 +54,18 @@ impl From<PackageType> for String {
     }
 }
 
-// TODO could check bucket and dir validity with macros
+// TODO check bucket! once checked, store the result in a local json file so you don't need to check again
+//  also allow override with CLOUD_INFRA_NO_REMOTE => accept bucket as correct
 pub struct Zip {
     bucket: String,
-    dir: String,
+    file: ZipFile,
 }
 
 impl Zip {
-    pub fn new(bucket: &str, dir: &str) -> Self {
+    pub fn new(bucket: &str, file: ZipFile) -> Self {
         Zip {
             bucket: bucket.to_string(),
-            dir: dir.to_string(),
+            file
         }
     }
 }
@@ -106,10 +105,21 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
     fn build_internal(self) -> Vec<Resource> {
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
-                LambdaCode {
+                let asset_id = Resource::generate_id("Asset");
+                let asset_id = format!("{asset_id}.zip");
+                
+                let asset = Asset {
+                    s3_bucket: z.bucket.clone(),
+                    s3_key: asset_id.clone(),
+                    path: z.file.0.to_string(),
+                };
+                
+                let code = LambdaCode {
                     s3_bucket: Some(z.bucket),
-                    s3_key: Some("generate.zip".to_string()), // TODO!
-                }
+                    s3_key: Some(asset_id),
+                };
+
+                (asset, code)
             }
         };
         
@@ -132,7 +142,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         let role = IamRole::new(role_id, props);
         
         let properties = LambdaFunctionProperties {
-            code,
+            code: code.1,
             architectures: vec![self.architecture.into()],
             memory_size: self.memory,
             timeout: self.timeout,
@@ -142,7 +152,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
         
         vec![
-            Resource::LambdaFunction(LambdaFunction::new(Resource::generate_id("LambdaFunction"), properties)),
+            Resource::LambdaFunction(LambdaFunction::new(Resource::generate_id("LambdaFunction"), code.0, properties)),
             Resource::IamRole(role),
         ]
     }
