@@ -2,7 +2,12 @@
 //  link Env var
 
 use std::marker::PhantomData;
+use std::vec;
 use crate::dynamodb::DynamoDBTable;
+use crate::intrinsic_functions::{get_arn, join};
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Principal, Statement};
+use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
+use crate::stack::Resource;
 
 pub enum Runtime {
     NodeJs22,
@@ -56,6 +61,15 @@ pub struct Zip {
     dir: String,
 }
 
+impl Zip {
+    pub fn new(bucket: &str, dir: &str) -> Self {
+        Zip {
+            bucket: bucket.to_string(),
+            dir: dir.to_string(),
+        }
+    }
+}
+
 pub enum Code {
     Zip(Zip)
 }
@@ -87,10 +101,54 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     permissions: Vec<Permission>,
 }
 
+impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
+    fn build_internal(self) -> Vec<Resource> {
+        let code = match self.code.expect("code to be present, enforced by builder") {
+            Code::Zip(z) => {
+                LambdaCode {
+                    s3_bucket: Some(z.bucket),
+                    s3_key: Some("generate.zip".to_string()), // TODO!
+                }
+            }
+        };
+        
+        let assumed_role_policy_document = AssumeRolePolicyDocument::new(vec![Statement {
+            action: "sts:AssumeRole".to_string(),
+            effect: "Allow".to_string(),
+            principal: Principal {
+                service: "lambda.amazonaws.com".to_string(),
+            }
+        }]);
+        let props = IamRoleProperties {
+            assumed_role_policy_document,
+            managed_policy_arns: vec![join()],
+        };
+
+        let role_id = Resource::generate_id("LambdaFunctionRole");
+        let role_ref = get_arn(&role_id);
+        let role = IamRole::new(role_id, props);
+        
+        let properties = LambdaFunctionProperties {
+            code,
+            architectures: vec![self.architecture.into()],
+            memory_size: self.memory,
+            timeout: self.timeout,
+            handler: self.handler,
+            runtime: self.runtime.map(Into::into),
+            role: role_ref,
+        };
+        
+        vec![
+            Resource::LambdaFunction(LambdaFunction::new(Resource::generate_id("LambdaFunction"), properties)),
+            Resource::IamRole(role),
+        ]
+    }
+}
+
 // TODO better checking for mem and duration
 impl LambdaFunctionBuilder<StartState> {
-    pub fn new(architecture: Architecture, memory: u16, timeout: u16) -> Self {
-        Self {
+    pub fn new(architecture: Architecture, memory: u16, timeout: u16) -> LambdaFunctionBuilder<StartState> {
+        LambdaFunctionBuilder {
             architecture,
             memory,
             timeout,
@@ -130,8 +188,6 @@ impl LambdaFunctionBuilder<StartState> {
             permissions: self.permissions,
         }
     }
-    
-    
 }
 
 impl LambdaFunctionBuilder<ZipState> {
@@ -150,7 +206,7 @@ impl LambdaFunctionBuilder<ZipState> {
 }
 
 impl LambdaFunctionBuilder<ZipStateWithHandler> {
-    pub fn handler(self, runtime: Runtime) -> LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
+    pub fn runtime(self, runtime: Runtime) -> LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
         LambdaFunctionBuilder {
             runtime: Some(runtime),
             state: Default::default(),
@@ -165,7 +221,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
 }
 
 impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn build(self) {
-        
+    pub fn build(self) -> Vec<Resource> {
+        self.build_internal()
     }
 }

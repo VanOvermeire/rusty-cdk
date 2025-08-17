@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Serialize)]
 pub struct IamRole {
@@ -27,11 +28,12 @@ impl IamRole {
 #[derive(Serialize)]
 pub struct IamRoleProperties {
     #[serde(rename = "AssumeRolePolicyDocument")]
-    assumed_role_policy_document: AssumeRolePolicyDocument,
-    #[serde(rename = "RoleName", skip_serializing_if = "Option::is_none")]
-    role_name: Option<String>,
-    #[serde(rename = "ManagedPolicyArns", skip_serializing_if = "Option::is_none")]
-    managed_policy_arns: Option<String>, // "Policies" : [ Policy, ... ],
+    pub(crate) assumed_role_policy_document: AssumeRolePolicyDocument,
+    #[serde(rename = "ManagedPolicyArns")]
+    pub(crate) managed_policy_arns: Vec<Value>,
+    // #[serde(rename = "RoleName", skip_serializing_if = "Option::is_none")]
+    // pub(crate) role_name: Option<String>,
+    // "Policies" : [ Policy, ... ],
 }
 
 #[derive(Serialize)]
@@ -53,13 +55,17 @@ impl AssumeRolePolicyDocument {
 
 #[derive(Serialize)]
 pub struct Statement {
-    action: String,
-    effect: String,
-    principal: Principal,
+    #[serde(rename = "Action")]
+    pub(crate) action: String,
+    #[serde(rename = "Effect")]
+    pub(crate) effect: String,
+    #[serde(rename = "Principal")]
+    pub(crate) principal: Principal,
 }
 
 // TODO does not have to contain service per se
 #[derive(Serialize)]
 pub struct Principal {
-    service: String,
+    #[serde(rename = "Service")]
+    pub(crate) service: String,
 }

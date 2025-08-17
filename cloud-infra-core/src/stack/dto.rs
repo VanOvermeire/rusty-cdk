@@ -2,6 +2,8 @@ use serde::Serialize;
 use std::collections::HashMap;
 use rand::Rng;
 use crate::dynamodb::DynamoDBTable;
+use crate::iam::IamRole;
+use crate::lambda::LambdaFunction;
 
 #[derive(Serialize)]
 pub struct Stack {
@@ -22,12 +24,16 @@ impl Stack {
 #[serde(untagged)]
 pub enum Resource {
     DynamoDBTable(DynamoDBTable),
+    LambdaFunction(LambdaFunction),
+    IamRole(IamRole),
 }
 
 impl Resource {
     fn get_id(&self) -> &str {
         match self {
-            Resource::DynamoDBTable(table) => table.get_id()
+            Resource::DynamoDBTable(t) => t.get_id(),
+            Resource::LambdaFunction(f) => f.get_id(),
+            Resource::IamRole(r) => r.get_id(),
         }
     }
     

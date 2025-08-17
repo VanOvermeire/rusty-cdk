@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Serialize)]
 pub struct LambdaFunction {
@@ -11,22 +12,36 @@ pub struct LambdaFunction {
     properties: LambdaFunctionProperties,
 }
 
+impl LambdaFunction {
+    pub(crate) fn new(id: String, properties: LambdaFunctionProperties) -> Self {
+        Self {
+            id,
+            r#type: "AWS::Lambda::Function".to_string(),
+            properties,
+        }
+    }
+
+    pub(crate) fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+}
+
 #[derive(Serialize)]
 pub struct LambdaFunctionProperties {
     #[serde(rename = "Code")]
-    code: LambdaCode,
+    pub(crate) code: LambdaCode,
     #[serde(rename = "MemorySize")]
-    memory_size: u16,
+    pub(crate) memory_size: u16,
     #[serde(rename = "Timeout")]
-    timeout: u16,
+    pub(crate) timeout: u16,
     #[serde(rename = "Architectures")]
-    architectures: Vec<String>,
+    pub(crate) architectures: Vec<String>,
     #[serde(rename = "Role")]
-    role: String,
+    pub(crate) role: Value,
     #[serde(rename = "Runtime", skip_serializing_if = "Option::is_none")]
-    runtime: Option<String>,
+    pub(crate) runtime: Option<String>,
     #[serde(rename = "Handler", skip_serializing_if = "Option::is_none")]
-    handler: Option<String>,
+    pub(crate) handler: Option<String>,
     // #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
     // function_name: Option<String>,
     // #[serde(rename = "PackageType", skip_serializing_if = "Option::is_none")]
@@ -43,9 +58,9 @@ pub struct LambdaFunctionProperties {
 #[derive(Serialize)]
 pub struct LambdaCode {
     #[serde(rename = "S3Bucket")]
-    s3_bucket: Option<String>,
+    pub(crate) s3_bucket: Option<String>,
     #[serde(rename = "S3Key")]
-    s3_key: Option<String>,
+    pub(crate) s3_key: Option<String>,
     // #[serde(rename = "S3ObjectVersion")]
     // s3_object_version: Option<String>,
     // #[serde(rename = "ZipFile")]
@@ -59,5 +74,5 @@ pub struct LambdaCode {
 #[derive(Serialize)]
 pub struct Environment {
     // TODO check env vars: [a-zA-Z][a-zA-Z0-9_]+
-    variables: HashMap<String, String>
+    pub(crate) variables: HashMap<String, String>
 }
