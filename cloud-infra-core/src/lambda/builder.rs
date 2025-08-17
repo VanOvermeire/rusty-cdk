@@ -3,8 +3,9 @@
 
 use std::marker::PhantomData;
 use std::vec;
+use serde_json::Value;
 use crate::dynamodb::DynamoDBTable;
-use crate::intrinsic_functions::{get_arn, join};
+use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Principal, Statement};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::Resource;
@@ -119,9 +120,11 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
                 service: "lambda.amazonaws.com".to_string(),
             }
         }]);
+
+        let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let props = IamRoleProperties {
             assumed_role_policy_document,
-            managed_policy_arns: vec![join()],
+            managed_policy_arns,
         };
 
         let role_id = Resource::generate_id("LambdaFunctionRole");

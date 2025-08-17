@@ -9,17 +9,17 @@ pub fn get_arn(id: &str) -> Value {
     })
 }
 
-// TODO generic...
-pub fn join() -> Value {
+pub fn get_ref(id: &str) -> Value {
+    json!({
+        "Ref": id
+    })
+}
+
+pub fn join(delimiter: &str, elements: Vec<Value>) -> Value {
     json!({
         "Fn::Join": [
-        "",
-        [
-            "arn:",
-            {
-                "Ref": "AWS::Partition"
-            },
-            ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-        ]]
+            delimiter,
+            elements
+        ]
     })
 }
