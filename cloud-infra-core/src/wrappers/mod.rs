@@ -2,4 +2,7 @@
 
 pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 pub struct NonZeroNumber(pub u32);
+pub struct Memory(pub u16);
+pub struct Timeout(pub u16);
+
 pub struct ZipFile(pub String);

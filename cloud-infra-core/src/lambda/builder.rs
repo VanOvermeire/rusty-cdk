@@ -6,7 +6,7 @@ use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Principal, Statement};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
-use crate::wrappers::ZipFile;
+use crate::wrappers::{Memory, Timeout, ZipFile};
 
 pub enum Runtime {
     NodeJs22,
@@ -160,11 +160,11 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
 
 // TODO better checking for mem and duration
 impl LambdaFunctionBuilder<StartState> {
-    pub fn new(architecture: Architecture, memory: u16, timeout: u16) -> LambdaFunctionBuilder<StartState> {
+    pub fn new(architecture: Architecture, memory: Memory, timeout: Timeout) -> LambdaFunctionBuilder<StartState> {
         LambdaFunctionBuilder {
             architecture,
-            memory,
-            timeout,
+            memory: memory.0,
+            timeout: timeout.0,
             state: Default::default(),
             code: None,
             handler: None,

@@ -63,10 +63,39 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
         let absolute_path = absolute(path).expect("to convert zip file path to an absolute path");
         absolute_path.to_str().expect("zip file path to be valid unicode").to_string()
     } else {
-        path.to_str().expect("zip file path to be valid unicde").to_string()
+        path.to_str().expect("zip file path to be valid unicode").to_string()
     };
 
     quote!(
         ZipFile(#value.to_string())
     ).into()
 }
+
+macro_rules! number_check {
+    ($name:ident,$min:literal,$max:literal,$output:ident) => {
+        #[proc_macro]
+        pub fn $name(input: TokenStream) -> TokenStream {
+            let output: LitInt = syn::parse(input).unwrap();
+        
+            let as_number: syn::Result<u16> = output.base10_parse();
+        
+            let num = if let Ok(num) = as_number {
+                if num < $min {
+                    panic!("value should be at least {}", $min)
+                } else if num > $max {
+                    panic!("value should be at most {}", $max)
+                }
+                num
+            } else {
+                panic!("value is not a valid number")
+            };
+        
+            quote!(
+                $output(#num)
+            ).into()
+        }
+    };
+}
+
+number_check!(memory, 128, 10240, Memory);
+number_check!(timeout, 1, 900, Timeout);
