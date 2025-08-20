@@ -5,14 +5,14 @@ use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::LambdaFunction;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Asset {
     pub s3_bucket: String,
     pub s3_key: String,
     pub path: String
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Stack {
     #[serde(rename = "Resources")]
     resources: HashMap<String, Resource>,
@@ -20,10 +20,15 @@ pub struct Stack {
 
 impl Stack {
     pub fn new(resources: Vec<Resource>) -> Self {
-        let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
+        // let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
         Self {
-            resources
+            resources: HashMap::new()
         }
+    }
+    
+    pub fn add<T: Into<Resource>>(&mut self, resource: T) {
+        let resource = resource.into();
+        self.resources.insert(resource.get_id().to_string(), resource);
     }
     
     pub fn get_assets(&self) -> Vec<Asset> {
@@ -35,7 +40,7 @@ impl Stack {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
     DynamoDBTable(DynamoDBTable),
@@ -56,5 +61,23 @@ impl Resource {
         let mut rng = rand::rng();
         let random_suffix: u32 = rng.random();
         format!("{resource_name}{random_suffix}")
+    }
+}
+
+impl From<DynamoDBTable> for Resource {
+    fn from(value: DynamoDBTable) -> Self {
+        Resource::DynamoDBTable(value)
+    }
+}
+
+impl From<LambdaFunction> for Resource {
+    fn from(value: LambdaFunction) -> Self {
+        Resource::LambdaFunction(value)
+    }
+}
+
+impl From<IamRole> for Resource {
+    fn from(value: IamRole) -> Self {
+        Resource::IamRole(value)
     }
 }

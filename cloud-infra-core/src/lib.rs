@@ -3,5 +3,5 @@ pub mod stack;
 pub mod dynamodb;
 pub mod wrappers;
 pub mod lambda;
-mod iam;
+pub mod iam;
 mod intrinsic_functions;

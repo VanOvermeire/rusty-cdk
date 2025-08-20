@@ -1,9 +1,9 @@
+use crate::dynamodb::DynamoDBTable;
 use std::marker::PhantomData;
 use std::vec;
 use serde_json::Value;
-use crate::dynamodb::DynamoDBTable;
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Permission, Policy, PolicyDocument, Principal, Statement};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
 use crate::wrappers::{Memory, Timeout, ZipFile};
@@ -74,11 +74,6 @@ pub enum Code {
     Zip(Zip)
 }
 
-pub enum Permission {
-    DynamoDBRead(DynamoDBTable),
-    DynamoDBReadWrite(DynamoDBTable),
-}
-
 pub trait LambdaFunctionBuilderState {}
 
 pub struct StartState {}
@@ -98,11 +93,11 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     code: Option<Code>,
     handler: Option<String>,
     runtime: Option<Runtime>,
-    permissions: Vec<Permission>,
+    additional_policies: Vec<Policy>,
 }
 
 impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
-    fn build_internal(self) -> Vec<Resource> {
+    fn build_internal(self) -> (LambdaFunction, IamRole) {
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
                 let asset_id = Resource::generate_id("Asset");
@@ -124,17 +119,19 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
         
         let assumed_role_policy_document = AssumeRolePolicyDocument::new(vec![Statement {
-            action: "sts:AssumeRole".to_string(),
+            action: vec!["sts:AssumeRole".to_string()],
             effect: "Allow".to_string(),
-            principal: Principal {
+            principal: Some(Principal {
                 service: "lambda.amazonaws.com".to_string(),
-            }
+            }),
+            resource: None,
         }]);
 
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let props = IamRoleProperties {
             assumed_role_policy_document,
             managed_policy_arns,
+            policies: Some(self.additional_policies),
         };
 
         let role_id = Resource::generate_id("LambdaFunctionRole");
@@ -150,15 +147,14 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             runtime: self.runtime.map(Into::into),
             role: role_ref,
         };
-        
-        vec![
-            Resource::LambdaFunction(LambdaFunction::new(Resource::generate_id("LambdaFunction"), code.0, properties)),
-            Resource::IamRole(role),
-        ]
+
+        (
+            LambdaFunction::new(Resource::generate_id("LambdaFunction"), code.0, properties),
+            role,
+        )
     }
 }
 
-// TODO better checking for mem and duration
 impl LambdaFunctionBuilder<StartState> {
     pub fn new(architecture: Architecture, memory: Memory, timeout: Timeout) -> LambdaFunctionBuilder<StartState> {
         LambdaFunctionBuilder {
@@ -169,24 +165,15 @@ impl LambdaFunctionBuilder<StartState> {
             code: None,
             handler: None,
             runtime: None,
-            permissions: vec![],
+            additional_policies: vec![],
         }
     }
     
     // TODO other optional config
     
-    pub fn add_permission_to_role(mut self, permissions: Vec<Permission>) -> LambdaFunctionBuilder<StartState> {
-        self.permissions.extend(permissions);
-        Self {
-            permissions: self.permissions,
-            state: Default::default(),
-            code: self.code,
-            architecture: self.architecture,
-            memory: self.memory,
-            timeout: self.timeout,
-            handler: self.handler,
-            runtime: self.runtime,
-        }
+    pub fn add_permission_to_role(mut self, permission: Permission) -> LambdaFunctionBuilder<StartState> {
+        self.additional_policies.push(permission.into_policy());
+        self
     }
 
     pub fn zip(self, zip: Zip) -> LambdaFunctionBuilder<ZipState> {
@@ -198,7 +185,7 @@ impl LambdaFunctionBuilder<StartState> {
             timeout: self.timeout,
             handler: self.handler,
             runtime: self.runtime,
-            permissions: self.permissions,
+            additional_policies: self.additional_policies,
         }
     }
 }
@@ -213,7 +200,7 @@ impl LambdaFunctionBuilder<ZipState> {
             timeout: self.timeout,
             code: self.code,
             runtime: self.runtime,
-            permissions: self.permissions,
+            additional_policies: self.additional_policies,
         }
     }
 }
@@ -228,13 +215,13 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
             timeout: self.timeout,
             code: self.code,
             handler: self.handler,
-            permissions: self.permissions,
+            additional_policies: self.additional_policies,
         }
     }
 }
 
 impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn build(self) -> Vec<Resource> {
+    pub fn build(self) -> (LambdaFunction, IamRole) {
         self.build_internal()
     }
 }

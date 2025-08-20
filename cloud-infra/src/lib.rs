@@ -20,6 +20,14 @@ pub fn synth(resources: Vec<Resource>) -> Result<Synth, String> {
         .map_err(|e| format!("Could not serialize resources: {e:?}"))
 }
 
+pub fn synth_stack(stack: Stack) -> Result<Synth, String> {
+    let assets = stack.get_assets();
+
+    serde_json::to_string(&stack)
+        .map(|s| Synth(s, assets))
+        .map_err(|e| format!("Could not serialize resources: {e:?}"))
+}
+
 // TODO does not work with existing stacks...
 pub async fn deploy(name: &str, synth: Synth) {
     let config = aws_config::load_from_env().await;

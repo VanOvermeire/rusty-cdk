@@ -135,7 +135,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         }
     }
 
-    fn build_internal(self) -> Resource {
+    fn build_internal(self) -> DynamoDBTable {
         let DynamoDBKey { key, key_type } = self.partition_key.unwrap();
         let mut key_schema = vec![KeySchema { attribute_name: key.clone(), key_type: "HASH".to_string() }];
         let mut key_attributes = vec![AttributeDefinition {
@@ -181,7 +181,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             on_demand_throughput,
         };
 
-        Resource::DynamoDBTable(DynamoDBTable::new(Resource::generate_id("DynamoDBTable"), properties))
+        DynamoDBTable::new(Resource::generate_id("DynamoDBTable"), properties)
     }
 }
 
@@ -200,7 +200,7 @@ impl DynamoDBTableBuilder<PayPerRequestState> {
         }
     }
 
-    pub fn build(self) -> Resource {
+    pub fn build(self) -> DynamoDBTable {
         self.build_internal()
     }
 }
@@ -238,7 +238,7 @@ impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
 }
 
 impl DynamoDBTableBuilder<ProvisionedStateWriteSet> {
-    pub fn build(self) -> Resource {
+    pub fn build(self) -> DynamoDBTable {
         self.build_internal()
     }
 }

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct DynamoDBTable {
     #[serde(skip)]
     id: String,
@@ -24,7 +24,7 @@ impl DynamoDBTable {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct DynamoDBTableProperties {
     #[serde(rename = "KeySchema")]
     pub(crate) key_schema: Vec<KeySchema>,
@@ -46,7 +46,7 @@ pub struct DynamoDBTableProperties {
     // "TimeToLiveSpecification" : TimeToLiveSpecification,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct AttributeDefinition {
     #[serde(rename = "AttributeName")]
     pub(crate) attribute_name: String,
@@ -54,7 +54,7 @@ pub struct AttributeDefinition {
     pub(crate) attribute_type: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct KeySchema {
     #[serde(rename = "AttributeName")]
     pub(crate) attribute_name: String,
@@ -62,7 +62,7 @@ pub struct KeySchema {
     pub(crate) key_type: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ProvisionedThroughput {
     #[serde(rename = "ReadCapacityUnits")]
     pub(crate) read_capacity: u32,
@@ -70,7 +70,7 @@ pub struct ProvisionedThroughput {
     pub(crate) write_capacity: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct OnDemandThroughput {
     #[serde(rename = "MaxReadRequestUnits", skip_serializing_if = "Option::is_none")]
     pub(crate) max_read_capacity: Option<u32>,

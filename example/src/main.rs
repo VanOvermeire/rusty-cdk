@@ -5,7 +5,9 @@ use cloud_infra_core::wrappers::ZipFile;
 use cloud_infra_core::wrappers::Memory;
 use cloud_infra_core::wrappers::Timeout;
 use cloud_infra_core::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+use cloud_infra_core::iam::{Permission, Policy};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
+use cloud_infra_core::stack::{Resource, Stack};
 use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout};
 
 #[tokio::main]
@@ -20,15 +22,20 @@ async fn main() {
     let zipper = zipfile!("./example/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    let mut all_resources = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+    let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+        .add_permission_to_role(Permission::DynamoDBRead(&table))
         .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .build();
-    // all_resources.push(table);
+
+    let mut stack = Stack::new(vec![]);
+    stack.add(fun);
+    stack.add(role);
+    stack.add(table);
     
-    let result = cloud_infra::synth(all_resources).unwrap();
+    let result = cloud_infra::synth_stack(stack).unwrap();
     println!("{}", result);
-    
-    cloud_infra::deploy("ExampleRemove", result).await;
+
+    // cloud_infra::deploy("ExampleRemove", result).await;
 }

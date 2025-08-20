@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::Value;
 use crate::stack::Asset;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct LambdaFunction {
     #[serde(skip)]
     id: String,
@@ -30,7 +30,7 @@ impl LambdaFunction {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct LambdaFunctionProperties {
     #[serde(rename = "Code")]
     pub(crate) code: LambdaCode,
@@ -59,7 +59,7 @@ pub struct LambdaFunctionProperties {
     // "VpcConfig": VpcConfig
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct LambdaCode {
     #[serde(rename = "S3Bucket")]
     pub(crate) s3_bucket: Option<String>,
@@ -75,7 +75,7 @@ pub struct LambdaCode {
     // source_kmskey_arn: String
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Environment {
     // TODO check env vars: [a-zA-Z][a-zA-Z0-9_]+
     pub(crate) variables: HashMap<String, String>
