@@ -88,7 +88,7 @@ pub struct Statement {
     #[serde(rename = "Principal", skip_serializing_if = "Option::is_none")]
     pub(crate) principal: Option<Principal>,
     #[serde(rename = "Resource", skip_serializing_if = "Option::is_none")]
-    pub(crate) resource: Option<String>,
+    pub(crate) resource: Option<Vec<Value>>,
 }
 
 // TODO does not have to contain service per se

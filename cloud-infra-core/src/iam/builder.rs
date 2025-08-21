@@ -19,8 +19,10 @@
 
 // TODO statement builder (and others) (use them in the other builders)
 
+use serde_json::Value;
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::{Policy, PolicyDocument, Statement};
+use crate::intrinsic_functions::get_arn;
 
 pub enum Permission<'a> {
     DynamoDBRead(&'a DynamoDBTable),
@@ -31,14 +33,7 @@ impl Permission<'_> {
     pub(crate) fn into_policy(self) -> Policy {
         match self {
             Permission::DynamoDBRead(table) => {
-                //     "Resource": [
-                //     {
-                //         "Fn::GetAtt": [
-                //         "someId25FE8D3B",
-                //         "Arn"
-                //         ]
-                //     }
-
+                let id = table.get_id();
                 let statement = Statement {
                     action: vec![
                         "dynamodb:Get*".to_string(),
@@ -50,11 +45,11 @@ impl Permission<'_> {
                     ],
                     effect: "Allow".to_string(),
                     principal: None,
-                    resource: Some("*".to_string()), // TODO!
+                    resource: Some(vec![get_arn(&id)]),
                 };
                 let policy_document = PolicyDocument::new(vec![statement]);
                 Policy {
-                    policy_name: format!("{}Read", table.get_id()),
+                    policy_name: format!("{}Read", id),
                     policy_document,
                 }
             }
