@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Permission, Policy, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocument, AssumeRolePolicyDocumentBuilder, IamRole, IamRoleProperties, Permission, Policy, Principal, Statement};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
@@ -117,7 +117,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             }
         };
         
-        let assumed_role_policy_document = AssumeRolePolicyDocument::new(vec![Statement {
+        let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![Statement {
             action: vec!["sts:AssumeRole".to_string()],
             effect: "Allow".to_string(),
             principal: Some(Principal {

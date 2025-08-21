@@ -1,7 +1,7 @@
 // TODO statement builder (and others) (use them in the other builders)
 
 use crate::dynamodb::DynamoDBTable;
-use crate::iam::{Policy, PolicyDocument, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocument, Policy, PolicyDocument, Principal, Statement};
 use crate::intrinsic_functions::get_arn;
 use std::marker::PhantomData;
 use std::vec;
@@ -57,6 +57,17 @@ pub struct PolicyDocumentBuilder {}
 impl PolicyDocumentBuilder {
     pub fn new(statements: Vec<Statement>) -> PolicyDocument {
         PolicyDocument {
+            version: "2012-10-17".to_string(),
+            statements,
+        }
+    }
+}
+
+pub struct AssumeRolePolicyDocumentBuilder {}
+
+impl AssumeRolePolicyDocumentBuilder {
+    pub fn new(statements: Vec<Statement>) -> AssumeRolePolicyDocument {
+        AssumeRolePolicyDocument {
             version: "2012-10-17".to_string(),
             statements,
         }

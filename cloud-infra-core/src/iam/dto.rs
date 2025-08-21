@@ -53,31 +53,12 @@ pub struct PolicyDocument {
     pub(crate) statements: Vec<Statement>
 }
 
-// TODO remove
-// impl PolicyDocument {
-//     pub(crate) fn new(statements: Vec<Statement>) -> PolicyDocument {
-//         PolicyDocument {
-//             version: "2012-10-17".to_string(),
-//             statements,
-//         }
-//     }
-// }
-
 #[derive(Debug, Serialize)]
 pub struct AssumeRolePolicyDocument {
     #[serde(rename = "Statement")]
-    statements: Vec<Statement>,
+    pub(crate) statements: Vec<Statement>,
     #[serde(rename = "Version")]
-    version: String,
-}
-
-impl AssumeRolePolicyDocument {
-    pub(crate) fn new(statements: Vec<Statement>) -> AssumeRolePolicyDocument {
-        Self {
-            statements,
-            version: "2012-10-17".to_string(),
-        }
-    }
+    pub(crate) version: String,
 }
 
 #[derive(Debug, Serialize)]
