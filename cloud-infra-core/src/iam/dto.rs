@@ -53,14 +53,15 @@ pub struct PolicyDocument {
     pub(crate) statements: Vec<Statement>
 }
 
-impl PolicyDocument {
-    pub(crate) fn new(statements: Vec<Statement>) -> PolicyDocument {
-        PolicyDocument {
-            version: "2012-10-17".to_string(),
-            statements,
-        }
-    }
-}
+// TODO remove
+// impl PolicyDocument {
+//     pub(crate) fn new(statements: Vec<Statement>) -> PolicyDocument {
+//         PolicyDocument {
+//             version: "2012-10-17".to_string(),
+//             statements,
+//         }
+//     }
+// }
 
 #[derive(Debug, Serialize)]
 pub struct AssumeRolePolicyDocument {
@@ -91,7 +92,7 @@ pub struct Statement {
     pub(crate) resource: Option<Vec<Value>>,
 }
 
-// TODO does not have to contain service per se
+// TODO does not have to contain service per se (that's only one option)
 #[derive(Debug, Serialize)]
 pub struct Principal {
     #[serde(rename = "Service")]

@@ -20,9 +20,9 @@ pub struct Stack {
 
 impl Stack {
     pub fn new(resources: Vec<Resource>) -> Self {
-        // let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
+        let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
         Self {
-            resources: HashMap::new()
+            resources,
         }
     }
     

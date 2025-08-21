@@ -1,12 +1,11 @@
-use crate::dynamodb::DynamoDBTable;
-use std::marker::PhantomData;
-use std::vec;
-use serde_json::Value;
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Permission, Policy, Principal, Statement};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Permission, Policy, PolicyDocument, Principal, Statement};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
 use crate::wrappers::{Memory, Timeout, ZipFile};
+use serde_json::Value;
+use std::marker::PhantomData;
+use std::vec;
 
 pub enum Runtime {
     NodeJs22,
