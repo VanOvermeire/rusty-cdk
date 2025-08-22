@@ -5,8 +5,10 @@ pub struct StackBuilder {
 }
 
 impl StackBuilder {
-    pub fn new(resources: Vec<Resource>) -> Self {
-        Self { resources }
+    pub fn new() -> Self {
+        Self {
+            resources: vec![]
+        }
     }
 
     pub fn add_resource<T: Into<Resource>>(&mut self, resource: T) {
