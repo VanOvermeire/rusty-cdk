@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocument, AssumeRolePolicyDocumentBuilder, IamRole, IamRoleProperties, Permission, Policy, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, IamRole, IamRoleBuilder, IamRoleProperties, Permission, Policy, Principal, Statement};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
@@ -131,11 +131,12 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             assumed_role_policy_document,
             managed_policy_arns,
             policies: Some(self.additional_policies),
+            role_name: None,
         };
 
         let role_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_id);
-        let role = IamRole::new(role_id, props);
+        let role = IamRoleBuilder::new(role_id, props);
         
         let properties = LambdaFunctionProperties {
             code: code.1,

@@ -180,8 +180,12 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             provisioned_throughput,
             on_demand_throughput,
         };
-
-        DynamoDBTable::new(Resource::generate_id("DynamoDBTable"), properties)
+        
+        DynamoDBTable {
+            id: Resource::generate_id("DynamoDBTable"),
+            r#type: "AWS::DynamoDB::Table".to_string(),
+            properties,
+        }
     }
 }
 

@@ -4,22 +4,14 @@ use serde_json::Value;
 #[derive(Debug, Serialize)]
 pub struct IamRole {
     #[serde(skip)]
-    id: String,
+    pub(crate) id: String,
     #[serde(rename = "Type")]
-    r#type: String,
+    pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    properties: IamRoleProperties,
+    pub(crate) properties: IamRoleProperties,
 }
 
 impl IamRole {
-    pub(crate) fn new(id: String, properties: IamRoleProperties) -> Self {
-        Self {
-            id,
-            r#type: "AWS::IAM::Role".to_string(),
-            properties,
-        }
-    }
-
     pub(crate) fn get_id(&self) -> &str {
         self.id.as_str()
     }
@@ -32,9 +24,9 @@ pub struct IamRoleProperties {
     #[serde(rename = "ManagedPolicyArns")]
     pub(crate) managed_policy_arns: Vec<Value>,
     #[serde(rename = "Policies", skip_serializing_if = "Option::is_none")]
-    pub(crate) policies: Option<Vec<Policy>>
-    // #[serde(rename = "RoleName", skip_serializing_if = "Option::is_none")]
-    // pub(crate) role_name: Option<String>,
+    pub(crate) policies: Option<Vec<Policy>>,
+    #[serde(rename = "RoleName", skip_serializing_if = "Option::is_none")]
+    pub(crate) role_name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

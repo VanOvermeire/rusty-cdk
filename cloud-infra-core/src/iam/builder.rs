@@ -1,11 +1,64 @@
 // TODO statement builder (and others) (use them in the other builders)
 
 use crate::dynamodb::DynamoDBTable;
-use crate::iam::{AssumeRolePolicyDocument, Policy, PolicyDocument, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
 use crate::intrinsic_functions::get_arn;
+use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
-use serde_json::Value;
+
+pub struct IamRoleBuilder {}
+
+impl IamRoleBuilder {
+    pub fn new(id: String, properties: IamRoleProperties) -> IamRole {
+        IamRole {
+            id,
+            r#type: "AWS::IAM::Role".to_string(),
+            properties,
+        }
+    }
+}
+
+pub struct IamRolePropertiesBuilder {
+    assumed_role_policy_document: AssumeRolePolicyDocument,
+    managed_policy_arns: Vec<Value>,
+    policies: Option<Vec<Policy>>,
+    role_name: Option<String>,
+}
+
+impl IamRolePropertiesBuilder {
+    pub fn new(assumed_role_policy_document: AssumeRolePolicyDocument, managed_policy_arns: Vec<Value>) -> IamRolePropertiesBuilder {
+        IamRolePropertiesBuilder {
+            assumed_role_policy_document,
+            managed_policy_arns,
+            policies: None,
+            role_name: None,
+        }
+    }
+    
+    pub fn policies(self, policies: Vec<Policy>) -> IamRolePropertiesBuilder {
+        Self {
+            policies: Some(policies),
+            ..self
+        }
+    }
+    
+    pub fn role_name(self, role_name: String) -> IamRolePropertiesBuilder {
+        Self {
+            role_name: Some(role_name),
+            ..self
+        }
+    }
+    
+    pub fn build(self) -> IamRoleProperties {
+        IamRoleProperties {
+            assumed_role_policy_document: self.assumed_role_policy_document,
+            managed_policy_arns: self.managed_policy_arns,
+            policies: self.policies,
+            role_name: self.role_name,
+        }
+    }
+}
 
 pub trait PolicyBuilderState {}
 
@@ -76,14 +129,14 @@ impl AssumeRolePolicyDocumentBuilder {
 
 pub enum Effect {
     Allow,
-    Deny
+    Deny,
 }
 
 impl From<Effect> for String {
     fn from(value: Effect) -> Self {
         match value {
             Effect::Allow => "Allow".to_string(),
-            Effect::Deny => "Deny".to_string()
+            Effect::Deny => "Deny".to_string(),
         }
     }
 }
@@ -97,7 +150,7 @@ pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,
     principal: Option<Principal>,
-    resource: Option<Vec<Value>>
+    resource: Option<Vec<Value>>,
 }
 
 impl StatementBuilder {
@@ -109,28 +162,28 @@ impl StatementBuilder {
             resource: None,
         }
     }
-    
+
     pub fn principal(self, principal: Principal) -> Self {
         Self {
             principal: Some(principal),
             ..self
         }
     }
-    
+
     pub fn resources(self, resources: Vec<Value>) -> Self {
         Self {
             resource: Some(resources),
             ..self
         }
     }
-    
+
     pub fn all_resources(self) -> Self {
         Self {
             resource: Some(vec![Value::String("*".to_string())]),
             ..self
         }
     }
-    
+
     pub fn build(self) -> Statement {
         Statement {
             action: self.action,
@@ -140,7 +193,6 @@ impl StatementBuilder {
         }
     }
 }
-
 
 // should this also be a builder for conformity?
 pub enum Permission<'a> {

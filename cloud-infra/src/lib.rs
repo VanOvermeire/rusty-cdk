@@ -1,5 +1,5 @@
 use aws_sdk_cloudformation::types::Capability;
-use cloud_infra_core::stack::{Asset, Resource, Stack};
+use cloud_infra_core::stack::{Asset, Resource, Stack, StackBuilder};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ impl Display for Synth {
 }
 
 pub fn synth(resources: Vec<Resource>) -> Result<Synth, String> {
-    let stack = Stack::new(resources);
+    let stack = StackBuilder::new(resources).build();
     let assets = stack.get_assets();
 
     serde_json::to_string(&stack)
@@ -40,7 +40,8 @@ pub async fn deploy(name: &str, synth: Synth) {
             let body = aws_sdk_s3::primitives::ByteStream::from_path(a.path).await;
             s3_client
                 .put_object()
-                .bucket(a.s3_bucket).key(a.s3_key)
+                .bucket(a.s3_bucket)
+                .key(a.s3_key)
                 .body(body.unwrap())//
                 .send()
                 .await

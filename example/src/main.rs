@@ -6,7 +6,7 @@ use cloud_infra_core::wrappers::Timeout;
 use cloud_infra_core::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
 use cloud_infra_core::iam::{Permission};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
-use cloud_infra_core::stack::{Stack};
+use cloud_infra_core::stack::{StackBuilder};
 use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout};
 
 #[tokio::main]
@@ -28,12 +28,12 @@ async fn main() {
         .runtime(Runtime::ProvidedAl2023)
         .build();
 
-    let mut stack = Stack::new(vec![]);
-    stack.add(fun);
-    stack.add(role);
-    stack.add(table);
+    let mut stack_builder = StackBuilder::new(vec![]);
+    stack_builder.add_resource(fun);
+    stack_builder.add_resource(role);
+    stack_builder.add_resource(table);
     
-    let result = cloud_infra::synth_stack(stack).unwrap();
+    let result = cloud_infra::synth_stack(stack_builder.build()).unwrap();
     println!("{}", result);
 
     // cloud_infra::deploy("ExampleRemove", result).await;

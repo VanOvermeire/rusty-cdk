@@ -15,24 +15,12 @@ pub struct Asset {
 #[derive(Debug, Serialize)]
 pub struct Stack {
     #[serde(rename = "Resources")]
-    resources: HashMap<String, Resource>,
+    pub(crate) resources: HashMap<String, Resource>,
 }
 
 impl Stack {
-    pub fn new(resources: Vec<Resource>) -> Self {
-        let resources = resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
-        Self {
-            resources,
-        }
-    }
-    
-    pub fn add<T: Into<Resource>>(&mut self, resource: T) {
-        let resource = resource.into();
-        self.resources.insert(resource.get_id().to_string(), resource);
-    }
-    
     pub fn get_assets(&self) -> Vec<Asset> {
-        self.resources.iter().flat_map(|r| match r.1 {
+        self.resources.values().flat_map(|r| match r {
             Resource::DynamoDBTable(_) => vec![],
             Resource::IamRole(_) => vec![],
             Resource::LambdaFunction(l) => vec![l.asset.clone()] // see if we can avoid the clone
@@ -49,7 +37,7 @@ pub enum Resource {
 }
 
 impl Resource {
-    fn get_id(&self) -> &str {
+    pub(crate) fn get_id(&self) -> &str {
         match self {
             Resource::DynamoDBTable(t) => t.get_id(),
             Resource::LambdaFunction(f) => f.get_id(),
@@ -57,7 +45,7 @@ impl Resource {
         }
     }
     
-    pub fn generate_id(resource_name: &str) -> String {
+    pub(crate) fn generate_id(resource_name: &str) -> String {
         let mut rng = rand::rng();
         let random_suffix: u32 = rng.random();
         format!("{resource_name}{random_suffix}")
