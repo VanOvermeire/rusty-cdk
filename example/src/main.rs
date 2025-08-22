@@ -1,3 +1,4 @@
+use cloud_infra_core::wrappers::EnvVarKey;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::NonZeroNumber;
 use cloud_infra_core::wrappers::ZipFile;
@@ -7,7 +8,7 @@ use cloud_infra_core::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilde
 use cloud_infra_core::iam::{Permission};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
 use cloud_infra_core::stack::{StackBuilder};
-use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout};
+use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout, env_var_key};
 
 #[tokio::main]
 async fn main() {
@@ -26,6 +27,7 @@ async fn main() {
         .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
+        .add_env_var(env_var_key!("example"), "val".to_string())
         .build();
 
     let mut stack_builder = StackBuilder::new(vec![]);

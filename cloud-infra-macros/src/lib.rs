@@ -25,22 +25,24 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
 }
 
 #[proc_macro]
-pub fn non_zero_number(input: TokenStream) -> TokenStream {
-    let output: LitInt = syn::parse(input).unwrap();
-    
-    let as_number: syn::Result<u32> = output.base10_parse();
-    
-    let num = if let Ok(num) = as_number {
-        if num == 0 {
-            panic!("value should not be null")
-        }
-        num
-    } else {
-        panic!("value is not a valid number")
-    };
-    
+pub fn env_var_key(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.len() < 2 {
+        panic!("env var key should be at least two characters long")
+    }
+
+    if value.get(0..1).expect("just checked that length is at least 2") == "_" {
+        panic!("env var key not start with an underscore")
+    }
+
+    if value.chars().any(|c| !c.is_alphanumeric() && c != '_') {
+        panic!("env var key should only contain alphanumeric characters and underscores")
+    }
+
     quote!(
-        NonZeroNumber(#num)
+        EnvVarKey(#value.to_string())
     ).into()
 }
 
@@ -68,6 +70,26 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
 
     quote!(
         ZipFile(#value.to_string())
+    ).into()
+}
+
+#[proc_macro]
+pub fn non_zero_number(input: TokenStream) -> TokenStream {
+    let output: LitInt = syn::parse(input).unwrap();
+
+    let as_number: syn::Result<u32> = output.base10_parse();
+
+    let num = if let Ok(num) = as_number {
+        if num == 0 {
+            panic!("value should not be null")
+        }
+        num
+    } else {
+        panic!("value is not a valid number")
+    };
+
+    quote!(
+        NonZeroNumber(#num)
     ).into()
 }
 

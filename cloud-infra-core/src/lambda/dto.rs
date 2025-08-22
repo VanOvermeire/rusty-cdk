@@ -46,12 +46,12 @@ pub struct LambdaFunctionProperties {
     pub(crate) runtime: Option<String>,
     #[serde(rename = "Handler", skip_serializing_if = "Option::is_none")]
     pub(crate) handler: Option<String>,
-    // #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
-    // function_name: Option<String>,
+    #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
+    pub(crate) function_name: Option<String>,
+    #[serde(rename = "Environment", skip_serializing_if = "Option::is_none")]
+    pub(crate) environment: Option<Environment>,
     // #[serde(rename = "PackageType", skip_serializing_if = "Option::is_none")]
     // package_type: Option<String>,
-    // #[serde(rename = "Environment", skip_serializing_if = "Option::is_none")]
-    // environment: Option<Environment>,
 
     // "LoggingConfig": LoggingConfig,
     // "ReservedConcurrentExecutions": Integer,
@@ -77,6 +77,5 @@ pub struct LambdaCode {
 
 #[derive(Debug, Serialize)]
 pub struct Environment {
-    // TODO check env vars: [a-zA-Z][a-zA-Z0-9_]+
     pub(crate) variables: HashMap<String, String>
 }

@@ -1,8 +1,8 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, IamRole, IamRoleBuilder, IamRoleProperties, Permission, Policy, Principal, Statement};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{LambdaCode, LambdaFunction, LambdaFunctionProperties};
+use crate::lambda::{Environment, LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{Memory, Timeout, ZipFile};
+use crate::wrappers::{EnvVarKey, Memory, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -93,9 +93,32 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     handler: Option<String>,
     runtime: Option<Runtime>,
     additional_policies: Vec<Policy>,
+    env_vars: Vec<(String, String)>,
+    function_name: Option<String>
 }
 
 impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
+    pub fn add_permission_to_role(mut self, permission: Permission) -> LambdaFunctionBuilder<T> {
+        self.additional_policies.push(permission.into_policy());
+        Self {
+            ..self
+        }
+    }
+    
+    pub fn function_name(self, name: StringWithOnlyAlphaNumericsAndUnderscores) -> LambdaFunctionBuilder<T> {
+        Self {
+            function_name: Some(name.0),
+            ..self
+        }
+    }
+    
+    pub fn add_env_var(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
+        self.env_vars.push((key.0, value));
+        Self {
+            ..self
+        }
+    }
+    
     fn build_internal(self) -> (LambdaFunction, IamRole) {
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
@@ -137,7 +160,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         let role_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_id);
         let role = IamRoleBuilder::new(role_id, props);
-        
+
+        let environment = if self.env_vars.is_empty() {
+            None
+        } else {
+            Some(Environment {
+                variables: self.env_vars.into_iter().collect(),
+            })
+        };
+
         let properties = LambdaFunctionProperties {
             code: code.1,
             architectures: vec![self.architecture.into()],
@@ -146,6 +177,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             handler: self.handler,
             runtime: self.runtime.map(Into::into),
             role: role_ref,
+            function_name: self.function_name,
+            environment,
         };
 
         (
@@ -166,14 +199,9 @@ impl LambdaFunctionBuilder<StartState> {
             handler: None,
             runtime: None,
             additional_policies: vec![],
+            env_vars: vec![],
+            function_name: None,
         }
-    }
-    
-    // TODO other optional config
-    
-    pub fn add_permission_to_role(mut self, permission: Permission) -> LambdaFunctionBuilder<StartState> {
-        self.additional_policies.push(permission.into_policy());
-        self
     }
 
     pub fn zip(self, zip: Zip) -> LambdaFunctionBuilder<ZipState> {
@@ -186,6 +214,8 @@ impl LambdaFunctionBuilder<StartState> {
             handler: self.handler,
             runtime: self.runtime,
             additional_policies: self.additional_policies,
+            env_vars: self.env_vars,
+            function_name: self.function_name,
         }
     }
 }
@@ -201,6 +231,8 @@ impl LambdaFunctionBuilder<ZipState> {
             code: self.code,
             runtime: self.runtime,
             additional_policies: self.additional_policies,
+            env_vars: self.env_vars,
+            function_name: self.function_name,
         }
     }
 }
@@ -216,6 +248,8 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
             code: self.code,
             handler: self.handler,
             additional_policies: self.additional_policies,
+            env_vars: self.env_vars,
+            function_name: self.function_name,
         }
     }
 }
