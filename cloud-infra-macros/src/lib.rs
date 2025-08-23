@@ -1,11 +1,78 @@
 #![allow(unused_comparisons)]
+//! # Cloud Infrastructure Macros
+//!
+//! This crate provides compile-time validation macros for AWS cloud infrastructure configuration.
+//! These macros ensure type safety and enforce AWS service limits at build time, preventing
+//! runtime errors from invalid configurations.
+//!
+//! ## Overview
+//!
+//! All macros perform validation at compile time and generate wrapper types that encapsulate
+//! validated values. This approach provides:
+//!
+//! - **Compile-time safety**: Invalid values are caught during compilation
+//! - **Zero runtime cost**: No performance overhead for validation
+//! - **Type safety**: Wrapper types prevent mixing incompatible values
+//! - **IDE support**: Better code completion and error messages
+//!
+//! ## Usage Examples
+//!
+//! ```rust,compile_fail
+//! use cloud_infra_macros::{
+//!     string_with_only_alpha_numerics_and_underscores,
+//!     delay_seconds,
+//!     memory,
+//!     timeout
+//! };
+//!
+//! // Lambda memory configuration with validated limit
+//! let mem = memory!(512);        // 512 MB (128-10240 range)
+//! ```
+//!
+//! ## Available Macros
+//!
+//! ### String and Identifier Macros
+//!
+//! - [`string_with_only_alpha_numerics_and_underscores!`] - AWS resource identifiers
+//! - [`env_var_key!`] - Lambda environment variable keys
+//!
+//! ### File Path Macros
+//!
+//! - [`zipfile!`] - ZIP file paths for Lambda deployment packages
+//!
+//! ### Numeric Validation Macros
+//!
+//! - [`non_zero_number!`] - Positive integers (> 0)
+//!
+//! ### AWS Lambda Configuration Macros
+//!
+//! - [`memory!`] - Memory allocation (128-10,240 MB)
+//! - [`timeout!`] - Function timeout (1-900 seconds)
+//!
+//! ### AWS SQS Configuration Macros
+//!
+//! - [`delay_seconds!`] - Message delay (0-900 seconds)
+//! - [`maximum_message_size!`] - Max message size (1,024-1,048,576 bytes)
+//! - [`message_retention_period!`] - Retention period (60-1,209,600 seconds)
+//! - [`visibility_timeout!`] - Visibility timeout (0-43,200 seconds)
+//! - [`receive_message_wait_time!`] - Long polling wait time (0-20 seconds)
 
 use proc_macro::TokenStream;
 use quote::quote;
 use std::path::{absolute, Path};
 use syn::{LitInt, LitStr};
 
-/// Generates a `StringWithOnlyAlphaNumericsAndUnderscores` after checking at compile time that the input is valid
+/// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
+///
+/// This macro ensures that the input string contains only alphanumeric characters (a-z, A-Z, 0-9)
+/// and underscores (_). It's designed for creating safe identifiers for AWS resources that have
+/// naming restrictions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters and underscores are allowed
+/// - Underscores can appear in any position (beginning, middle, or end)
 #[proc_macro]
 pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -24,6 +91,16 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     ).into()
 }
 
+/// Creates a validated `EnvVarKey` wrapper for AWS Lambda environment variable keys at compile time.
+///
+/// This macro ensures that the input string is a valid environment variable key for AWS Lambda
+/// functions, following AWS naming conventions and restrictions.
+///
+/// # Validation Rules
+///
+/// - Key must be at least 2 characters long
+/// - Cannot start with an underscore (_)
+/// - Only alphanumeric characters and underscores are allowed
 #[proc_macro]
 pub fn env_var_key(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -46,6 +123,23 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
     ).into()
 }
 
+/// Creates a validated `ZipFile` wrapper for AWS Lambda deployment packages at compile time.
+///
+/// This macro ensures that the input string refers to a valid ZIP file that exists on the
+/// filesystem at compile time.
+///
+/// # Validation Rules
+///
+/// - Path must end with `.zip` extension
+/// - File must exist at compile time
+/// - Path must be valid Unicode
+/// - Both relative and absolute paths are allowed
+///
+/// # Note
+///
+/// This macro performs filesystem checks at compile time, so the ZIP file must exist
+/// when the code is compiled. This ensures deployment packages are available before
+/// attempting to deploy infrastructure.
 #[proc_macro]
 pub fn zipfile(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -62,8 +156,10 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
     }
 
     let value = if path.is_relative() {
-        let absolute_path = absolute(path).expect("to convert zip file path to an absolute path");
-        absolute_path.to_str().expect("zip file path to be valid unicode").to_string()
+        match absolute(path) {
+            Ok(absolute_path) => absolute_path.to_str().expect("zip file path to be valid unicode").to_string(),
+            Err(e) => panic!("failed to convert zip file path to absolute path: {}", e)
+        }
     } else {
         path.to_str().expect("zip file path to be valid unicode").to_string()
     };
@@ -73,6 +169,11 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
     ).into()
 }
 
+/// Creates a validated `NonZeroNumber` wrapper for positive integers at compile time.
+///
+/// This macro ensures that the input number is greater than zero, preventing common
+/// configuration errors where zero values would cause AWS resource creation to fail
+/// or behave unexpectedly.
 #[proc_macro]
 pub fn non_zero_number(input: TokenStream) -> TokenStream {
     let output: LitInt = syn::parse(input).unwrap();
