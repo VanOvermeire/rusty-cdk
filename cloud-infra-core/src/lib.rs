@@ -4,4 +4,5 @@ pub mod dynamodb;
 pub mod wrappers;
 pub mod lambda;
 pub mod iam;
+pub mod sqs;
 mod intrinsic_functions;
