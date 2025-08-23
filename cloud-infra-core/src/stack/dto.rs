@@ -1,6 +1,6 @@
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
-use crate::lambda::LambdaFunction;
+use crate::lambda::{EventSourceMapping, LambdaFunction};
 use crate::sqs::SqsQueue;
 use rand::Rng;
 use serde::Serialize;
@@ -28,6 +28,7 @@ impl Stack {
                 Resource::DynamoDBTable(_) => vec![],
                 Resource::IamRole(_) => vec![],
                 Resource::SqsQueue(_) => vec![],
+                Resource::EventSourceMapping(_) => vec![],
             })
             .collect()
     }
@@ -39,6 +40,7 @@ pub enum Resource {
     DynamoDBTable(DynamoDBTable),
     LambdaFunction(LambdaFunction),
     SqsQueue(SqsQueue),
+    EventSourceMapping(EventSourceMapping),
     IamRole(IamRole),
 }
 
@@ -49,6 +51,7 @@ impl Resource {
             Resource::LambdaFunction(f) => f.get_id(),
             Resource::IamRole(r) => r.get_id(),
             Resource::SqsQueue(q) => q.get_id(),
+            Resource::EventSourceMapping(m) => m.get_id(), 
         }
     }
 
@@ -80,5 +83,10 @@ impl From<IamRole> for Resource {
 impl From<SqsQueue> for Resource {
     fn from(value: SqsQueue) -> Self {
         Resource::SqsQueue(value)
+    }
+}
+impl From<EventSourceMapping> for Resource {
+    fn from(value: EventSourceMapping) -> Self {
+        Resource::EventSourceMapping(value)
     }
 }

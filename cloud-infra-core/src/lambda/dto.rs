@@ -71,3 +71,27 @@ pub struct Environment {
     #[serde(rename = "Variables")]
     pub(crate) variables: HashMap<String, Value>
 }
+
+#[derive(Debug, Serialize)]
+pub struct EventSourceMapping {
+    #[serde(skip)]
+    pub(crate) id: String,
+    #[serde(rename = "Type")]
+    pub(crate) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(crate) properties: EventSourceProperties,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EventSourceProperties {
+    #[serde(rename = "EventSourceArn", skip_serializing_if = "Option::is_none")]
+    pub(crate) event_source_arn: Option<Value>,
+    #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
+    pub(crate) function_name: Option<Value>
+}
+
+impl EventSourceMapping {
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+}

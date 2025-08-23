@@ -218,6 +218,7 @@ impl Permission<'_> {
                     resource: Some(vec![get_arn(&id)]),
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
+                // TODO use builder
                 Policy {
                     policy_name: format!("{}Read", id),
                     policy_document,

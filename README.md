@@ -80,6 +80,8 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 Currently only a limited number of AWS services are supported, with more on the way:
 - DynamoDB
+- Lambda
+- SQS
 
 ## TODO
 
