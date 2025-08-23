@@ -3,9 +3,7 @@ use quote::quote;
 use std::path::{absolute, Path};
 use syn::{LitInt, LitStr};
 
-/// The outputs (like `string_with_only_alpha_numerics_and_underscores(pub String);`) produced by this crate are _not defined here_!
-/// Instead, they appear in other crates in this library
-
+/// Generates a `StringWithOnlyAlphaNumericsAndUnderscores` after checking at compile time that the input is valid
 #[proc_macro]
 pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();

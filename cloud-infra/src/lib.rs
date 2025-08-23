@@ -55,6 +55,7 @@ pub async fn deploy(name: &str, synth: Synth) {
         task.await.unwrap();
     }
 
+    println!("Starting stack creation");
     let cloudformation_client = aws_sdk_cloudformation::Client::new(&config);
     match cloudformation_client
         .create_stack()

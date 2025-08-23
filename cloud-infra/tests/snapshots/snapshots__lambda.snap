@@ -11,10 +11,10 @@ expression: synthesized
         ],
         "Code": {
           "S3Bucket": "some-bucket",
-          "S3Key": "Asset867030342.zip"
+          "S3Key": "[Asset]"
         },
         "Environment": {
-          "variables": {
+          "Variables": {
             "STAGE": "prod"
           }
         },

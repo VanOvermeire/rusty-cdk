@@ -37,7 +37,7 @@ pub enum Resource {
 }
 
 impl Resource {
-    pub(crate) fn get_id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         match self {
             Resource::DynamoDBTable(t) => t.get_id(),
             Resource::LambdaFunction(f) => f.get_id(),

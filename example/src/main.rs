@@ -15,7 +15,9 @@ async fn main() {
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
+    let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
     let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String)).provisioned_billing()
+        .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
@@ -27,7 +29,7 @@ async fn main() {
         .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
-        .add_env_var(env_var_key!("example"), "val".to_string())
+        .add_env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .build();
 
     let mut stack_builder = StackBuilder::new();

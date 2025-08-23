@@ -12,7 +12,7 @@ pub struct IamRole {
 }
 
 impl IamRole {
-    pub(crate) fn get_id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         self.id.as_str()
     }
 }

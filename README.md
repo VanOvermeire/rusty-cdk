@@ -84,5 +84,7 @@ Currently only a limited number of AWS services are supported, with more on the 
 ## TODO
 
 - support tags
+- check things like bucket (where assets are stored) existence
+    - store result in a local file, so you don't need to check again
+    - add an override (CLOUD_INFRA_NO_REMOTE) and a recheck (CLOUD_INFRA_RECHECK)
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
-

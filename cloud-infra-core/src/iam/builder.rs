@@ -1,5 +1,3 @@
-// TODO statement builder (and others) (use them in the other builders)
-
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
 use crate::intrinsic_functions::get_arn;

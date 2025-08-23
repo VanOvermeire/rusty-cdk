@@ -6,26 +6,17 @@ use crate::stack::Asset;
 #[derive(Debug, Serialize)]
 pub struct LambdaFunction {
     #[serde(skip)]
-    id: String,
+    pub(crate) id: String,
     #[serde(skip)]
     pub(crate) asset: Asset,
     #[serde(rename = "Type")]
-    r#type: String,
+    pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    properties: LambdaFunctionProperties,
+    pub(crate) properties: LambdaFunctionProperties,
 }
 
 impl LambdaFunction {
-    pub(crate) fn new(id: String, asset: Asset, properties: LambdaFunctionProperties) -> Self {
-        Self {
-            id,
-            asset,
-            r#type: "AWS::Lambda::Function".to_string(),
-            properties,
-        }
-    }
-
-    pub(crate) fn get_id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         self.id.as_str()
     }
 }
@@ -77,5 +68,6 @@ pub struct LambdaCode {
 
 #[derive(Debug, Serialize)]
 pub struct Environment {
-    pub(crate) variables: HashMap<String, String>
+    #[serde(rename = "Variables")]
+    pub(crate) variables: HashMap<String, Value>
 }

@@ -1,4 +1,6 @@
 use serde::Serialize;
+use serde_json::Value;
+use crate::intrinsic_functions::get_ref;
 
 #[derive(Debug, Serialize)]
 pub struct DynamoDBTable {
@@ -11,8 +13,12 @@ pub struct DynamoDBTable {
 }
 
 impl DynamoDBTable {
-    pub(crate) fn get_id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         self.id.as_str()
+    }
+    
+    pub fn get_ref(&self) -> Value {
+        get_ref(self.get_id())
     }
 }
 

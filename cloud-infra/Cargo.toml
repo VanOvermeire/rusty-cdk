@@ -14,5 +14,5 @@ aws-sdk-s3 = "1.103.0"
 
 [dev-dependencies]
 cloud-infra-macros = { path = "../cloud-infra-macros" }
-insta = {  version = "1.43.1", features = ["json", "redactions", "filters"] }
+insta = {  version = "1.43.1", features = ["json", "filters"] }
 serde_json = "1.0.142"

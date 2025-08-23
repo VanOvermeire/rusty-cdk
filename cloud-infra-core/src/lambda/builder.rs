@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, IamRole, IamRoleBuilder, IamRoleProperties, Permission, Policy, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::stack::{Asset, Resource};
@@ -53,8 +53,6 @@ impl From<PackageType> for String {
     }
 }
 
-// TODO check bucket! once checked, store the result in a local json file so you don't need to check again
-//  also allow override with CLOUD_INFRA_NO_REMOTE => accept bucket as correct
 pub struct Zip {
     bucket: String,
     file: ZipFile,
@@ -93,7 +91,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     handler: Option<String>,
     runtime: Option<Runtime>,
     additional_policies: Vec<Policy>,
-    env_vars: Vec<(String, String)>,
+    env_vars: Vec<(String, Value)>,
     function_name: Option<String>
 }
 
@@ -112,8 +110,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         }
     }
     
-    pub fn add_env_var(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
+    pub fn add_env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
         self.env_vars.push((key.0, value));
+        Self {
+            ..self
+        }
+    }
+
+    pub fn add_env_var_string(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
+        self.env_vars.push((key.0, Value::String(value)));
         Self {
             ..self
         }
@@ -139,23 +144,13 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
                 (asset, code)
             }
         };
-        
-        let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![Statement {
-            action: vec!["sts:AssumeRole".to_string()],
-            effect: "Allow".to_string(),
-            principal: Some(Principal {
-                service: "lambda.amazonaws.com".to_string(),
-            }),
-            resource: None,
-        }]);
 
+        let assume_role_statement = StatementBuilder::new(vec!["sts:AssumeRole".to_string()], Effect::Allow).principal(Principal {
+            service: "lambda.amazonaws.com".to_string(),
+        }).build();
+        let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
-        let props = IamRoleProperties {
-            assumed_role_policy_document,
-            managed_policy_arns,
-            policies: Some(self.additional_policies),
-            role_name: None,
-        };
+        let props = IamRolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
 
         let role_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_id);
@@ -181,8 +176,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             environment,
         };
 
+        let function = LambdaFunction {
+            id: Resource::generate_id("LambdaFunction"),
+            asset: code.0,
+            r#type: "AWS::Lambda::Function".to_string(),
+            properties,
+        };
+        
         (
-            LambdaFunction::new(Resource::generate_id("LambdaFunction"), code.0, properties),
+            function,
             role,
         )
     }
