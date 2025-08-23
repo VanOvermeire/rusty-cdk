@@ -1,15 +1,16 @@
-use serde::Serialize;
-use std::collections::HashMap;
-use rand::Rng;
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::LambdaFunction;
+use crate::sqs::SqsQueue;
+use rand::Rng;
+use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Asset {
     pub s3_bucket: String,
     pub s3_key: String,
-    pub path: String
+    pub path: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -20,11 +21,15 @@ pub struct Stack {
 
 impl Stack {
     pub fn get_assets(&self) -> Vec<Asset> {
-        self.resources.values().flat_map(|r| match r {
-            Resource::DynamoDBTable(_) => vec![],
-            Resource::IamRole(_) => vec![],
-            Resource::LambdaFunction(l) => vec![l.asset.clone()] // see if we can avoid the clone
-        }).collect()
+        self.resources
+            .values()
+            .flat_map(|r| match r {
+                Resource::LambdaFunction(l) => vec![l.asset.clone()], // see if we can avoid the clone
+                Resource::DynamoDBTable(_) => vec![],
+                Resource::IamRole(_) => vec![],
+                Resource::SqsQueue(_) => vec![],
+            })
+            .collect()
     }
 }
 
@@ -33,6 +38,7 @@ impl Stack {
 pub enum Resource {
     DynamoDBTable(DynamoDBTable),
     LambdaFunction(LambdaFunction),
+    SqsQueue(SqsQueue),
     IamRole(IamRole),
 }
 
@@ -42,9 +48,10 @@ impl Resource {
             Resource::DynamoDBTable(t) => t.get_id(),
             Resource::LambdaFunction(f) => f.get_id(),
             Resource::IamRole(r) => r.get_id(),
+            Resource::SqsQueue(q) => q.get_id(),
         }
     }
-    
+
     pub(crate) fn generate_id(resource_name: &str) -> String {
         let mut rng = rand::rng();
         let random_suffix: u32 = rng.random();
@@ -67,5 +74,11 @@ impl From<LambdaFunction> for Resource {
 impl From<IamRole> for Resource {
     fn from(value: IamRole) -> Self {
         Resource::IamRole(value)
+    }
+}
+
+impl From<SqsQueue> for Resource {
+    fn from(value: SqsQueue) -> Self {
+        Resource::SqsQueue(value)
     }
 }

@@ -24,6 +24,7 @@ async fn main() {
     let zipper = zipfile!("./example/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
+    
     let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .add_permission_to_role(Permission::DynamoDBRead(&table))
         .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))

@@ -158,3 +158,108 @@ pub struct EnvVarKey(pub String);
 /// ```
 #[derive(Debug, Clone)]
 pub struct ZipFile(pub String);
+
+/// Delay seconds wrapper for AWS SQS queue configuration.
+///
+/// This wrapper ensures type safety when configuring SQS queue delay settings.
+/// AWS SQS has specific constraints on delay duration that this wrapper helps enforce.
+///
+/// # AWS SQS DelaySeconds Constraints
+/// - Minimum: 0 seconds (no delay)
+/// - Maximum: 900 seconds (15 minutes)
+/// - Affects all messages sent to the queue
+///
+/// # Recommended Usage
+/// Use the `delay_seconds!` macro from `cloud-infra-macros` for compile-time validation:
+///
+/// ```rust
+/// use cloud_infra_macros::delay_seconds;
+/// 
+/// let delay = delay_seconds!(300);   // Compile-time validated
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct DelaySeconds(pub u16);
+
+/// Maximum message size wrapper for AWS SQS queue configuration.
+///
+/// This wrapper ensures type safety when configuring SQS queue message size limits.
+/// AWS SQS has specific constraints on message size that this wrapper helps enforce.
+///
+/// # AWS SQS MaximumMessageSize Constraints
+/// - Minimum: 1,024 bytes (1 KiB)
+/// - Maximum: 1,048,576 bytes (1 MiB)
+/// - Messages larger than this limit will be rejected
+///
+/// # Recommended Usage
+/// Use the `maximum_message_size!` macro from `cloud-infra-macros` for compile-time validation:
+///
+/// ```rust
+/// use cloud_infra_macros::maximum_message_size;
+/// 
+/// let max_size = maximum_message_size!(262144);   // 256 KiB, compile-time validated
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct MaximumMessageSize(pub u32);
+
+/// Message retention period wrapper for AWS SQS queue configuration.
+///
+/// This wrapper ensures type safety when configuring SQS queue message retention settings.
+/// AWS SQS has specific constraints on retention period that this wrapper helps enforce.
+///
+/// # AWS SQS MessageRetentionPeriod Constraints
+/// - Minimum: 60 seconds (1 minute)
+/// - Maximum: 1,209,600 seconds (14 days)
+/// - Determines how long messages are kept in the queue
+///
+/// # Recommended Usage
+/// Use the `message_retention_period!` macro from `cloud-infra-macros` for compile-time validation:
+///
+/// ```rust
+/// use cloud_infra_macros::message_retention_period;
+/// 
+/// let retention = message_retention_period!(345600);   // 4 days, compile-time validated
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct MessageRetentionPeriod(pub u32);
+
+/// Visibility timeout wrapper for AWS SQS queue configuration.
+///
+/// This wrapper ensures type safety when configuring SQS queue visibility timeout settings.
+/// AWS SQS has specific constraints on visibility timeout that this wrapper helps enforce.
+///
+/// # AWS SQS VisibilityTimeout Constraints
+/// - Minimum: 0 seconds
+/// - Maximum: 43,200 seconds (12 hours)
+/// - Determines how long messages remain invisible after being received
+///
+/// # Recommended Usage
+/// Use the `visibility_timeout!` macro from `cloud-infra-macros` for compile-time validation:
+///
+/// ```rust
+/// use cloud_infra_macros::visibility_timeout;
+/// 
+/// let timeout = visibility_timeout!(30);   // Compile-time validated
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct VisibilityTimeout(pub u32);
+
+/// Receive message wait time wrapper for AWS SQS queue configuration.
+///
+/// This wrapper ensures type safety when configuring SQS queue long polling settings.
+/// AWS SQS has specific constraints on receive message wait time that this wrapper helps enforce.
+///
+/// # AWS SQS ReceiveMessageWaitTimeSeconds Constraints
+/// - Minimum: 0 seconds (short polling)
+/// - Maximum: 20 seconds (long polling)
+/// - Enables long polling when greater than 0
+///
+/// # Recommended Usage
+/// Use the `receive_message_wait_time!` macro from `cloud-infra-macros` for compile-time validation:
+///
+/// ```rust
+/// use cloud_infra_macros::receive_message_wait_time;
+/// 
+/// let wait_time = receive_message_wait_time!(10);   // Compile-time validated
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct ReceiveMessageWaitTime(pub u16);

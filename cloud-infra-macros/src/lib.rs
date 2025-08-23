@@ -1,3 +1,5 @@
+#![allow(unused_comparisons)]
+
 use proc_macro::TokenStream;
 use quote::quote;
 use std::path::{absolute, Path};
@@ -92,12 +94,18 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
 }
 
 macro_rules! number_check {
-    ($name:ident,$min:literal,$max:literal,$output:ident) => {
+    ($name:ident,$min:literal,$max:literal,$output:ident,$type:ty) => {
+        #[doc = "Checks whether the value that will be wrapped in the "]
+		#[doc = stringify!($output)]
+		#[doc = "struct is between "]
+		#[doc = stringify!($min)]
+		#[doc = "and "]
+        #[doc = stringify!($max)]
         #[proc_macro]
         pub fn $name(input: TokenStream) -> TokenStream {
             let output: LitInt = syn::parse(input).unwrap();
         
-            let as_number: syn::Result<u16> = output.base10_parse();
+            let as_number: syn::Result<$type> = output.base10_parse();
         
             let num = if let Ok(num) = as_number {
                 if num < $min {
@@ -117,5 +125,10 @@ macro_rules! number_check {
     };
 }
 
-number_check!(memory, 128, 10240, Memory);
-number_check!(timeout, 1, 900, Timeout);
+number_check!(memory, 128, 10240, Memory, u16);
+number_check!(timeout, 1, 900, Timeout, u16);
+number_check!(delay_seconds, 0, 900, DelaySeconds, u16);
+number_check!(maximum_message_size, 1024, 1048576, MaximumMessageSize, u32);
+number_check!(message_retention_period, 60, 1209600, MessageRetentionPeriod, u32);
+number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
+number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);

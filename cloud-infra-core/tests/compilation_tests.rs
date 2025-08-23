@@ -1,13 +1,58 @@
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
-use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
-use cloud_infra_macros::string_with_only_alpha_numerics_and_underscores;
+use cloud_infra_core::sqs::{SqsQueueBuilder, DeduplicationScope, FifoThroughputLimit};
+use cloud_infra_core::wrappers::{
+    StringWithOnlyAlphaNumericsAndUnderscores, DelaySeconds, MaximumMessageSize,
+    MessageRetentionPeriod, VisibilityTimeout, ReceiveMessageWaitTime, NonZeroNumber
+};
+use cloud_infra_macros::{
+    string_with_only_alpha_numerics_and_underscores, delay_seconds, maximum_message_size,
+    message_retention_period, visibility_timeout, receive_message_wait_time, non_zero_number
+};
 
 #[test]
 fn dynamodb_builder_should_compile() {
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
         .pay_per_request_billing()
+        .build();
+}
+
+#[test]
+fn sqs_standard_queue_builder_should_compile() {
+    let queue_name = string_with_only_alpha_numerics_and_underscores!("test_queue");
+    let delay = delay_seconds!(300);
+    let max_size = maximum_message_size!(262144);
+    let retention = message_retention_period!(345600);
+    let timeout = visibility_timeout!(30);
+    let wait_time = receive_message_wait_time!(10);
+    let max_receive = non_zero_number!(3);
+    
+    SqsQueueBuilder::new()
+        .standard_queue()
+        .queue_name(queue_name)
+        .delay_seconds(delay)
+        .maximum_message_size(max_size)
+        .message_retention_period(retention)
+        .visibility_timeout(timeout)
+        .receive_message_wait_time_seconds(wait_time)
+        .dead_letter_queue("arn:aws:sqs:us-east-1:123456789012:dlq".to_string(), max_receive)
+        .sqs_managed_sse_enabled(true)
+        .build();
+}
+
+#[test]
+fn sqs_fifo_queue_builder_should_compile() {
+    let queue_name = string_with_only_alpha_numerics_and_underscores!("test_fifo_queue");
+    let delay = delay_seconds!(60);
+    let timeout = visibility_timeout!(120);
+    
+    SqsQueueBuilder::new()
+        .fifo_queue()
+        .queue_name(queue_name)
+        .delay_seconds(delay)
+        .visibility_timeout(timeout)
+        .content_based_deduplication(true)
         .build();
 }
