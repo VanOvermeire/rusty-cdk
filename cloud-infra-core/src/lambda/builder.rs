@@ -1,12 +1,12 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, PolicyBuilder, Principal, StatementBuilder};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, PolicyBuilder, PolicyDocumentBuilder, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties};
+use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
 use crate::wrappers::{EnvVarKey, Memory, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
-use crate::sqs::SqsQueue;
 
 pub enum Runtime {
     NodeJs22,
@@ -128,7 +128,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         }
     }
     
-    fn build_internal(self) -> (LambdaFunction, IamRole, Option<EventSourceMapping>) {
+    fn build_internal(mut self) -> (LambdaFunction, IamRole, Option<EventSourceMapping>) {
         let id = Resource::generate_id("LambdaFunction");
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
@@ -151,8 +151,18 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let mapping = if let Some(sqs_queue_id) = self.sqs_event_source_mapping {
-            // TODO build policy and add
-            // self.additional_policies.push(PolicyBuilder::new())
+            let sqs_permissions_statement = StatementBuilder::new(vec![
+                "sqs:ChangeMessageVisibility".to_string(),
+                "sqs:DeleteMessage".to_string(),
+                "sqs:GetQueueAttributes".to_string(),
+                "sqs:GetQueueUrl".to_string(),
+                "sqs:ReceiveMessage".to_string(),
+            ], Effect::Allow)
+                .resources(vec![get_arn(&sqs_queue_id)])
+                .build();
+            let policy = PolicyBuilder::new("example".to_string(), PolicyDocumentBuilder::new(vec![sqs_permissions_statement])).build();
+            self.additional_policies.push(policy);
+
             let event_source_mapping = EventSourceMapping {
                 id: format!("EventSourceMapping{}", id),
                 r#type: "AWS::Lambda::EventSourceMapping".to_string(),
@@ -298,7 +308,8 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
             function_name: self.function_name,
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> (LambdaFunction, IamRole) {
         let (lambda, iam_role, _) = self.build_internal();
         (lambda, iam_role)
@@ -306,6 +317,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
 }
 
 impl LambdaFunctionBuilder<EventSourceMappingState> {
+    #[must_use]
     pub fn build(self) -> (LambdaFunction, IamRole, EventSourceMapping) {
         let (lambda, iam_role, mapping) = self.build_internal();
         (lambda, iam_role, mapping.expect("should be Some because we are in the event source mapping state"))

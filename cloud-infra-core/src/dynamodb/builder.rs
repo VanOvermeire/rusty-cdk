@@ -204,6 +204,7 @@ impl DynamoDBTableBuilder<PayPerRequestState> {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> DynamoDBTable {
         self.build_internal()
     }
@@ -242,6 +243,7 @@ impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
 }
 
 impl DynamoDBTableBuilder<ProvisionedStateWriteSet> {
+    #[must_use]
     pub fn build(self) -> DynamoDBTable {
         self.build_internal()
     }

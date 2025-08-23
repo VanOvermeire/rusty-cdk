@@ -213,6 +213,7 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
 }
 
 impl SqsQueueBuilder<StandardState> {
+    #[must_use]
     pub fn build(self) -> SqsQueue {
         self.build_internal(false)
     }
@@ -248,6 +249,7 @@ impl SqsQueueBuilder<FifoState> {
         }
     }
 
+    #[must_use]
     pub fn build(mut self) -> SqsQueue {
         if let Some(ref name) = self.queue_name {
             if !name.ends_with(FIFO_SUFFIX) {

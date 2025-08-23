@@ -83,6 +83,10 @@ Currently only a limited number of AWS services are supported, with more on the 
 - Lambda
 - SQS
 
+Next up:
+- SNS
+- S3
+
 ## TODO
 
 - support tags
@@ -90,3 +94,4 @@ Currently only a limited number of AWS services are supported, with more on the 
     - store result in a local file, so you don't need to check again
     - add an override (CLOUD_INFRA_NO_REMOTE) and a recheck (CLOUD_INFRA_RECHECK)
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
+- it's possible to forget to add a resource to the stack → maybe a proc macro can do that?

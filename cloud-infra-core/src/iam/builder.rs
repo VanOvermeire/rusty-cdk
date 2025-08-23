@@ -2,7 +2,6 @@ use crate::dynamodb::DynamoDBTable;
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
 use crate::intrinsic_functions::get_arn;
 use serde_json::Value;
-use std::marker::PhantomData;
 use std::vec;
 
 pub struct IamRoleBuilder {}
@@ -58,47 +57,23 @@ impl IamRolePropertiesBuilder {
     }
 }
 
-pub trait PolicyBuilderState {}
-
-pub struct StartState {}
-impl PolicyBuilderState for StartState {}
-
-pub struct PolicyDocumentState {}
-impl PolicyBuilderState for PolicyDocumentState {}
-
-pub struct PolicyBuilder<T: PolicyBuilderState> {
-    state: PhantomData<T>,
+pub struct PolicyBuilder {
     policy_name: String,
-    policy_document: Option<PolicyDocument>,
+    policy_document: PolicyDocument,
 }
 
-impl<T: PolicyBuilderState> PolicyBuilder<T> {
-    pub fn new(policy_name: String) -> PolicyBuilder<StartState> {
+impl PolicyBuilder {
+    pub fn new(policy_name: String, policy_document: PolicyDocument) -> Self {
         PolicyBuilder {
-            state: Default::default(),
             policy_name,
-            policy_document: None,
+            policy_document,
         }
     }
-}
 
-impl PolicyBuilder<StartState> {
-    pub fn policy_document(self, document: PolicyDocument) -> PolicyBuilder<PolicyDocumentState> {
-        PolicyBuilder {
-            state: Default::default(),
-            policy_name: self.policy_name,
-            policy_document: Some(document),
-        }
-    }
-}
-
-impl PolicyBuilder<PolicyDocumentState> {
     pub fn build(self) -> Policy {
         Policy {
             policy_name: self.policy_name,
-            policy_document: self
-                .policy_document
-                .expect("policy document should be set, as this is enforced by the builder"),
+            policy_document: self.policy_document
         }
     }
 }
