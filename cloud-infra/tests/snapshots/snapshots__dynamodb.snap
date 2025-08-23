@@ -4,7 +4,7 @@ expression: synthesized
 ---
 {
   "Resources": {
-    "DynamoDBTable2367373420": {
+    "[DynamoDBTable]": {
       "Properties": {
         "AttributeDefinitions": [
           {

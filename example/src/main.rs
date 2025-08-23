@@ -30,7 +30,7 @@ async fn main() {
         .add_env_var(env_var_key!("example"), "val".to_string())
         .build();
 
-    let mut stack_builder = StackBuilder::new(vec![]);
+    let mut stack_builder = StackBuilder::new();
     stack_builder.add_resource(fun);
     stack_builder.add_resource(role);
     stack_builder.add_resource(table);

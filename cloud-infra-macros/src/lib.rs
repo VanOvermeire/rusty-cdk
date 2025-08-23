@@ -58,7 +58,7 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
     let path = Path::new(&value);
 
     if !path.exists() {
-        panic!("did not find directory {}", value)
+        panic!("did not find file {}", value)
     }
 
     let value = if path.is_relative() {
