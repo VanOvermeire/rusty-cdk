@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/maximum_message_size_too_high.rs:4:16
+  |
+4 |     let size = maximum_message_size!(2097152);
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 1048576

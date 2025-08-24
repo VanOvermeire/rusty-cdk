@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/env_var_key_invalid_chars.rs:4:15
+  |
+4 |     let key = env_var_key!("INVALID-KEY");
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: env var key should only contain alphanumeric characters and underscores

@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/timeout_too_high.rs:4:13
+  |
+4 |     let t = timeout!(1000);
+  |             ^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 900

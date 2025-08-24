@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/memory_too_low.rs:4:15
+  |
+4 |     let mem = memory!(64);
+  |               ^^^^^^^^^^^
+  |
+  = help: message: value should be at least 128

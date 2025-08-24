@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/receive_message_wait_time_boundary_high.rs:4:21
+  |
+4 |     let wait_time = receive_message_wait_time!(21);
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 20

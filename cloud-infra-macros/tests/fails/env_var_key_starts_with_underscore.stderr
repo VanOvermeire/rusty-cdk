@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/env_var_key_starts_with_underscore.rs:4:15
+  |
+4 |     let key = env_var_key!("_INVALID");
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: env var key not start with an underscore

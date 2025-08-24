@@ -58,7 +58,7 @@ impl Resource {
     pub fn get_ref_ids(&self) -> Vec<&str> {
         match self {
             Resource::LambdaFunction(f) => f.get_referenced_ids(),
-            _ => vec![] // TODO
+            _ => vec![] // TODO (but currently no others that have referenced ids)
         }
     }
 
@@ -92,6 +92,7 @@ impl From<SqsQueue> for Resource {
         Resource::SqsQueue(value)
     }
 }
+
 impl From<EventSourceMapping> for Resource {
     fn from(value: EventSourceMapping) -> Self {
         Resource::EventSourceMapping(value)

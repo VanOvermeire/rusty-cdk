@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/memory_boundary_high.rs:4:15
+  |
+4 |     let mem = memory!(10241);
+  |               ^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 10240

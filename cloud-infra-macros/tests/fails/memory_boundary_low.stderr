@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/memory_boundary_low.rs:4:15
+  |
+4 |     let mem = memory!(127);
+  |               ^^^^^^^^^^^^
+  |
+  = help: message: value should be at least 128

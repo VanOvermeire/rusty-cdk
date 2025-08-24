@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/delay_seconds_too_high.rs:4:17
+  |
+4 |     let delay = delay_seconds!(1000);
+  |                 ^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 900

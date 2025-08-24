@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/visibility_timeout_too_high.rs:4:19
+  |
+4 |     let timeout = visibility_timeout!(50000);
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: value should be at most 43200

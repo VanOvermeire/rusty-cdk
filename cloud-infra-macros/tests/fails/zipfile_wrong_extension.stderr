@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/fails/zipfile_wrong_extension.rs:4:16
+  |
+4 |     let file = zipfile!("package.tar.gz");
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: zip file should end with `.zip`, instead found package.tar.gz
