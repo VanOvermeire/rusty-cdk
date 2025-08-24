@@ -16,6 +16,7 @@ impl StackBuilder {
         self.resources.push(resource);
     }
 
+    #[must_use]
     pub fn build(self) -> Stack {
         let resources = self.resources.into_iter().map(|r| (r.get_id().to_string(), r)).collect();
         Stack { resources }

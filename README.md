@@ -86,6 +86,7 @@ Currently only a limited number of AWS services are supported, with more on the 
 Next up:
 - SNS
 - S3
+- API Gateway
 
 ## TODO
 
