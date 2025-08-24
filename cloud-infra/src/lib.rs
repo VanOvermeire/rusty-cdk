@@ -14,7 +14,7 @@ impl Display for Synth {
 pub fn synth(resources: Vec<Resource>) -> Result<Synth, String> {
     let mut stack_builder = StackBuilder::new();
     resources.into_iter().for_each(|r| stack_builder.add_resource(r));
-    let stack = stack_builder.build();
+    let stack = stack_builder.build().map_err(|e| e.to_string())?;
     let assets = stack.get_assets();
 
     serde_json::to_string(&stack)

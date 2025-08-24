@@ -54,6 +54,13 @@ impl Resource {
             Resource::EventSourceMapping(m) => m.get_id(), 
         }
     }
+    
+    pub fn get_ref_ids(&self) -> Vec<&str> {
+        match self {
+            Resource::LambdaFunction(f) => f.get_referenced_ids(),
+            _ => vec![] // TODO
+        }
+    }
 
     pub(crate) fn generate_id(resource_name: &str) -> String {
         let mut rng = rand::rng();

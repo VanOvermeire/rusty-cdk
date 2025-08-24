@@ -33,11 +33,11 @@ async fn main() {
         .build();
     
     let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
-        .add_permission_to_role(Permission::DynamoDBRead(&table))
+        .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
-        .add_env_var(env_var_key!("TABLE_NAME"), table.get_ref())
+        .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .sqs_event_source_mapping(&queue)
         .build();
     
@@ -46,9 +46,16 @@ async fn main() {
     stack_builder.add_resource(table);
     stack_builder.add_resource(map);
     stack_builder.add_resource(queue);
+
+    let stack = stack_builder.build();
     
-    let result = cloud_infra::synth_stack(stack_builder.build()).unwrap();
-    println!("{}", result);
+    if let Err(s) = stack {
+        println!("{s}");
+    } else {
+        let result = cloud_infra::synth_stack(stack.unwrap()).unwrap(); // TODO
+        println!("{}", result);
+    }
+    
 
     // cloud_infra::deploy("ExampleRemove", result).await;
 }

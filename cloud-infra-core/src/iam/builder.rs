@@ -3,6 +3,7 @@ use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, P
 use crate::intrinsic_functions::get_arn;
 use serde_json::Value;
 use std::vec;
+use crate::sqs::SqsQueue;
 
 pub struct IamRoleBuilder {}
 
@@ -171,10 +172,20 @@ impl StatementBuilder {
 pub enum Permission<'a> {
     DynamoDBRead(&'a DynamoDBTable),
     DynamoDBReadWrite(&'a DynamoDBTable),
+    SqsRead(&'a SqsQueue),
     // TODO custom, add any permission you want...
 }
 
 impl Permission<'_> {
+    pub(crate) fn get_id(&self) -> Option<&str> {
+        let id = match self {
+            Permission::DynamoDBRead(d) => d.get_id(), 
+            Permission::DynamoDBReadWrite(d) => d.get_id(), 
+            Permission::SqsRead(s) => s.get_id(),
+        };
+        Some(id)
+    }
+    
     pub(crate) fn into_policy(self) -> Policy {
         match self {
             Permission::DynamoDBRead(table) => {
@@ -193,11 +204,7 @@ impl Permission<'_> {
                     resource: Some(vec![get_arn(&id)]),
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
-                // TODO use builder
-                Policy {
-                    policy_name: format!("{}Read", id),
-                    policy_document,
-                }
+                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::DynamoDBReadWrite(table) => {
                 let id = table.get_id();
@@ -219,10 +226,21 @@ impl Permission<'_> {
                     resource: Some(vec![get_arn(&id)]),
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
-                Policy {
-                    policy_name: format!("{}ReadWrite", id),
-                    policy_document,
-                }
+                PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
+            }
+            Permission::SqsRead(queue) => {
+                let id = queue.get_id();
+                let sqs_permissions_statement = StatementBuilder::new(vec![
+                    "sqs:ChangeMessageVisibility".to_string(),
+                    "sqs:DeleteMessage".to_string(),
+                    "sqs:GetQueueAttributes".to_string(),
+                    "sqs:GetQueueUrl".to_string(),
+                    "sqs:ReceiveMessage".to_string(),
+                ], Effect::Allow)
+                    .resources(vec![get_arn(&id)])
+                    .build();
+                let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
+                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
         }
     }

@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, PolicyBuilder, PolicyDocumentBuilder, Principal, StatementBuilder};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties};
 use crate::sqs::SqsQueue;
@@ -96,32 +96,36 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     additional_policies: Vec<Policy>,
     env_vars: Vec<(String, Value)>,
     function_name: Option<String>,
-    sqs_event_source_mapping: Option<String>
+    sqs_event_source_mapping: Option<String>,
+    referenced_ids: Vec<String>,
 }
 
 impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
-    pub fn add_permission_to_role(mut self, permission: Permission) -> LambdaFunctionBuilder<T> {
-        self.additional_policies.push(permission.into_policy());
-        Self {
-            ..self
-        }
-    }
-    
     pub fn function_name(self, name: StringWithOnlyAlphaNumericsAndUnderscores) -> LambdaFunctionBuilder<T> {
         Self {
             function_name: Some(name.0),
             ..self
         }
     }
+
+    pub fn permissions(mut self, permission: Permission) -> LambdaFunctionBuilder<T> {
+        if let Some(id) = permission.get_id() {
+            self.referenced_ids.push(id.to_string());
+        }
+        self.additional_policies.push(permission.into_policy());
+        Self {
+            ..self
+        }
+    }
     
-    pub fn add_env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
+    pub fn env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
         self.env_vars.push((key.0, value));
         Self {
             ..self
         }
     }
 
-    pub fn add_env_var_string(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
+    pub fn env_var_string(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
         self.env_vars.push((key.0, Value::String(value)));
         Self {
             ..self
@@ -129,7 +133,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
     }
     
     fn build_internal(mut self) -> (LambdaFunction, IamRole, Option<EventSourceMapping>) {
-        let id = Resource::generate_id("LambdaFunction");
+        let function_id = Resource::generate_id("LambdaFunction");
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
                 let asset_id = Resource::generate_id("Asset");
@@ -151,26 +155,16 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let mapping = if let Some(sqs_queue_id) = self.sqs_event_source_mapping {
-            let sqs_permissions_statement = StatementBuilder::new(vec![
-                "sqs:ChangeMessageVisibility".to_string(),
-                "sqs:DeleteMessage".to_string(),
-                "sqs:GetQueueAttributes".to_string(),
-                "sqs:GetQueueUrl".to_string(),
-                "sqs:ReceiveMessage".to_string(),
-            ], Effect::Allow)
-                .resources(vec![get_arn(&sqs_queue_id)])
-                .build();
-            let policy = PolicyBuilder::new("example".to_string(), PolicyDocumentBuilder::new(vec![sqs_permissions_statement])).build();
-            self.additional_policies.push(policy);
-
+            let event_id = format!("EventSourceMapping{}", function_id);
             let event_source_mapping = EventSourceMapping {
-                id: format!("EventSourceMapping{}", id),
+                id: event_id.clone(),
                 r#type: "AWS::Lambda::EventSourceMapping".to_string(),
                 properties: EventSourceProperties {
                     event_source_arn: Some(get_arn(&sqs_queue_id)),
-                    function_name: Some(get_ref(&id)),
+                    function_name: Some(get_ref(&function_id)),
                 },
             };
+            self.referenced_ids.push(event_id);
             Some(event_source_mapping)
         } else {
             None
@@ -185,7 +179,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
 
         let role_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_id);
-        let role = IamRoleBuilder::new(role_id, props);
+        let role = IamRoleBuilder::new(role_id.clone(), props);
+        self.referenced_ids.push(role_id);
 
         let environment = if self.env_vars.is_empty() {
             None
@@ -208,7 +203,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let function = LambdaFunction {
-            id,
+            id: function_id,
+            referenced_ids: self.referenced_ids,
             asset: code.0,
             r#type: "AWS::Lambda::Function".to_string(),
             properties,
@@ -236,6 +232,7 @@ impl LambdaFunctionBuilder<StartState> {
             env_vars: vec![],
             function_name: None,
             sqs_event_source_mapping: None,
+            referenced_ids: vec![],
         }
     }
 
@@ -252,6 +249,7 @@ impl LambdaFunctionBuilder<StartState> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
+            referenced_ids: self.referenced_ids,
         }
     }
 }
@@ -270,6 +268,7 @@ impl LambdaFunctionBuilder<ZipState> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
+            referenced_ids: self.referenced_ids,
         }
     }
 }
@@ -288,12 +287,16 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
+            referenced_ids: self.referenced_ids,
         }
     }
 }
 
 impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn sqs_event_source_mapping(self, sqs_queue: &SqsQueue) -> LambdaFunctionBuilder<EventSourceMappingState>  {
+    pub fn sqs_event_source_mapping(mut self, sqs_queue: &SqsQueue) -> LambdaFunctionBuilder<EventSourceMappingState>  {
+        self.additional_policies.push(Permission::SqsRead(sqs_queue).into_policy());
+        self.referenced_ids.push(sqs_queue.get_id().to_string());
+        
         LambdaFunctionBuilder {
             sqs_event_source_mapping: Some(sqs_queue.get_id().to_string()),
             state: Default::default(),
@@ -306,6 +309,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
             additional_policies: self.additional_policies,
             env_vars: self.env_vars,
             function_name: self.function_name,
+            referenced_ids: self.referenced_ids,
         }
     }
 

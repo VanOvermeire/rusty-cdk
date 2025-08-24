@@ -27,7 +27,7 @@ fn test_dynamodb() {
     stack_builder.add_resource(table);
     let stack = stack_builder.build();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized = cloud_infra::synth_stack(stack.unwrap()).unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![
@@ -44,7 +44,7 @@ fn test_lambda() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
 
     let lambda = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
-        .add_env_var_string(env_var_key!("STAGE"), "prod".to_string())
+        .env_var_string(env_var_key!("STAGE"), "prod".to_string())
         .zip(Zip::new("some-bucket", zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
@@ -55,7 +55,7 @@ fn test_lambda() {
     stack_builder.add_resource(lambda.1);
     let stack = stack_builder.build();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized = cloud_infra::synth_stack(stack.unwrap()).unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![
@@ -83,11 +83,11 @@ fn test_lambda_with_dynamodb() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
-        .add_permission_to_role(Permission::DynamoDBRead(&table))
+        .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new("configuration-of-sam-van-overmeire", zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
-        .add_env_var(env_var_key!("TABLE_NAME"), table.get_ref())
+        .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .build();
 
     let mut stack_builder = StackBuilder::new();
@@ -96,7 +96,7 @@ fn test_lambda_with_dynamodb() {
     stack_builder.add_resource(role);
     let stack = stack_builder.build();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized = cloud_infra::synth_stack(stack.unwrap()).unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![

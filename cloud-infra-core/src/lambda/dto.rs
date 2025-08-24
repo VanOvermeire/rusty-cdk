@@ -8,6 +8,8 @@ pub struct LambdaFunction {
     #[serde(skip)]
     pub(crate) id: String,
     #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
+    #[serde(skip)]
     pub(crate) asset: Asset,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
@@ -18,6 +20,10 @@ pub struct LambdaFunction {
 impl LambdaFunction {
     pub fn get_id(&self) -> &str {
         self.id.as_str()
+    }
+    
+    pub fn get_referenced_ids(&self) -> Vec<&str> {
+        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 
@@ -82,16 +88,16 @@ pub struct EventSourceMapping {
     pub(crate) properties: EventSourceProperties,
 }
 
+impl EventSourceMapping {
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct EventSourceProperties {
     #[serde(rename = "EventSourceArn", skip_serializing_if = "Option::is_none")]
     pub(crate) event_source_arn: Option<Value>,
     #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
     pub(crate) function_name: Option<Value>
-}
-
-impl EventSourceMapping {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
 }

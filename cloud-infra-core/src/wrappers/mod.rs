@@ -16,15 +16,15 @@
 //!
 //! # Example
 //! ```rust
+//! use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 //! use cloud_infra_macros::string_with_only_alpha_numerics_and_underscores;
-//! use cloud_infra_core::wrappers::{Memory, Timeout};
+//! use cloud_infra_core::wrappers::{Memory};
 //! 
 //! // Preferred: Use the macro for compile-time validation
 //! let function_name = string_with_only_alpha_numerics_and_underscores!("my_lambda_function");
 //! 
 //! // Direct creation (use _sparingly_, as an override)
 //! let memory = Memory(512);  // 512 MB
-//! let timeout = Timeout(30); // 30 seconds
 //! ```
 
 /// A string wrapper that ensures the content contains only letters, numbers, and underscores.
@@ -41,6 +41,7 @@
 /// for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 /// use cloud_infra_macros::string_with_only_alpha_numerics_and_underscores;
 /// 
 /// let function_name = string_with_only_alpha_numerics_and_underscores!("my_lambda_function");
@@ -61,6 +62,7 @@ pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 /// Use the `non_zero_number!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::NonZeroNumber;
 /// use cloud_infra_macros::non_zero_number;
 /// 
 /// let capacity = non_zero_number!(10);  // Compile-time validated
@@ -83,6 +85,7 @@ pub struct NonZeroNumber(pub u32);
 /// Use the `memory!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::Memory;
 /// use cloud_infra_macros::memory;
 /// 
 /// let mem = memory!(512);   // Compile-time validated
@@ -105,6 +108,7 @@ pub struct Memory(pub u16);
 /// Use the `timeout!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::Timeout;
 /// use cloud_infra_macros::timeout;
 /// 
 /// let timeout_val = timeout!(30);   // Compile-time validated
@@ -127,6 +131,7 @@ pub struct Timeout(pub u16);
 /// Use the `env_var_key!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::EnvVarKey;
 /// use cloud_infra_macros::env_var_key;
 /// 
 /// let db_url = env_var_key!("DATABASE_URL");   // Compile-time validated
@@ -151,7 +156,8 @@ pub struct EnvVarKey(pub String);
 /// # Recommended Usage
 /// Use the `zipfile!` macro from `cloud-infra-macros` for compile-time validation:
 ///
-/// ```rust
+/// ```rust,compile_fail
+/// use cloud_infra_core::wrappers::ZipFile;
 /// use cloud_infra_macros::zipfile;
 /// 
 /// let lambda_code = zipfile!("./target/lambda/function.zip");   // Compile-time validated
@@ -173,6 +179,7 @@ pub struct ZipFile(pub String);
 /// Use the `delay_seconds!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::DelaySeconds;
 /// use cloud_infra_macros::delay_seconds;
 /// 
 /// let delay = delay_seconds!(300);   // Compile-time validated
@@ -194,6 +201,7 @@ pub struct DelaySeconds(pub u16);
 /// Use the `maximum_message_size!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::MaximumMessageSize;
 /// use cloud_infra_macros::maximum_message_size;
 /// 
 /// let max_size = maximum_message_size!(262144);   // 256 KiB, compile-time validated
@@ -215,6 +223,7 @@ pub struct MaximumMessageSize(pub u32);
 /// Use the `message_retention_period!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::MessageRetentionPeriod;
 /// use cloud_infra_macros::message_retention_period;
 /// 
 /// let retention = message_retention_period!(345600);   // 4 days, compile-time validated
@@ -236,6 +245,7 @@ pub struct MessageRetentionPeriod(pub u32);
 /// Use the `visibility_timeout!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::VisibilityTimeout;
 /// use cloud_infra_macros::visibility_timeout;
 /// 
 /// let timeout = visibility_timeout!(30);   // Compile-time validated
@@ -257,6 +267,7 @@ pub struct VisibilityTimeout(pub u32);
 /// Use the `receive_message_wait_time!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust
+/// use cloud_infra_core::wrappers::ReceiveMessageWaitTime;
 /// use cloud_infra_macros::receive_message_wait_time;
 /// 
 /// let wait_time = receive_message_wait_time!(10);   // Compile-time validated
