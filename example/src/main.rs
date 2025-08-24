@@ -1,3 +1,4 @@
+use cloud_infra_core::wrappers::SqsEventSourceMaxConcurrency;
 use cloud_infra_core::wrappers::EnvVarKey;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::NonZeroNumber;
@@ -9,7 +10,7 @@ use cloud_infra_core::iam::{Permission};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
 use cloud_infra_core::sqs::SqsQueueBuilder;
 use cloud_infra_core::stack::{StackBuilder};
-use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout, env_var_key};
+use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout, env_var_key, sqs_event_source_max_concurrency};
 
 #[tokio::main]
 async fn main() {
@@ -38,7 +39,7 @@ async fn main() {
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
-        .sqs_event_source_mapping(&queue)
+        .sqs_event_source_mapping(&queue, None)
         .build();
     
     stack_builder.add_resource(fun);
@@ -46,7 +47,6 @@ async fn main() {
     stack_builder.add_resource(table);
     stack_builder.add_resource(map);
     stack_builder.add_resource(queue);
-
     let stack = stack_builder.build();
     
     if let Err(s) = stack {
@@ -55,7 +55,6 @@ async fn main() {
         let result = cloud_infra::synth_stack(stack.unwrap()).unwrap(); // TODO
         println!("{}", result);
     }
-    
 
     // cloud_infra::deploy("ExampleRemove", result).await;
 }

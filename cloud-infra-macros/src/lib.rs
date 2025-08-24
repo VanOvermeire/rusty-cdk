@@ -233,3 +233,4 @@ number_check!(maximum_message_size, 1024, 1048576, MaximumMessageSize, u32);
 number_check!(message_retention_period, 60, 1209600, MessageRetentionPeriod, u32);
 number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
 number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
+number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);

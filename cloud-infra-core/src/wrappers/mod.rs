@@ -274,3 +274,7 @@ pub struct VisibilityTimeout(pub u32);
 /// ```
 #[derive(Debug, Copy, Clone)]
 pub struct ReceiveMessageWaitTime(pub u16);
+
+#[derive(Debug, Copy, Clone)]
+pub struct SqsEventSourceMaxConcurrency(pub u16);
+

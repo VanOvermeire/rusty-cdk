@@ -99,5 +99,13 @@ pub struct EventSourceProperties {
     #[serde(rename = "EventSourceArn", skip_serializing_if = "Option::is_none")]
     pub(crate) event_source_arn: Option<Value>,
     #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
-    pub(crate) function_name: Option<Value>
+    pub(crate) function_name: Option<Value>,
+    #[serde(rename = "ScalingConfig", skip_serializing_if = "Option::is_none")]
+    pub(crate) scaling_config: Option<ScalingConfig>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScalingConfig {
+    #[serde(rename = "MaximumConcurrency")]
+    pub(crate) max_concurrency: u16,
 }

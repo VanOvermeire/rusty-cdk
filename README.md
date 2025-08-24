@@ -46,9 +46,11 @@ Compare the above with this example:
 ```rust
 fn iac() {
     let key = create_alphanumeric_underscore_string!("test");
-    let resources = vec![DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING)).provisioned_billing()
+    let resources = vec![
+      DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING)).provisioned_billing()
         .read_capacity(5)
-        .build()];
+        .build()
+    ];
     let result = cloud_infra::synth(resources).unwrap();
 }
 ```
@@ -90,6 +92,7 @@ Next up:
 
 ## TODO
 
+- add and update docs
 - support tags
 - check things like bucket (where assets are stored) existence
     - store result in a local file, so you don't need to check again

@@ -1,9 +1,9 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties};
+use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{EnvVarKey, Memory, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
+use crate::wrappers::{EnvVarKey, Memory, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -85,6 +85,11 @@ impl LambdaFunctionBuilderState for ZipStateWithHandlerAndRuntime {}
 pub struct EventSourceMappingState {}
 impl LambdaFunctionBuilderState for EventSourceMappingState {}
 
+struct EventSourceMappingInfo {
+    id: String,
+    max_concurrency: Option<u16>,
+}
+
 pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     state: PhantomData<T>,
     architecture: Architecture,
@@ -96,7 +101,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     additional_policies: Vec<Policy>,
     env_vars: Vec<(String, Value)>,
     function_name: Option<String>,
-    sqs_event_source_mapping: Option<String>,
+    sqs_event_source_mapping: Option<EventSourceMappingInfo>,
     referenced_ids: Vec<String>,
 }
 
@@ -154,14 +159,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             }
         };
 
-        let mapping = if let Some(sqs_queue_id) = self.sqs_event_source_mapping {
+        let mapping = if let Some(mapping) = self.sqs_event_source_mapping {
             let event_id = format!("EventSourceMapping{}", function_id);
             let event_source_mapping = EventSourceMapping {
                 id: event_id.clone(),
                 r#type: "AWS::Lambda::EventSourceMapping".to_string(),
                 properties: EventSourceProperties {
-                    event_source_arn: Some(get_arn(&sqs_queue_id)),
+                    event_source_arn: Some(get_arn(&mapping.id)),
                     function_name: Some(get_ref(&function_id)),
+                    scaling_config: mapping.max_concurrency.map(|c| ScalingConfig { max_concurrency: c }),
                 },
             };
             self.referenced_ids.push(event_id);
@@ -293,12 +299,17 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
 }
 
 impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn sqs_event_source_mapping(mut self, sqs_queue: &SqsQueue) -> LambdaFunctionBuilder<EventSourceMappingState>  {
+    pub fn sqs_event_source_mapping(mut self, sqs_queue: &SqsQueue, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> LambdaFunctionBuilder<EventSourceMappingState>  {
         self.additional_policies.push(Permission::SqsRead(sqs_queue).into_policy());
         self.referenced_ids.push(sqs_queue.get_id().to_string());
         
+        let mapping = EventSourceMappingInfo {
+            id: sqs_queue.get_id().to_string(),
+            max_concurrency: max_concurrency.map(|c| c.0),
+        };
+        
         LambdaFunctionBuilder {
-            sqs_event_source_mapping: Some(sqs_queue.get_id().to_string()),
+            sqs_event_source_mapping: Some(mapping),
             state: Default::default(),
             runtime: self.runtime,
             architecture: self.architecture,
