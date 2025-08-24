@@ -335,6 +335,6 @@ impl LambdaFunctionBuilder<EventSourceMappingState> {
     #[must_use]
     pub fn build(self) -> (LambdaFunction, IamRole, EventSourceMapping) {
         let (lambda, iam_role, mapping) = self.build_internal();
-        (lambda, iam_role, mapping.expect("should be Some because we are in the event source mapping state"))
+        (lambda, iam_role, mapping.expect("should be `Some` because we are in the event source mapping state"))
     }
 }

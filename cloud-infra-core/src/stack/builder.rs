@@ -10,7 +10,10 @@ pub enum StackBuilderError {
 impl Display for StackBuilderError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            StackBuilderError::ReferencedIdMissingFromResources(id) => f.write_fmt(format_args!("a resource id (`{}`) was referenced by a resource, but not added to the stack - are you missing an `add_resource` call?", id))
+            StackBuilderError::ReferencedIdMissingFromResources(id) => {
+                let id_without_suffix: String = id.chars().take_while(|c| !c.is_ascii_digit()).collect();
+                f.write_fmt(format_args!("a resource id (`{}`) was referenced by a resource, but not added to the stack - are you missing an `add_resource` call for a `{}`?", id, id_without_suffix))
+            }
         }
     }
 }

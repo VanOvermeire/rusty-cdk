@@ -54,11 +54,14 @@ impl Resource {
             Resource::EventSourceMapping(m) => m.get_id(), 
         }
     }
-    
+
     pub fn get_ref_ids(&self) -> Vec<&str> {
         match self {
             Resource::LambdaFunction(f) => f.get_referenced_ids(),
-            _ => vec![] // TODO (but currently no others that have referenced ids)
+            Resource::DynamoDBTable(_) => vec![],
+            Resource::SqsQueue(_) => vec![],
+            Resource::EventSourceMapping(_) => vec![],
+            Resource::IamRole(_) => vec![],
         }
     }
 
