@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-cloud-infra-macros = { path = "../cloud-infra-macros" }
+cloud-infra-macros = { version = "0.1.0", path = "../cloud-infra-macros" }
 rand = "0.9.2"
 serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 serde_json = "1.0.142"

@@ -1,15 +1,15 @@
-use cloud_infra_core::wrappers::EnvVarKey;
-use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
-use cloud_infra_core::wrappers::NonZeroNumber;
-use cloud_infra_core::wrappers::ZipFile;
-use cloud_infra_core::wrappers::Memory;
-use cloud_infra_core::wrappers::Timeout;
-use cloud_infra_core::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
-use cloud_infra_core::iam::{Permission};
-use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
-use cloud_infra_core::sqs::SqsQueueBuilder;
-use cloud_infra_core::stack::{StackBuilder};
-use cloud_infra_macros::{string_with_only_alpha_numerics_and_underscores, non_zero_number, zipfile, memory, timeout, env_var_key};
+use cloud_infra::wrappers::EnvVarKey;
+use cloud_infra::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
+use cloud_infra::wrappers::NonZeroNumber;
+use cloud_infra::wrappers::ZipFile;
+use cloud_infra::wrappers::Memory;
+use cloud_infra::wrappers::Timeout;
+use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+use cloud_infra::iam::{Permission};
+use cloud_infra::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
+use cloud_infra::sqs::SqsQueueBuilder;
+use cloud_infra::stack::StackBuilder;
+use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores, zipfile, memory, timeout, env_var_key};
 
 #[tokio::main]
 async fn main() {

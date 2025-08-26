@@ -44,12 +44,22 @@ That leads to a slow feedback loop, where you're constantly fixing errors and go
 Compare the above with this example:
 
 ```rust
+use cloud_infra::wrappers::{NonZeroNumber,StringWithOnlyAlphaNumericsAndUnderscores};
+use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
+use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+
 fn iac() {
-    let key = create_alphanumeric_underscore_string!("test");
+    let key = string_with_only_alpha_numerics_and_underscores!("test");
+    let read_capacity = non_zero_number!(5);
+    let write_capacity = non_zero_number!(1);
+  
     let resources = vec![
-      DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::STRING)).provisioned_billing()
-        .read_capacity(5)
-        .build()
+      DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+              .provisioned_billing()
+              .read_capacity(read_capacity)
+              .write_capacity(write_capacity)
+              .build()
+              .into()
     ];
     let result = cloud_infra::synth(resources).unwrap();
 }
@@ -89,13 +99,15 @@ Next up:
 - SNS
 - S3
 - API Gateway
+- Secrets Manager
+- AppConfig?
+- CloudFront?
 
 ## TODO
 
+- better deploy
 - add and update docs
-- support tags
 - check things like bucket (where assets are stored) existence
     - store result in a local file, so you don't need to check again
     - add an override (CLOUD_INFRA_NO_REMOTE) and a recheck (CLOUD_INFRA_RECHECK)
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
-- it's possible to forget to add a resource to the stack → maybe a proc macro can do that?
