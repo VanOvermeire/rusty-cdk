@@ -53,7 +53,6 @@ async fn main() {
     } else {
         let result = cloud_infra::synth_stack(stack.unwrap()).unwrap(); // TODO
         println!("{}", result);
+        cloud_infra::deploy("ExampleRemove", result).await;
     }
-
-    // cloud_infra::deploy("ExampleRemove", result).await;
 }
