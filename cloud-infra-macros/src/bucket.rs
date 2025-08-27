@@ -9,23 +9,22 @@ use crate::bucket::FileStorageOutput::{INVALID, UNKNOWN, VALID};
 const HOME_DIR_CLOUD_INFRA: &str = "~/.cloud_infra";
 const BUCKETS_FILE: &str = "buckets";
 
-// TODO borrow more
-
 #[derive(Deserialize, Serialize)]
-struct BucketInfo {
-    valid_bucket_names: Vec<String>,
-    invalid_bucket_names: Vec<String>
+struct BucketInfo<'a> {
+    #[serde(borrow)]
+    valid_bucket_names: Vec<&'a str>,
+    invalid_bucket_names: Vec<&'a str>
 }
 
-impl BucketInfo {
+impl BucketInfo<'_> {
     fn new() -> Self {
         Self { valid_bucket_names: vec![], invalid_bucket_names: vec![] }
     }
 }
 
-pub(crate) enum FileStorageInput {
-    VALID(String),
-    INVALID(String),
+pub(crate) enum FileStorageInput<'a> {
+    VALID(&'a str),
+    INVALID(&'a str),
 }
 
 pub(crate) enum FileStorageOutput {
@@ -48,13 +47,13 @@ pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorage
         };
         match serde_json::from_str::<BucketInfo>(&as_string) {
             Ok(info) => {
-                let valid_bucket_name = info.valid_bucket_names.iter().find(|v| v.as_str() == value);
+                let valid_bucket_name = info.valid_bucket_names.iter().find(|v| **v == value);
 
                 if let Some(_) = valid_bucket_name {
                     return VALID
                 }
 
-                let invalid_bucket_name = info.valid_bucket_names.iter().find(|v| v.as_str() == value);
+                let invalid_bucket_name = info.invalid_bucket_names.iter().find(|v| **v == value);
 
                 if let Some(_) = invalid_bucket_name {
                     return INVALID
@@ -77,8 +76,8 @@ pub(crate) fn update_file_storage(input: FileStorageInput) {
     match serde_json::from_str::<BucketInfo>(&as_string) {
         Ok(mut info) => {
             match input {
-                FileStorageInput::VALID(name) => info.valid_bucket_names.push(name),
-                FileStorageInput::INVALID(name) => info.invalid_bucket_names.push(name),
+                FileStorageInput::VALID(name) => info.valid_bucket_names.push(&name),
+                FileStorageInput::INVALID(name) => info.invalid_bucket_names.push(&name),
             }
             write_bucket_info(info);
         }

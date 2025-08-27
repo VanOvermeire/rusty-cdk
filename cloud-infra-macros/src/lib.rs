@@ -281,12 +281,12 @@ pub fn bucket(input: TokenStream) -> TokenStream {
 
     match rt.block_on(find_bucket(input, &value)) {
         Ok(_) => {
-            update_file_storage(FileStorageInput::VALID(value.clone()));
+            update_file_storage(FileStorageInput::VALID(&value));
             bucket_output(value)
         }
         // TODO combine with error that explains how to override etc.
         Err(e) => {
-            update_file_storage(FileStorageInput::INVALID(value));
+            update_file_storage(FileStorageInput::INVALID(&value));
             e.into_compile_error().into()
         }
     }
