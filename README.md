@@ -105,6 +105,7 @@ Next up:
 
 ## TODO
 
+- syn::Result
 - add and update docs
 - check things like bucket (where assets are stored) existence
     - store result in a local file, so you don't need to check again

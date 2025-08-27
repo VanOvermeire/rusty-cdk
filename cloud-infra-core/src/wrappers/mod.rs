@@ -278,3 +278,5 @@ pub struct ReceiveMessageWaitTime(pub u16);
 #[derive(Debug, Copy, Clone)]
 pub struct SqsEventSourceMaxConcurrency(pub u16);
 
+#[derive(Debug, Clone)]
+pub struct Bucket(pub String);

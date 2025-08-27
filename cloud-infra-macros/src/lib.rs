@@ -15,15 +15,14 @@
 //! - **Type safety**: Wrapper types prevent mixing incompatible values
 //! - **IDE support**: Better code completion and error messages
 //!
+//! The macros always return a newtype 'wrapper'.
+//! You should import those from the cloud_infra::wrappers directory, as seen in the below example.
+//!
 //! ## Usage Examples
 //!
 //! ```rust,compile_fail
-//! use cloud_infra_macros::{
-//!     string_with_only_alpha_numerics_and_underscores,
-//!     delay_seconds,
-//!     memory,
-//!     timeout
-//! };
+//! use cloud_infra::wrappers::Memory; // import the wrapper
+//! use cloud_infra::memory;
 //!
 //! // Lambda memory configuration with validated limit
 //! let mem = memory!(512);        // 512 MB (128-10240 range)
@@ -57,10 +56,14 @@
 //! - [`visibility_timeout!`] - Visibility timeout (0-43,200 seconds)
 //! - [`receive_message_wait_time!`] - Long polling wait time (0-20 seconds)
 
-use proc_macro::TokenStream;
+mod bucket;
+
+use proc_macro::{TokenStream};
+use std::env;
 use quote::quote;
 use std::path::{absolute, Path};
-use syn::{LitInt, LitStr};
+use syn::{Error, LitInt, LitStr};
+use crate::bucket::{bucket_output, find_bucket, update_file_storage, valid_bucket_according_to_file_storage, FileStorageInput, FileStorageOutput};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -234,3 +237,57 @@ number_check!(message_retention_period, 60, 1209600, MessageRetentionPeriod, u32
 number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
 number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
 number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);
+
+
+const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_NO_REMOTE";
+const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_RECHECK";
+
+// TODO documentation
+// TODO more stringify?
+#[proc_macro]
+pub fn bucket(input: TokenStream) -> TokenStream {
+    let input: LitStr = syn::parse(input).unwrap();
+    let value = input.value();
+
+    if value.starts_with("arn:") {
+        panic!("expected bucket name, not arn, as input")
+    }
+
+    if value.starts_with("s3:") {
+        panic!("expected plain bucket name, remove the s3 prefix")
+    }
+
+    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+
+    if no_remote_check_wanted {
+        return bucket_output(value)
+    }
+
+    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+
+    if !rechecked_wanted {
+        match valid_bucket_according_to_file_storage(&value) {
+            FileStorageOutput::VALID => {
+                return bucket_output(value)
+            }
+            FileStorageOutput::INVALID => {
+                return Error::new(input.span(), "(cached) did not find bucket with name".to_string()).into_compile_error().into()
+            }
+            FileStorageOutput::UNKNOWN => {}
+        }
+    }
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    match rt.block_on(find_bucket(input, &value)) {
+        Ok(_) => {
+            update_file_storage(FileStorageInput::VALID(value.clone()));
+            bucket_output(value)
+        }
+        // TODO combine with error that explains how to override etc.
+        Err(e) => {
+            update_file_storage(FileStorageInput::INVALID(value));
+            e.into_compile_error().into()
+        }
+    }
+}
