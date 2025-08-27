@@ -60,7 +60,7 @@ mod bucket;
 
 use proc_macro::{TokenStream};
 use std::env;
-use quote::quote;
+use quote::{quote};
 use std::path::{absolute, Path};
 use syn::{Error, LitInt, LitStr};
 use crate::bucket::{bucket_output, find_bucket, update_file_storage, valid_bucket_according_to_file_storage, FileStorageInput, FileStorageOutput};
@@ -243,7 +243,6 @@ const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_RECHECK";
 
 // TODO documentation
-// TODO more stringify?
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -271,7 +270,7 @@ pub fn bucket(input: TokenStream) -> TokenStream {
                 return bucket_output(value)
             }
             FileStorageOutput::Invalid => {
-                return Error::new(input.span(), "(cached) did not find bucket with name".to_string()).into_compile_error().into()
+                return Error::new(input.span(), format!("(cached) did not find bucket with name {value}. You can rerun the check by adding setting the {CLOUD_INFRA_RECHECK_ENV_VAR_NAME} env var to true")).into_compile_error().into()
             }
             FileStorageOutput::Unknown => {}
         }
@@ -279,12 +278,11 @@ pub fn bucket(input: TokenStream) -> TokenStream {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    match rt.block_on(find_bucket(input, &value)) {
+    match rt.block_on(find_bucket(input.clone(), &value)) {
         Ok(_) => {
             update_file_storage(FileStorageInput::Valid(&value));
             bucket_output(value)
         }
-        // TODO combine with error that explains how to override etc.
         Err(e) => {
             update_file_storage(FileStorageInput::Invalid(&value));
             e.into_compile_error().into()

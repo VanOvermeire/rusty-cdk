@@ -1,3 +1,4 @@
+use cloud_infra::wrappers::Bucket;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
@@ -43,10 +44,12 @@ fn test_lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
-
+    // not interested in testing the bucket macro here, so just use the wrapper directly
+    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+    
     let lambda = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod".to_string())
-        .zip(Zip::new("some-bucket", zip_file))
+        .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .build();
@@ -83,9 +86,12 @@ fn test_lambda_with_dynamodb() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
+    // not interested in testing the bucket macro here, so just use the wrapper directly
+    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+    
     let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new("configuration-of-sam-van-overmeire", zip_file))
+        .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
@@ -121,17 +127,20 @@ fn test_lambda_with_dynamodb_and_sqs() {
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
-    let memory = memory!(512);
-    let timeout = timeout!(30);
 
     let queue = SqsQueueBuilder::new()
         .standard_queue()
         .build();
 
+    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    // not interested in testing the bucket macro here, so just use the wrapper directly
+    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+
     let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new("configuration-of-sam-van-overmeire", zip_file))
+        .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())

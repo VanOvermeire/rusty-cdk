@@ -46,7 +46,7 @@ expression: synthesized
           "arm64"
         ],
         "Code": {
-          "S3Bucket": "configuration-of-sam-van-overmeire",
+          "S3Bucket": "some-bucket",
           "S3Key": "[Asset]"
         },
         "Environment": {

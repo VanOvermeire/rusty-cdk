@@ -3,7 +3,7 @@ use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{EnvVarKey, Memory, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
+use crate::wrappers::{Bucket, EnvVarKey, Memory, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -60,9 +60,9 @@ pub struct Zip {
 }
 
 impl Zip {
-    pub fn new(bucket: &str, file: ZipFile) -> Self {
+    pub fn new(bucket: Bucket, file: ZipFile) -> Self {
         Zip {
-            bucket: bucket.to_string(),
+            bucket: bucket.0,
             file
         }
     }

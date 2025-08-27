@@ -1,3 +1,4 @@
+use cloud_infra::wrappers::Bucket;
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
 use cloud_infra::iam::Permission;
 use cloud_infra::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
@@ -8,8 +9,6 @@ use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only
 
 #[tokio::main]
 async fn main() {
-    // bucket!("conf-of-sam-van-overmeire");
-    
     let mut stack_builder = StackBuilder::new();
 
     let read_capacity = non_zero_number!(1);
@@ -27,10 +26,11 @@ async fn main() {
     let timeout = timeout!(30);
 
     let queue = SqsQueueBuilder::new().standard_queue().build();
+    let bucket = bucket!("configuration-of-sam-van-overmeire");
 
     let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new("configuration-of-sam-van-overmeire", zipper))
+        .zip(Zip::new(bucket, zipper))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
