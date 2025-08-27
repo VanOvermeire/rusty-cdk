@@ -267,13 +267,13 @@ pub fn bucket(input: TokenStream) -> TokenStream {
 
     if !rechecked_wanted {
         match valid_bucket_according_to_file_storage(&value) {
-            FileStorageOutput::VALID => {
+            FileStorageOutput::Valid => {
                 return bucket_output(value)
             }
-            FileStorageOutput::INVALID => {
+            FileStorageOutput::Invalid => {
                 return Error::new(input.span(), "(cached) did not find bucket with name".to_string()).into_compile_error().into()
             }
-            FileStorageOutput::UNKNOWN => {}
+            FileStorageOutput::Unknown => {}
         }
     }
 
@@ -281,12 +281,12 @@ pub fn bucket(input: TokenStream) -> TokenStream {
 
     match rt.block_on(find_bucket(input, &value)) {
         Ok(_) => {
-            update_file_storage(FileStorageInput::VALID(&value));
+            update_file_storage(FileStorageInput::Valid(&value));
             bucket_output(value)
         }
         // TODO combine with error that explains how to override etc.
         Err(e) => {
-            update_file_storage(FileStorageInput::INVALID(&value));
+            update_file_storage(FileStorageInput::Invalid(&value));
             e.into_compile_error().into()
         }
     }

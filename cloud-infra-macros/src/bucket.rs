@@ -1,88 +1,92 @@
 use proc_macro::TokenStream;
-use std::fs::{create_dir, read_to_string, write};
-use std::path::Path;
+use std::collections::HashSet;
+use std::fs::{read_to_string, write};
+use std::path::{PathBuf};
+use dirs::home_dir;
 use quote::quote;
 use syn::{Error, LitStr};
 use serde::{Deserialize, Serialize};
-use crate::bucket::FileStorageOutput::{INVALID, UNKNOWN, VALID};
+use crate::bucket::FileStorageOutput::{Invalid, Unknown, Valid};
 
-const HOME_DIR_CLOUD_INFRA: &str = "~/.cloud_infra";
-const BUCKETS_FILE: &str = "buckets";
+const HOME_DIR_CLOUD_BUCKET_FILE: &str = ".cloud_infra_bucket_info";
 
 #[derive(Deserialize, Serialize)]
 struct BucketInfo<'a> {
     #[serde(borrow)]
-    valid_bucket_names: Vec<&'a str>,
-    invalid_bucket_names: Vec<&'a str>
+    valid_bucket_names: HashSet<&'a str>,
+    invalid_bucket_names: HashSet<&'a str>
 }
 
 impl BucketInfo<'_> {
     fn new() -> Self {
-        Self { valid_bucket_names: vec![], invalid_bucket_names: vec![] }
+        Self { valid_bucket_names: HashSet::new(), invalid_bucket_names: HashSet::new() }
     }
 }
 
 pub(crate) enum FileStorageInput<'a> {
-    VALID(&'a str),
-    INVALID(&'a str),
+    Valid(&'a str),
+    Invalid(&'a str),
 }
 
 pub(crate) enum FileStorageOutput {
-    VALID,
-    INVALID,
-    UNKNOWN,
+    Valid,
+    Invalid,
+    Unknown,
 }
 
 pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorageOutput {
-    let path_as_string = format!("{}/{}", HOME_DIR_CLOUD_INFRA, BUCKETS_FILE);
-    let path = Path::new(&path_as_string);
+    let full_path = match get_file_path() {
+        Some(p) => p,
+        None => {
+            return Unknown
+        }
+    };
 
-    if path.exists() {
-        let as_string = match read_to_string(path) {
+    if full_path.exists() {
+        let file_as_string = match read_to_string(full_path) {
             Ok(str) => str,
             Err(_) => {
                 write_empty_bucket_info();
-                return UNKNOWN
+                return Unknown
             }
         };
-        match serde_json::from_str::<BucketInfo>(&as_string) {
+        match serde_json::from_str::<BucketInfo>(&file_as_string) {
             Ok(info) => {
                 let valid_bucket_name = info.valid_bucket_names.iter().find(|v| **v == value);
-
-                if let Some(_) = valid_bucket_name {
-                    return VALID
-                }
-
                 let invalid_bucket_name = info.invalid_bucket_names.iter().find(|v| **v == value);
 
-                if let Some(_) = invalid_bucket_name {
-                    return INVALID
+                if valid_bucket_name.is_some() {
+                    return Valid
+                } else if invalid_bucket_name.is_some() {
+                    return Invalid
                 }
             }
-            Err(_) => write_empty_bucket_info(),
+            Err(_) => {
+                write_empty_bucket_info();
+                return Unknown
+            }
         }
     }
-    UNKNOWN
+    Unknown
 }
 
 pub(crate) fn update_file_storage(input: FileStorageInput) {
-    let _result = create_dir(HOME_DIR_CLOUD_INFRA);
-    
-    let path_as_string = format!("{}/{}", HOME_DIR_CLOUD_INFRA, BUCKETS_FILE);
-    let path = Path::new(&path_as_string);
+    let info_as_string = read_bucket_info().unwrap_or("{}".to_string());
 
-    let as_string = read_to_string(path).expect("our own file to be readable as string");
-
-    match serde_json::from_str::<BucketInfo>(&as_string) {
+    match serde_json::from_str::<BucketInfo>(&info_as_string) {
         Ok(mut info) => {
             match input {
-                FileStorageInput::VALID(name) => info.valid_bucket_names.push(&name),
-                FileStorageInput::INVALID(name) => info.invalid_bucket_names.push(&name),
-            }
+                FileStorageInput::Valid(name) => info.valid_bucket_names.insert(&name),
+                FileStorageInput::Invalid(name) => info.invalid_bucket_names.insert(&name),
+            };
             write_bucket_info(info);
         }
         Err(_) => write_empty_bucket_info(),
     }
+}
+
+fn read_bucket_info() -> Option<String> {
+    get_file_path().and_then(|p| read_to_string(p).ok())
 }
 
 fn write_empty_bucket_info() {
@@ -90,11 +94,19 @@ fn write_empty_bucket_info() {
 }
 
 fn write_bucket_info(info: BucketInfo) {
-    let path_as_string = format!("{}/{}", HOME_DIR_CLOUD_INFRA, BUCKETS_FILE);
-    let path = Path::new(&path_as_string);
-    
-    let info_as_string = serde_json::to_string(&info).expect("to be able to serialize bucket info");
-    let _result = write(&path, info_as_string);
+    match get_file_path() {
+        Some(path) => {
+            let info_as_string = serde_json::to_string(&info).expect("to be able to serialize bucket info");
+            let _result = write(&path, info_as_string);
+        }
+        None => {}
+    }
+}
+
+fn get_file_path() -> Option<PathBuf> {
+    home_dir().map(|home_dir| {
+        home_dir.join(HOME_DIR_CLOUD_BUCKET_FILE)
+    })
 }
 
 pub(crate) async fn find_bucket(input: LitStr, name: &str) -> Result<(), Error> {
