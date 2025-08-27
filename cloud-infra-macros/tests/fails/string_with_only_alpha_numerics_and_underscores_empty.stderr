@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/string_with_only_alpha_numerics_and_underscores_empty.rs:4:15
+error: value should not be blank
+ --> tests/fails/string_with_only_alpha_numerics_and_underscores_empty.rs:4:64
   |
 4 |     let key = string_with_only_alpha_numerics_and_underscores!("");
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: value should not be blank
+  |                                                                ^^

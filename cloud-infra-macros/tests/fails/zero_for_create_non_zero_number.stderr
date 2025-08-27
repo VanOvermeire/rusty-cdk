@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/zero_for_create_non_zero_number.rs:4:15
+error: value should not be null
+ --> tests/fails/zero_for_create_non_zero_number.rs:4:32
   |
 4 |     let key = non_zero_number!(0);
-  |               ^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: value should not be null
+  |                                ^

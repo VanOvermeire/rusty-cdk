@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/string_with_only_alpha_numerics_and_underscores_invalid_chars.rs:4:15
+error: value should only contain alphanumeric characters and underscores
+ --> tests/fails/string_with_only_alpha_numerics_and_underscores_invalid_chars.rs:4:64
   |
 4 |     let key = string_with_only_alpha_numerics_and_underscores!("invalid-name");
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: value should only contain alphanumeric characters and underscores
+  |                                                                ^^^^^^^^^^^^^^

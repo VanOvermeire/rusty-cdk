@@ -82,11 +82,11 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     let value = output.value();
 
     if value.is_empty() {
-        panic!("value should not be blank")
+        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
     }
     
     if value.chars().any(|c| !c.is_alphanumeric() && c != '_') {
-        panic!("value should only contain alphanumeric characters and underscores")
+        return Error::new(output.span(), "value should only contain alphanumeric characters and underscores".to_string()).into_compile_error().into()
     }
     
     quote!(
@@ -110,15 +110,15 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if value.len() < 2 {
-        panic!("env var key should be at least two characters long")
+        return Error::new(output.span(), "env var key should be at least two characters long".to_string()).into_compile_error().into()
     }
 
     if value.get(0..1).expect("just checked that length is at least 2") == "_" {
-        panic!("env var key not start with an underscore")
+        return Error::new(output.span(), "env var key should not start with an underscore".to_string()).into_compile_error().into()
     }
 
     if value.chars().any(|c| !c.is_alphanumeric() && c != '_') {
-        panic!("env var key should only contain alphanumeric characters and underscores")
+        return Error::new(output.span(), "env var key should only contain alphanumeric characters and underscores".to_string()).into_compile_error().into()
     }
 
     quote!(
@@ -149,19 +149,21 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if !value.ends_with(".zip") {
-        panic!("zip file should end with `.zip`, instead found {}", value)
+        return Error::new(output.span(), format!("zip file should end with `.zip`, instead found `{value}`")).into_compile_error().into()
     }
 
     let path = Path::new(&value);
 
     if !path.exists() {
-        panic!("did not find file {}", value)
+        return Error::new(output.span(), format!("did not find file `{value}`")).into_compile_error().into()
     }
 
     let value = if path.is_relative() {
         match absolute(path) {
             Ok(absolute_path) => absolute_path.to_str().expect("zip file path to be valid unicode").to_string(),
-            Err(e) => panic!("failed to convert zip file path to absolute path: {}", e)
+            Err(e) => {
+                return Error::new(output.span(), format!("failed to convert zip file path to absolute path: {e}")).into_compile_error().into()
+            }
         }
     } else {
         path.to_str().expect("zip file path to be valid unicode").to_string()
@@ -185,11 +187,11 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
 
     let num = if let Ok(num) = as_number {
         if num == 0 {
-            panic!("value should not be null")
+            return Error::new(output.span(), "value should not be null".to_string()).into_compile_error().into()
         }
         num
     } else {
-        panic!("value is not a valid number")
+        return Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
     };
 
     quote!(
@@ -213,13 +215,13 @@ macro_rules! number_check {
         
             let num = if let Ok(num) = as_number {
                 if num < $min {
-                    panic!("value should be at least {}", $min)
+                    return Error::new(output.span(), format!("value should be at least {}", $min)).into_compile_error().into()
                 } else if num > $max {
-                    panic!("value should be at most {}", $max)
+                    return Error::new(output.span(), format!("value should be at most {}", $max)).into_compile_error().into()
                 }
                 num
             } else {
-                panic!("value is not a valid number")
+                return Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
             };
         
             quote!(
@@ -249,11 +251,11 @@ pub fn bucket(input: TokenStream) -> TokenStream {
     let value = input.value();
 
     if value.starts_with("arn:") {
-        panic!("expected bucket name, not arn, as input")
+        return Error::new(input.span(), "expected bucket name, not arn, as input".to_string()).into_compile_error().into()
     }
 
     if value.starts_with("s3:") {
-        panic!("expected plain bucket name, remove the s3 prefix")
+        return Error::new(input.span(), "expected plain bucket name, remove the s3 prefix".to_string()).into_compile_error().into()
     }
 
     let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
@@ -270,7 +272,7 @@ pub fn bucket(input: TokenStream) -> TokenStream {
                 return bucket_output(value)
             }
             FileStorageOutput::Invalid => {
-                return Error::new(input.span(), format!("(cached) did not find bucket with name {value}. You can rerun the check by adding setting the {CLOUD_INFRA_RECHECK_ENV_VAR_NAME} env var to true")).into_compile_error().into()
+                return Error::new(input.span(), format!("(cached) did not find bucket with name `{value}`. You can rerun the check by adding setting the `{CLOUD_INFRA_RECHECK_ENV_VAR_NAME}` env var to true")).into_compile_error().into()
             }
             FileStorageOutput::Unknown => {}
         }

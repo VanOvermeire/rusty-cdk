@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/env_var_key_too_short.rs:4:15
+error: env var key should be at least two characters long
+ --> tests/fails/env_var_key_too_short.rs:4:28
   |
 4 |     let key = env_var_key!("A");
-  |               ^^^^^^^^^^^^^^^^^
-  |
-  = help: message: env var key should be at least two characters long
+  |                            ^^^

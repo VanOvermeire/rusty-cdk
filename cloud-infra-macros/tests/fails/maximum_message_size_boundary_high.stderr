@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/maximum_message_size_boundary_high.rs:4:16
+error: value should be at most 1048576
+ --> tests/fails/maximum_message_size_boundary_high.rs:4:38
   |
 4 |     let size = maximum_message_size!(1048577);
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: value should be at most 1048576
+  |                                      ^^^^^^^

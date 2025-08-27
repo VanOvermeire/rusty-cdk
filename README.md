@@ -96,6 +96,7 @@ Currently only a limited number of AWS services are supported, with more on the 
 - SQS
 
 Next up:
+- Cloudwatch logs
 - SNS
 - S3
 - API Gateway
@@ -105,6 +106,5 @@ Next up:
 
 ## TODO
 
-- syn::Result
 - add and update docs
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code

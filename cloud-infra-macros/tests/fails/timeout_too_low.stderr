@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/timeout_too_low.rs:4:13
+error: value should be at least 1
+ --> tests/fails/timeout_too_low.rs:4:22
   |
 4 |     let t = timeout!(0);
-  |             ^^^^^^^^^^^
-  |
-  = help: message: value should be at least 1
+  |                      ^

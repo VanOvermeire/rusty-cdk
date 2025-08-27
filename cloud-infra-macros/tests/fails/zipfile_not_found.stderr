@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/zipfile_not_found.rs:4:16
+error: did not find file `nonexistent.zip`
+ --> tests/fails/zipfile_not_found.rs:4:25
   |
 4 |     let file = zipfile!("nonexistent.zip");
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: did not find file nonexistent.zip
+  |                         ^^^^^^^^^^^^^^^^^

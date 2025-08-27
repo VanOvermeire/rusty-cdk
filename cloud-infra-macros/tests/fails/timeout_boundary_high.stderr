@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/timeout_boundary_high.rs:4:13
+error: value should be at most 900
+ --> tests/fails/timeout_boundary_high.rs:4:22
   |
 4 |     let t = timeout!(901);
-  |             ^^^^^^^^^^^^^
-  |
-  = help: message: value should be at most 900
+  |                      ^^^

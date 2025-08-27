@@ -1,7 +1,5 @@
-error: proc macro panicked
- --> tests/fails/message_retention_period_too_high.rs:4:18
+error: value should be at most 1209600
+ --> tests/fails/message_retention_period_too_high.rs:4:44
   |
 4 |     let period = message_retention_period!(1500000);
-  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: value should be at most 1209600
+  |                                            ^^^^^^^
