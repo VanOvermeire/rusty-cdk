@@ -72,32 +72,18 @@ impl Resource {
     }
 }
 
-impl From<DynamoDBTable> for Resource {
-    fn from(value: DynamoDBTable) -> Self {
-        Resource::DynamoDBTable(value)
-    }
+macro_rules! from_resource {
+    ($name:ident) => {
+        impl From<$name> for Resource {
+            fn from(value: $name) -> Self {
+                Resource::$name(value)
+            }
+        }
+    };
 }
 
-impl From<LambdaFunction> for Resource {
-    fn from(value: LambdaFunction) -> Self {
-        Resource::LambdaFunction(value)
-    }
-}
-
-impl From<IamRole> for Resource {
-    fn from(value: IamRole) -> Self {
-        Resource::IamRole(value)
-    }
-}
-
-impl From<SqsQueue> for Resource {
-    fn from(value: SqsQueue) -> Self {
-        Resource::SqsQueue(value)
-    }
-}
-
-impl From<EventSourceMapping> for Resource {
-    fn from(value: EventSourceMapping) -> Self {
-        Resource::EventSourceMapping(value)
-    }
-}
+from_resource!(DynamoDBTable);
+from_resource!(LambdaFunction);
+from_resource!(IamRole);
+from_resource!(SqsQueue);
+from_resource!(EventSourceMapping);

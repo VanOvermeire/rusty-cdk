@@ -108,4 +108,5 @@ Next up:
 ## TODO
 
 - add and update docs
+- borrow all the things? see borrowing-example branch for an example
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
