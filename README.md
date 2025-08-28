@@ -77,6 +77,7 @@ The library does require you to be somewhat more explicit at times. For example,
 This project intends to use any and all tools that Rust offers for ensuring infrastructure correctness at compile time.
 In some cases, Rust offers help out of the box. E.g., it has unsigned numbers, unlike TypeScript. 
 In addition, macros and type state are the most important additional tools used here.
+Const functions would be interesting as well, but too limited for the moment (e.g. I can check a `const` at compile time, but not a `let`).
 It might also turn to macros to do more advanced, optional, checking of your actual environment: do you actually have a VPC with id `abc` in your AWS account?
 When these are not enough, we can try to use newtype wrappers and `Try` methods (`TryFrom`) to indicate to users that the operation might fail.
 
