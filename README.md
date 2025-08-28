@@ -8,7 +8,7 @@ Install using cargo:
 
 `cargo add ...`
 
-## Motivating example
+## Motivation
 
 This is some CDK code that is valid at compile time (i.e. it synthesizes to a CloudFormation template).
 
@@ -47,13 +47,15 @@ Compare the above with this example:
 use cloud_infra::wrappers::{NonZeroNumber,StringWithOnlyAlphaNumericsAndUnderscores};
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+use cloud_infra::stack::Resource;
+use cloud_infra::Synth;
 
 fn iac() {
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let read_capacity = non_zero_number!(5);
     let write_capacity = non_zero_number!(1);
   
-    let resources = vec![
+    let resources: Vec<Resource> = vec![
       DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
               .provisioned_billing()
               .read_capacity(read_capacity)
@@ -61,7 +63,7 @@ fn iac() {
               .build()
               .into()
     ];
-    let result = cloud_infra::synth(resources).unwrap();
+    let synthesized: Synth = resources.try_into().unwrap();
 }
 ```
 

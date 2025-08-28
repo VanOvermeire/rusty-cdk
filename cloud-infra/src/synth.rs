@@ -9,21 +9,24 @@ impl Display for Synth {
     }
 }
 
-pub fn synth(resources: Vec<Resource>) -> Result<Synth, String> {
-    let mut stack_builder = StackBuilder::new();
-    resources.into_iter().for_each(|r| stack_builder.add_resource(r));
-    let stack = stack_builder.build().map_err(|e| e.to_string())?;
-    let assets = stack.get_assets();
+impl TryFrom<Stack> for Synth {
+    type Error = String;
 
-    serde_json::to_string(&stack)
-        .map(|s| Synth(s, assets))
-        .map_err(|e| format!("Could not serialize resources: {e:?}"))
+    fn try_from(value: Stack) -> Result<Self, Self::Error> {
+        let assets = value.get_assets();
+        serde_json::to_string(&value)
+            .map(|s| Synth(s, assets))
+            .map_err(|e| format!("Could not serialize resources: {e:?}"))
+    }
 }
 
-pub fn synth_stack(stack: Stack) -> Result<Synth, String> {
-    let assets = stack.get_assets();
+impl TryFrom<Vec<Resource>> for Synth {
+    type Error = String;
 
-    serde_json::to_string(&stack)
-        .map(|s| Synth(s, assets))
-        .map_err(|e| format!("Could not serialize resources: {e:?}"))
+    fn try_from(resources: Vec<Resource>) -> Result<Self, Self::Error> {
+        let mut stack_builder = StackBuilder::new();
+        resources.into_iter().for_each(|r| stack_builder.add_resource(r));
+        let stack = stack_builder.build().map_err(|e| e.to_string())?;
+        stack.try_into()
+    }
 }

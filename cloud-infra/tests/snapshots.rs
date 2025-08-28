@@ -11,6 +11,7 @@ use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::{Timeout, ZipFile};
 use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile};
 use serde_json::Value;
+use cloud_infra::Synth;
 use cloud_infra_core::iam::Permission;
 use cloud_infra_core::sqs::SqsQueueBuilder;
 
@@ -29,7 +30,7 @@ fn test_dynamodb() {
     stack_builder.add_resource(table);
     let stack = stack_builder.build().unwrap();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![
@@ -44,7 +45,7 @@ fn test_lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
-    // not interested in testing the bucket macro here, so just use the wrapper directly
+    // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
     
     let lambda = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
@@ -59,7 +60,7 @@ fn test_lambda() {
     stack_builder.add_resource(lambda.1);
     let stack = stack_builder.build().unwrap();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![
@@ -86,7 +87,7 @@ fn test_lambda_with_dynamodb() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    // not interested in testing the bucket macro here, so just use the wrapper directly
+    // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
     
     let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
@@ -103,7 +104,7 @@ fn test_lambda_with_dynamodb() {
     stack_builder.add_resource(role);
     let stack = stack_builder.build().unwrap();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![
@@ -135,7 +136,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    // not interested in testing the bucket macro here, so just use the wrapper directly
+    // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
 
     let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
@@ -155,7 +156,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     stack_builder.add_resource(queue);
     let stack = stack_builder.build().unwrap();
 
-    let synthesized = cloud_infra::synth_stack(stack).unwrap();
+    let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
 
     insta::with_settings!({filters => vec![

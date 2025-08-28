@@ -5,7 +5,7 @@ use cloud_infra::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
 use cloud_infra::sqs::SqsQueueBuilder;
 use cloud_infra::stack::StackBuilder;
 use cloud_infra::wrappers::{EnvVarKey, Memory, NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
-use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile};
+use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile, Synth};
 
 #[tokio::main]
 async fn main() {
@@ -47,8 +47,8 @@ async fn main() {
     if let Err(s) = stack {
         println!("{s}");
     } else {
-        let result = cloud_infra::synth_stack(stack.unwrap()).unwrap(); // TODO
-        println!("{}", result);
-        cloud_infra::deploy("ExampleRemove", result).await;
+        let synthesized: Synth = stack.unwrap().try_into().unwrap();
+        println!("{}", synthesized);
+        cloud_infra::deploy("ExampleRemove", synthesized).await;
     }
 }
