@@ -5,6 +5,8 @@ use crate::sqs::SqsQueue;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
+use crate::cloudwatch::LogGroup;
+use crate::stack::StackBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -29,8 +31,20 @@ impl Stack {
                 Resource::IamRole(_) => vec![],
                 Resource::SqsQueue(_) => vec![],
                 Resource::EventSourceMapping(_) => vec![],
+                Resource::LogGroup(_) => vec![],
             })
             .collect()
+    }
+}
+
+impl TryFrom<Vec<Resource>> for Stack {
+    type Error = String;
+
+    fn try_from(resources: Vec<Resource>) -> Result<Self, Self::Error> {
+        let mut stack_builder = StackBuilder::new();
+        resources.into_iter().for_each(|r| stack_builder.add_resource(r));
+        let stack = stack_builder.build().map_err(|e| e.to_string())?;
+        Ok(stack)
     }
 }
 
@@ -39,6 +53,7 @@ impl Stack {
 pub enum Resource {
     DynamoDBTable(DynamoDBTable),
     LambdaFunction(LambdaFunction),
+    LogGroup(LogGroup),
     SqsQueue(SqsQueue),
     EventSourceMapping(EventSourceMapping),
     IamRole(IamRole),
@@ -51,7 +66,8 @@ impl Resource {
             Resource::LambdaFunction(f) => f.get_id(),
             Resource::IamRole(r) => r.get_id(),
             Resource::SqsQueue(q) => q.get_id(),
-            Resource::EventSourceMapping(m) => m.get_id(), 
+            Resource::EventSourceMapping(m) => m.get_id(),
+            Resource::LogGroup(l) => l.get_id(),
         }
     }
 
@@ -62,6 +78,7 @@ impl Resource {
             Resource::SqsQueue(_) => vec![],
             Resource::EventSourceMapping(_) => vec![],
             Resource::IamRole(_) => vec![],
+            Resource::LogGroup(_) => vec![],
         }
     }
 
@@ -85,5 +102,6 @@ macro_rules! from_resource {
 from_resource!(DynamoDBTable);
 from_resource!(LambdaFunction);
 from_resource!(IamRole);
+from_resource!(LogGroup);
 from_resource!(SqsQueue);
 from_resource!(EventSourceMapping);

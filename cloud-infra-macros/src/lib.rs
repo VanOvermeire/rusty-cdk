@@ -213,22 +213,21 @@ macro_rules! number_check {
         
             let as_number: syn::Result<$type> = output.base10_parse();
         
-            let num = if let Ok(num) = as_number {
+            if let Ok(num) = as_number {
                 if num < $min {
-                    return Error::new(output.span(), format!("value should be at least {}", $min)).into_compile_error().into()
+                    Error::new(output.span(), format!("value should be at least {}", $min)).into_compile_error().into()
                 } else if num > $max {
-                    return Error::new(output.span(), format!("value should be at most {}", $max)).into_compile_error().into()
+                    Error::new(output.span(), format!("value should be at most {}", $max)).into_compile_error().into()
+                } else {
+                    quote!(
+                        $output(#num)
+                    ).into()
                 }
-                num
             } else {
-                return Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
-            };
-        
-            quote!(
-                $output(#num)
-            ).into()
+                Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
+            }
         }
-    };
+    }
 }
 
 number_check!(memory, 128, 10240, Memory, u16);
@@ -290,4 +289,49 @@ pub fn bucket(input: TokenStream) -> TokenStream {
             e.into_compile_error().into()
         }
     }
+}
+
+const VALUES: [u16;22] = [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653];
+
+#[proc_macro]
+pub fn log_retention(input: TokenStream) -> TokenStream {
+    let output: LitInt = syn::parse(input).unwrap();
+
+    let as_number: syn::Result<u16> = output.base10_parse();
+
+    if let Ok(num) = as_number {
+        if VALUES.contains(&num) {
+            quote! {
+                RetentionInDays(#num)
+            }.into()
+        } else {
+            Error::new(output.span(), format!("value should be one of {:?}", VALUES)).into_compile_error().into()    
+        }
+    } else {
+        Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
+    }
+}
+
+const ADDITIONAL_ALLOWED: [char; 6] = ['.', '-', '_', '#', '/', '\\'];
+
+#[proc_macro]
+pub fn log_group_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.is_empty() {
+        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
+    }
+    
+    if value.len() > 512 {
+        return Error::new(output.span(), "value should not be longer than 512 chars".to_string()).into_compile_error().into()
+    }
+
+    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED.contains(&c)) {
+        return Error::new(output.span(), format!("value should only contain alphanumeric characters and {:?}", ADDITIONAL_ALLOWED)).into_compile_error().into()
+    }
+    
+    quote!(
+        LogGroupName(#value.to_string())
+    ).into()
 }

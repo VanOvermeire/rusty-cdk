@@ -47,12 +47,11 @@ pub struct LambdaFunctionProperties {
     pub(crate) function_name: Option<String>,
     #[serde(rename = "Environment", skip_serializing_if = "Option::is_none")]
     pub(crate) environment: Option<Environment>,
-    // #[serde(rename = "PackageType", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "ReservedConcurrentExecutions", skip_serializing_if = "Option::is_none")]
+    pub(crate) reserved_concurrent_executions: Option<u32>,
+    #[serde(rename = "LoggingConfig")]
+    pub(crate) logging_info: LoggingInfo
     // package_type: Option<String>,
-
-    // "LoggingConfig": LoggingConfig,
-    // "ReservedConcurrentExecutions": Integer,
-    // "TracingConfig": TracingConfig,
     // "VpcConfig": VpcConfig
 }
 
@@ -62,13 +61,9 @@ pub struct LambdaCode {
     pub(crate) s3_bucket: Option<String>,
     #[serde(rename = "S3Key")]
     pub(crate) s3_key: Option<String>,
-    // #[serde(rename = "S3ObjectVersion")]
     // s3_object_version: Option<String>,
-    // #[serde(rename = "ZipFile")]
     // zipfile: Option<String>,
-    // #[serde(rename = "ImageUri")]
     // image_uri: Option<String>,
-    // #[serde(rename = "SourceKMSKeyArn")]
     // source_kmskey_arn: String
 }
 
@@ -76,6 +71,12 @@ pub struct LambdaCode {
 pub struct Environment {
     #[serde(rename = "Variables")]
     pub(crate) variables: HashMap<String, Value>
+}
+
+#[derive(Debug, Serialize)]
+pub struct LoggingInfo {
+    #[serde(rename = "LogGroup")]
+    pub(crate) log_group: Option<Value>,
 }
 
 #[derive(Debug, Serialize)]

@@ -280,3 +280,9 @@ pub struct SqsEventSourceMaxConcurrency(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct Bucket(pub String);
+
+#[derive(Debug, Copy, Clone)]
+pub struct RetentionInDays(pub u16);
+
+#[derive(Debug, Clone)]
+pub struct LogGroupName(pub String);

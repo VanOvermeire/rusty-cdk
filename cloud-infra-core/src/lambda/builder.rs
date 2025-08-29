@@ -1,12 +1,13 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, ScalingConfig};
+use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{Bucket, EnvVarKey, Memory, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
+use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
+use crate::cloudwatch::{LogGroup, LogGroupBuilder};
 
 pub enum Runtime {
     NodeJs22,
@@ -103,6 +104,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     function_name: Option<String>,
     sqs_event_source_mapping: Option<EventSourceMappingInfo>,
     referenced_ids: Vec<String>,
+    reserved_concurrent_executions: Option<u32>,
 }
 
 impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
@@ -136,8 +138,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             ..self
         }
     }
+
+    pub fn reserved_concurrent_executions(self, executions: u32) -> LambdaFunctionBuilder<T> {
+        Self {
+            reserved_concurrent_executions: Some(executions),
+            ..self
+        }
+    }
     
-    fn build_internal(mut self) -> (LambdaFunction, IamRole, Option<EventSourceMapping>) {
+    fn build_internal(mut self) -> (LambdaFunction, IamRole, LogGroup, Option<EventSourceMapping>) {
         let function_id = Resource::generate_id("LambdaFunction");
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
@@ -196,6 +205,17 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             })
         };
 
+        let log_group_name = self.function_name.clone().map(|fun_name| format!("aws/lambda/{fun_name}"));
+        let base_builder = LogGroupBuilder::new()
+            .log_group_retention(RetentionInDays(731));
+        let log_group = if let Some(name) = log_group_name {
+            base_builder.log_group_name_string(LogGroupName(name)).build()
+        } else {
+            base_builder.build()
+        };
+        
+        let logging_info = LoggingInfo { log_group: Some(log_group.get_ref()) };
+
         let properties = LambdaFunctionProperties {
             code: code.1,
             architectures: vec![self.architecture.into()],
@@ -206,6 +226,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             role: role_ref,
             function_name: self.function_name,
             environment,
+            reserved_concurrent_executions: self.reserved_concurrent_executions,
+            logging_info,
         };
 
         let function = LambdaFunction {
@@ -219,6 +241,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         (
             function,
             role,
+            log_group,
             mapping,
         )
     }
@@ -239,6 +262,7 @@ impl LambdaFunctionBuilder<StartState> {
             function_name: None,
             sqs_event_source_mapping: None,
             referenced_ids: vec![],
+            reserved_concurrent_executions: None,
         }
     }
 
@@ -256,6 +280,7 @@ impl LambdaFunctionBuilder<StartState> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             referenced_ids: self.referenced_ids,
+            reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
 }
@@ -275,6 +300,7 @@ impl LambdaFunctionBuilder<ZipState> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             referenced_ids: self.referenced_ids,
+            reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
 }
@@ -294,6 +320,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             referenced_ids: self.referenced_ids,
+            reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
 }
@@ -321,20 +348,21 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             referenced_ids: self.referenced_ids,
+            reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
 
     #[must_use]
-    pub fn build(self) -> (LambdaFunction, IamRole) {
-        let (lambda, iam_role, _) = self.build_internal();
-        (lambda, iam_role)
+    pub fn build(self) -> (LambdaFunction, IamRole, LogGroup) {
+        let (lambda, iam_role, log_group, _) = self.build_internal();
+        (lambda, iam_role, log_group)
     }
 }
 
 impl LambdaFunctionBuilder<EventSourceMappingState> {
     #[must_use]
-    pub fn build(self) -> (LambdaFunction, IamRole, EventSourceMapping) {
-        let (lambda, iam_role, mapping) = self.build_internal();
-        (lambda, iam_role, mapping.expect("should be `Some` because we are in the event source mapping state"))
+    pub fn build(self) -> (LambdaFunction, IamRole, LogGroup, EventSourceMapping) {
+        let (lambda, iam_role, log_group, mapping) = self.build_internal();
+        (lambda, iam_role, log_group, mapping.expect("should be `Some` because we are in the event source mapping state"))
     }
 }

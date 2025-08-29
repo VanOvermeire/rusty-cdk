@@ -76,8 +76,14 @@ pub(crate) fn update_file_storage(input: FileStorageInput) {
     match serde_json::from_str::<BucketInfo>(&info_as_string) {
         Ok(mut info) => {
             match input {
-                FileStorageInput::Valid(name) => info.valid_bucket_names.insert(&name),
-                FileStorageInput::Invalid(name) => info.invalid_bucket_names.insert(&name),
+                FileStorageInput::Valid(name) => {
+                    info.valid_bucket_names.insert(&name);
+                    info.invalid_bucket_names = info.invalid_bucket_names.into_iter().filter(|v| *v == name).collect()
+                },
+                FileStorageInput::Invalid(name) => {
+                    info.invalid_bucket_names.insert(&name);
+                    info.valid_bucket_names = info.valid_bucket_names.into_iter().filter(|v| *v == name).collect()
+                },
             };
             write_bucket_info(info);
         }

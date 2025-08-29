@@ -28,7 +28,7 @@ async fn main() {
     let queue = SqsQueueBuilder::new().standard_queue().build();
     let bucket = bucket!("configuration-of-sam-van-overmeire");
 
-    let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+    let (fun, role, log_group, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zipper))
         .handler("bootstrap".to_string())
@@ -39,6 +39,7 @@ async fn main() {
 
     stack_builder.add_resource(fun);
     stack_builder.add_resource(role);
+    stack_builder.add_resource(log_group);
     stack_builder.add_resource(table);
     stack_builder.add_resource(map);
     stack_builder.add_resource(queue);
@@ -49,6 +50,6 @@ async fn main() {
     } else {
         let synthesized: Synth = stack.unwrap().try_into().unwrap();
         println!("{}", synthesized);
-        cloud_infra::deploy("ExampleRemove", synthesized).await;
+        // cloud_infra::deploy("ExampleRemove", synthesized).await;
     }
 }
