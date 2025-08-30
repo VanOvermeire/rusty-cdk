@@ -1,0 +1,5 @@
+error: value should only contain alphanumeric characters and ['.', '-', '_', '#', '/', '\\']
+ --> tests/fails/log_group_name_invalid_chars.rs:4:32
+  |
+4 |     let name = log_group_name!("invalid@chars");
+  |                                ^^^^^^^^^^^^^^^

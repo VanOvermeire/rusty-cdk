@@ -1,0 +1,5 @@
+error: value should not be blank
+ --> tests/fails/log_group_name_empty.rs:4:32
+  |
+4 |     let name = log_group_name!("");
+  |                                ^^

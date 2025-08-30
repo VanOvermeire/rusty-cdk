@@ -1,0 +1,5 @@
+error: expected bucket name, not arn, as input
+ --> tests/fails/bucket_arn_passed_in.rs:4:26
+  |
+4 |     let bucket = bucket!("arn:aws:s3:::some-example-arn");
+  |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

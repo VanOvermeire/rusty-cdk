@@ -1,0 +1,7 @@
+error: value is not a valid number
+ --> tests/fails/log_retention_invalid_string.rs:4:21
+  |
+4 |     let retention = log_retention!("not_a_number");
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `log_retention` (in Nightly builds, run with -Z macro-backtrace for more info)
