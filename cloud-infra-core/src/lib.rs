@@ -1,4 +1,3 @@
-// TODO could generate some stuff with declarative macros
 pub mod stack;
 pub mod dynamodb;
 pub mod wrappers;
@@ -9,5 +8,6 @@ pub mod cloudwatch;
 pub mod sns;
 pub mod s3;
 pub mod secretsmanager;
+pub mod apigateway;
 
 mod intrinsic_functions;
