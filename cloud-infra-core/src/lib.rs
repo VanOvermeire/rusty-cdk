@@ -6,5 +6,8 @@ pub mod lambda;
 pub mod iam;
 pub mod sqs;
 pub mod cloudwatch;
+pub mod sns;
+pub mod s3;
+pub mod secretsmanager;
 
 mod intrinsic_functions;
