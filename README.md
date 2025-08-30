@@ -72,8 +72,12 @@ And (max) read capacity can only be set when you choose the correct billing mode
 
 With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible.
 
-The library does require you to be somewhat more explicit at times. For example, you have to pick a billing mode, as well as read and write capacity for provisioned. The CDK 'helps' you by setting sensible defaults (of `5` in this particular case). Which helps you get up and running quickly, but is probably not what you want for any real application!
- 
+The library does require you to be somewhat more explicit at times.
+
+For example, you have to pick a billing mode, as well as read and write capacity for provisioned. The CDK 'helps' you by setting sensible defaults (of `5` in this particular case). Which helps you get up and running quickly, but is probably not what you want for any real application!
+
+Also, you have to add all created resources to the `Stack` (or list of resources), whereas the CDK does this automagically. 'Must use' annotations and a final check for the stack do make this a bit less error-prone.
+
 ## Approach
 
 This project intends to use any and all tools that Rust offers for ensuring infrastructure correctness at compile time.
@@ -99,7 +103,6 @@ Currently only a limited number of AWS services are supported, with more on the 
 - SQS
 
 Next up:
-- SNS
 - S3
 - Secrets Manager
 - API Gateway

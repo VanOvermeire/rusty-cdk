@@ -110,3 +110,38 @@ pub struct ScalingConfig {
     #[serde(rename = "MaximumConcurrency")]
     pub(crate) max_concurrency: u16,
 }
+
+#[derive(Debug, Serialize)]
+pub struct LambdaPermission {
+    #[serde(skip)]
+    pub(crate) id: String,
+    #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
+    #[serde(rename = "Type")]
+    pub(crate) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(crate) properties: LambdaPermissionProperties,
+}
+
+impl LambdaPermission {
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    pub fn get_referenced_ids(&self) -> Vec<&str> {
+        self.referenced_ids.iter().map(|r| r.as_str()).collect()
+    }
+}
+
+// TODO add and use builder
+#[derive(Debug, Serialize)]
+pub struct LambdaPermissionProperties {
+    #[serde(rename = "Action")]
+    pub(crate) action: String,
+    #[serde(rename = "FunctionName")]
+    pub(crate) function_name: Value,
+    #[serde(rename = "Principal")]
+    pub(crate) principal: String,
+    #[serde(rename = "SourceArn", skip_serializing_if = "Option::is_none")]
+    pub(crate) source_arn: Option<Value>
+}

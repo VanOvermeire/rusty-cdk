@@ -1,11 +1,12 @@
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
-use crate::lambda::{EventSourceMapping, LambdaFunction};
+use crate::lambda::{EventSourceMapping, LambdaFunction, LambdaPermission};
 use crate::sqs::SqsQueue;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
 use crate::cloudwatch::LogGroup;
+use crate::sns::dto::{SnsSubscription, SnsTopic};
 use crate::stack::StackBuilder;
 
 #[derive(Debug, Clone)]
@@ -32,6 +33,9 @@ impl Stack {
                 Resource::SqsQueue(_) => vec![],
                 Resource::EventSourceMapping(_) => vec![],
                 Resource::LogGroup(_) => vec![],
+                Resource::SnsTopic(_) => vec![],
+                Resource::SnsSubscription(_) => vec![],
+                Resource::LambdaPermission(_) => vec![],
             })
             .collect()
     }
@@ -55,6 +59,9 @@ pub enum Resource {
     LambdaFunction(LambdaFunction),
     LogGroup(LogGroup),
     SqsQueue(SqsQueue),
+    SnsTopic(SnsTopic),
+    SnsSubscription(SnsSubscription),
+    LambdaPermission(LambdaPermission),
     EventSourceMapping(EventSourceMapping),
     IamRole(IamRole),
 }
@@ -68,17 +75,23 @@ impl Resource {
             Resource::SqsQueue(q) => q.get_id(),
             Resource::EventSourceMapping(m) => m.get_id(),
             Resource::LogGroup(l) => l.get_id(),
+            Resource::SnsTopic(s) => s.get_id(),
+            Resource::SnsSubscription(s) => s.get_id(),
+            Resource::LambdaPermission(l) => l.get_id(),
         }
     }
 
     pub fn get_ref_ids(&self) -> Vec<&str> {
         match self {
             Resource::LambdaFunction(f) => f.get_referenced_ids(),
+            Resource::SnsSubscription(s) => s.get_referenced_ids(),
+            Resource::LambdaPermission(l) => l.get_referenced_ids(),
             Resource::DynamoDBTable(_) => vec![],
             Resource::SqsQueue(_) => vec![],
             Resource::EventSourceMapping(_) => vec![],
             Resource::IamRole(_) => vec![],
             Resource::LogGroup(_) => vec![],
+            Resource::SnsTopic(_) => vec![],
         }
     }
 
@@ -104,4 +117,7 @@ from_resource!(LambdaFunction);
 from_resource!(IamRole);
 from_resource!(LogGroup);
 from_resource!(SqsQueue);
+from_resource!(SnsTopic);
 from_resource!(EventSourceMapping);
+from_resource!(LambdaPermission);
+from_resource!(SnsSubscription);
