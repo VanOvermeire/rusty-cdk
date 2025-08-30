@@ -1,3 +1,4 @@
+use cloud_infra::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 use cloud_infra::wrappers::Bucket;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
@@ -9,10 +10,11 @@ use cloud_infra_core::wrappers::Memory;
 use cloud_infra_core::wrappers::NonZeroNumber;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::{Timeout, ZipFile};
-use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile};
+use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zipfile};
 use serde_json::Value;
 use cloud_infra::Synth;
 use cloud_infra_core::iam::Permission;
+use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
 use cloud_infra_core::sqs::SqsQueueBuilder;
 
 #[test]
@@ -75,6 +77,68 @@ fn test_lambda() {
 }
 
 #[test]
+fn test_sns() {
+    let (sns, subscriptions) = SnsTopicBuilder::new()
+        .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
+        .fifo()
+        .fifo_throughput_scope(FifoThroughputScope::Topic)
+        .content_based_deduplication(true)
+        .build();
+
+    assert!(subscriptions.is_empty());
+
+    let synthesized: Synth = vec![sns.into()].try_into().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
+    
+    insta::with_settings!({filters => vec![
+            (r"SnsTopic[0-9]+", "[SnsTopic]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn test_lambda_with_sns_subscription() {
+    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let bucket = get_bucket();
+    
+    let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+        .zip(Zip::new(bucket, zip_file))
+        .handler("bootstrap".to_string())
+        .runtime(Runtime::ProvidedAl2023)
+        .build();
+
+    let (sns, subscriptions) = SnsTopicBuilder::new()
+        .add_subscription(Subscription::Lambda(&fun))
+        .build();
+
+    let mut stack_builder = StackBuilder::new();
+    stack_builder.add_resource(fun);
+    stack_builder.add_resource(role);
+    stack_builder.add_resource(log);
+    stack_builder.add_resource(sns);
+    stack_builder.add_resource_tuples(subscriptions);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized: Synth = stack.try_into().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"SnsTopic[0-9]+", "[SnsTopic]"),
+            (r"SnsSubscription[0-9]+", "[SnsSubscription]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
 fn test_lambda_with_dynamodb() {
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
@@ -89,8 +153,7 @@ fn test_lambda_with_dynamodb() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    // not interested in testing the bucket macro here, so use the wrapper directly
-    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+    let bucket = get_bucket();
     
     let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
@@ -140,8 +203,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     let zip_file = zipfile!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    // not interested in testing the bucket macro here, so use the wrapper directly
-    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+    let bucket = get_bucket();
 
     let (fun, role, log, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
@@ -174,4 +236,9 @@ fn test_lambda_with_dynamodb_and_sqs() {
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
+}
+
+fn get_bucket() -> Bucket {
+    // not interested in testing the bucket macro here, so use the wrapper directly
+    Bucket("some-bucket".to_ascii_lowercase())
 }

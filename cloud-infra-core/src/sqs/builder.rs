@@ -256,7 +256,6 @@ impl SqsQueueBuilder<FifoState> {
                 self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         }
-        
         self.build_internal(true)
     }
 }

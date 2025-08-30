@@ -1,0 +1,17 @@
+---
+source: cloud-infra/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Resources": {
+    "[SnsTopic]": {
+      "Properties": {
+        "ContentBasedDeduplication": true,
+        "FifoThroughputScope": "Topic",
+        "FifoTopic": true,
+        "TopicName": "some-name.fifo"
+      },
+      "Type": "AWS::SNS::Topic"
+    }
+  }
+}

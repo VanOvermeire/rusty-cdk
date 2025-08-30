@@ -95,6 +95,24 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     ).into()
 }
 
+#[proc_macro]
+pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.is_empty() {
+        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
+    }
+
+    if value.chars().any(|c| !c.is_alphanumeric() && c != '_' && c != '-') {
+        return Error::new(output.span(), "value should only contain alphanumeric characters, underscores and hyphens".to_string()).into_compile_error().into()
+    }
+
+    quote!(
+        StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
+    ).into()
+}
+
 /// Creates a validated `EnvVarKey` wrapper for AWS Lambda environment variable keys at compile time.
 ///
 /// This macro ensures that the input string is a valid environment variable key for AWS Lambda

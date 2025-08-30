@@ -3,6 +3,9 @@ use crate::intrinsic_functions::{get_arn, get_ref};
 use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionProperties};
 use crate::sns::dto::{SnsSubscription, SnsSubscriptionProperties, SnsTopic, SnsTopicProperties};
 use crate::stack::Resource;
+use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
+
+const FIFO_SUFFIX: &'static str = ".fifo";
 
 pub enum FifoThroughputScope {
     Topic,
@@ -60,10 +63,9 @@ impl SnsTopicBuilder<StartState> {
 }
 
 impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
-    // TODO wrapper
-    pub fn topic_name(self, topic_name: String) -> SnsTopicBuilder<T> {
+    pub fn topic_name(self, topic_name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> SnsTopicBuilder<T> {
         SnsTopicBuilder {
-            topic_name: Some(topic_name),
+            topic_name: Some(topic_name.0),
             state: Default::default(),
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -163,7 +165,12 @@ impl SnsTopicBuilder<FifoState> {
     }
 
     #[must_use]
-    pub fn build(self) -> (SnsTopic, Vec<(SnsSubscription, LambdaPermission)>) {
+    pub fn build(mut self) -> (SnsTopic, Vec<(SnsSubscription, LambdaPermission)>) {
+        if let Some(ref name) = self.topic_name {
+            if !name.ends_with(FIFO_SUFFIX) {
+                self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
+            }
+        }
         self.build_internal(true)
     }
 }

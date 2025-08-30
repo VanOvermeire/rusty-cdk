@@ -49,6 +49,9 @@
 #[derive(Debug, Clone)]
 pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 
+#[derive(Debug, Clone)]
+pub struct StringWithOnlyAlphaNumericsUnderscoresAndHyphens(pub String);
+
 /// A wrapper for positive integers that must be greater than zero.
 ///
 /// This wrapper ensures that numeric configuration values are always positive,
