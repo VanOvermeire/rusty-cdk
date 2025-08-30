@@ -78,14 +78,12 @@ fn test_lambda() {
 
 #[test]
 fn test_sns() {
-    let (sns, subscriptions) = SnsTopicBuilder::new()
+    let sns = SnsTopicBuilder::new()
         .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
         .fifo()
         .fifo_throughput_scope(FifoThroughputScope::Topic)
         .content_based_deduplication(true)
         .build();
-
-    assert!(subscriptions.is_empty());
 
     let synthesized: Synth = vec![sns.into()].try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();

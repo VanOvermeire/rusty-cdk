@@ -30,13 +30,15 @@ pub trait SnsTopicBuilderState {}
 pub struct StartState {}
 impl SnsTopicBuilderState for StartState {}
 
-pub struct StandardState {}
-impl SnsTopicBuilderState for StandardState {}
+pub struct StandardStateWithSubscriptions {}
+impl SnsTopicBuilderState for StandardStateWithSubscriptions {}
 
 pub struct FifoState {}
 impl SnsTopicBuilderState for FifoState {}
 
-// TODO maybe another state for subscriptions, that way you don't get an empty vec when there are no subscriptions
+pub struct FifoStateWithSubscriptions {}
+impl SnsTopicBuilderState for FifoStateWithSubscriptions {}
+
 pub struct SnsTopicBuilder<T: SnsTopicBuilderState> {
     state: PhantomData<T>,
     topic_name: Option<String>,
@@ -53,6 +55,38 @@ impl SnsTopicBuilder<StartState> {
             content_based_deduplication: None,
             fifo_throughput_scope: None,
             lambda_subscription_ids: vec![],
+        }
+    }
+
+    pub fn add_subscription(mut self, subscription: Subscription) -> SnsTopicBuilder<StandardStateWithSubscriptions> {
+        self.add_subscription_internal(subscription);
+
+        SnsTopicBuilder {
+            state: Default::default(),
+            topic_name: self.topic_name,
+            content_based_deduplication: self.content_based_deduplication,
+            fifo_throughput_scope: self.fifo_throughput_scope,
+            lambda_subscription_ids: self.lambda_subscription_ids,
+        }
+    }
+
+    #[must_use]
+    pub fn build(self) -> SnsTopic {
+        let (topic, _) = self.build_internal(false);
+        topic
+    }
+}
+
+impl SnsTopicBuilder<StandardStateWithSubscriptions> {
+    pub fn add_subscription(mut self, subscription: Subscription) -> SnsTopicBuilder<StandardStateWithSubscriptions> {
+        self.add_subscription_internal(subscription);
+
+        SnsTopicBuilder {
+            state: Default::default(),
+            topic_name: self.topic_name,
+            content_based_deduplication: self.content_based_deduplication,
+            fifo_throughput_scope: self.fifo_throughput_scope,
+            lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
 
@@ -82,20 +116,11 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
-
-    // TODO add email and SNS subscriptions
-    pub fn add_subscription(mut self, subscription: Subscription) -> SnsTopicBuilder<T> {
+    
+    fn add_subscription_internal(&mut self, subscription: Subscription) {
         match subscription {
             Subscription::Lambda(l) => self.lambda_subscription_ids.push(l.get_id().to_string())
         };
-        
-        SnsTopicBuilder {
-            state: Default::default(),
-            topic_name: self.topic_name,
-            content_based_deduplication: self.content_based_deduplication,
-            fifo_throughput_scope: self.fifo_throughput_scope,
-            lambda_subscription_ids: self.lambda_subscription_ids,
-        }
     }
     
     fn build_internal(self, fifo: bool) -> (SnsTopic, Vec<(SnsSubscription, LambdaPermission)>) {
@@ -161,6 +186,57 @@ impl SnsTopicBuilder<FifoState> {
         Self {
             content_based_deduplication: Some(content_based_deduplication),
             ..self
+        }
+    }
+
+    pub fn add_subscription(mut self, subscription: Subscription) -> SnsTopicBuilder<FifoStateWithSubscriptions> {
+        self.add_subscription_internal(subscription);
+
+        SnsTopicBuilder {
+            state: Default::default(),
+            topic_name: self.topic_name,
+            content_based_deduplication: self.content_based_deduplication,
+            fifo_throughput_scope: self.fifo_throughput_scope,
+            lambda_subscription_ids: self.lambda_subscription_ids,
+        }
+    }
+
+    #[must_use]
+    pub fn build(mut self) -> SnsTopic {
+        if let Some(ref name) = self.topic_name {
+            if !name.ends_with(FIFO_SUFFIX) {
+                self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
+            }
+        }
+        let (topic, _) = self.build_internal(true);
+        topic
+    }
+}
+
+impl SnsTopicBuilder<FifoStateWithSubscriptions> {
+    pub fn fifo_throughput_scope(self, scope: FifoThroughputScope) -> SnsTopicBuilder<FifoStateWithSubscriptions> {
+        Self {
+            fifo_throughput_scope: Some(scope),
+            ..self
+        }
+    }
+
+    pub fn content_based_deduplication(self, content_based_deduplication: bool) -> SnsTopicBuilder<FifoStateWithSubscriptions> {
+        Self {
+            content_based_deduplication: Some(content_based_deduplication),
+            ..self
+        }
+    }
+
+    pub fn add_subscription(mut self, subscription: Subscription) -> SnsTopicBuilder<FifoStateWithSubscriptions> {
+        self.add_subscription_internal(subscription);
+
+        SnsTopicBuilder {
+            state: Default::default(),
+            topic_name: self.topic_name,
+            content_based_deduplication: self.content_based_deduplication,
+            fifo_throughput_scope: self.fifo_throughput_scope,
+            lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
 
