@@ -48,7 +48,7 @@ fn test_lambda() {
     // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
     
-    let lambda = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
+    let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod".to_string())
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
@@ -56,8 +56,9 @@ fn test_lambda() {
         .build();
 
     let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(lambda.0);
-    stack_builder.add_resource(lambda.1);
+    stack_builder.add_resource(fun);
+    stack_builder.add_resource(role);
+    stack_builder.add_resource(log);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -66,6 +67,7 @@ fn test_lambda() {
     insta::with_settings!({filters => vec![
             (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
             (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
             (r"Asset[0-9]+\.zip", "[Asset]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
@@ -90,7 +92,7 @@ fn test_lambda_with_dynamodb() {
     // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
     
-    let (fun, role) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+    let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
@@ -102,6 +104,7 @@ fn test_lambda_with_dynamodb() {
     stack_builder.add_resource(table);
     stack_builder.add_resource(fun);
     stack_builder.add_resource(role);
+    stack_builder.add_resource(log);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -110,6 +113,7 @@ fn test_lambda_with_dynamodb() {
     insta::with_settings!({filters => vec![
             (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
             (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
             (r"Asset[0-9]+\.zip", "[Asset]"),
         ]},{
@@ -139,7 +143,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
 
-    let (fun, role, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+    let (fun, role, log, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
@@ -151,6 +155,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     let mut stack_builder = StackBuilder::new();
     stack_builder.add_resource(fun);
     stack_builder.add_resource(role);
+    stack_builder.add_resource(log);
     stack_builder.add_resource(table);
     stack_builder.add_resource(map);
     stack_builder.add_resource(queue);
@@ -162,6 +167,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     insta::with_settings!({filters => vec![
             (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
             (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
             (r"SqsQueue[0-9]+", "[SqsQueue]"),
             (r"Asset[0-9]+\.zip", "[Asset]"),

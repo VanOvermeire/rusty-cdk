@@ -99,11 +99,10 @@ Currently only a limited number of AWS services are supported, with more on the 
 - SQS
 
 Next up:
-- Cloudwatch logs
 - SNS
 - S3
-- API Gateway
 - Secrets Manager
+- API Gateway
 - AppConfig?
 - CloudFront?
 

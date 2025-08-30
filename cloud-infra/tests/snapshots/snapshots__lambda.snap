@@ -19,6 +19,11 @@ expression: synthesized
           }
         },
         "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "[LogGroup]"
+          }
+        },
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
@@ -64,6 +69,12 @@ expression: synthesized
         "Policies": []
       },
       "Type": "AWS::IAM::Role"
+    },
+    "[LogGroup]": {
+      "Properties": {
+        "RetentionInDays": 731
+      },
+      "Type": "AWS::Logs::LogGroup"
     }
   }
 }
