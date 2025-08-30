@@ -62,6 +62,7 @@ use proc_macro::{TokenStream};
 use std::env;
 use quote::{quote};
 use std::path::{absolute, Path};
+use quote::__private::Span;
 use syn::{Error, LitInt, LitStr};
 use crate::bucket::{bucket_output, find_bucket, update_file_storage, valid_bucket_according_to_file_storage, FileStorageInput, FileStorageOutput};
 
@@ -181,7 +182,12 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
 /// or behave unexpectedly.
 #[proc_macro]
 pub fn non_zero_number(input: TokenStream) -> TokenStream {
-    let output: LitInt = syn::parse(input).unwrap();
+    let output = match syn::parse::<LitInt>(input) {
+        Ok(v) => v,
+        Err(_) => {
+            return Error::new(Span::call_site(), "value is not a valid number".to_string()).into_compile_error().into()
+        }
+    };
 
     let as_number: syn::Result<u32> = output.base10_parse();
 
@@ -191,7 +197,7 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
         }
         num
     } else {
-        return Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "value is not a valid u32 number".to_string()).into_compile_error().into()
     };
 
     quote!(
@@ -295,7 +301,12 @@ const VALUES: [u16;22] = [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 5
 
 #[proc_macro]
 pub fn log_retention(input: TokenStream) -> TokenStream {
-    let output: LitInt = syn::parse(input).unwrap();
+    let output = match syn::parse::<LitInt>(input) {
+        Ok(v) => v,
+        Err(_) => {
+            return Error::new(Span::call_site(), "value is not a valid number".to_string()).into_compile_error().into()
+        }
+    };
 
     let as_number: syn::Result<u16> = output.base10_parse();
 
@@ -308,7 +319,7 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
             Error::new(output.span(), format!("value should be one of {:?}", VALUES)).into_compile_error().into()    
         }
     } else {
-        Error::new(output.span(), "value is not a valid number".to_string()).into_compile_error().into()
+        Error::new(output.span(), "value is not a valid u16 number".to_string()).into_compile_error().into()
     }
 }
 
