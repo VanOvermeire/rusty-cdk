@@ -46,6 +46,11 @@ impl StackBuilder {
         let mut resources: Vec<_> = resources.into_iter().flat_map(|r| [r.0.into(), r.1.into()]).collect();
         self.resources.append(&mut resources);
     }
+    
+    pub fn add_resource_triples<T: Into<Resource>, R: Into<Resource>, S: Into<Resource>>(&mut self, resources: Vec<(T, R, S)>) {
+        let mut resources: Vec<_> = resources.into_iter().flat_map(|r| [r.0.into(), r.1.into(), r.2.into()]).collect();
+        self.resources.append(&mut resources);
+    }
 
     pub fn build(self) -> Result<Stack, StackBuilderError> {
         let ref_ids: Vec<_> = self.resources.iter().flat_map(|r| r.get_ref_ids()).collect();

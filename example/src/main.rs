@@ -6,6 +6,7 @@ use cloud_infra::sqs::SqsQueueBuilder;
 use cloud_infra::stack::StackBuilder;
 use cloud_infra::wrappers::{EnvVarKey, Memory, NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile, Synth};
+use cloud_infra::apigateway::builder::{HttpApiGatewayBuilder, HttpMethod};
 
 #[tokio::main]
 async fn main() {
@@ -37,12 +38,20 @@ async fn main() {
         .sqs_event_source_mapping(&queue, None)
         .build();
 
+    let (api, stage, routes) = HttpApiGatewayBuilder::new()
+        .disable_execute_api_endpoint(true)
+        .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
+        .build();
+
     stack_builder.add_resource(fun);
     stack_builder.add_resource(role);
     stack_builder.add_resource(log_group);
     stack_builder.add_resource(table);
     stack_builder.add_resource(map);
     stack_builder.add_resource(queue);
+    stack_builder.add_resource(api);
+    stack_builder.add_resource(stage);
+    stack_builder.add_resource_triples(routes);
     let stack = stack_builder.build();
 
     if let Err(s) = stack {

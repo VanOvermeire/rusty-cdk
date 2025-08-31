@@ -2,9 +2,6 @@ use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
 
-// TODO auth, websockets
-// most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
-
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Api {
     #[serde(skip)]
@@ -35,6 +32,22 @@ pub struct ApiGatewayV2ApiProperties {
     pub(crate) disable_execute_api_endpoint: Option<bool>,
     #[serde(rename = "CorsConfiguration", skip_serializing_if = "Option::is_none")]
     pub(crate) cors_configuration: Option<CorsConfiguration>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CorsConfiguration {
+    #[serde(rename = "AllowCredentials", skip_serializing_if = "Option::is_none")]
+    pub(crate) allow_credentials: Option<bool>,
+    #[serde(rename = "AllowHeaders", skip_serializing_if = "Option::is_none")]
+    pub(crate) allow_headers: Option<Vec<String>>,
+    #[serde(rename = "AllowMethods", skip_serializing_if = "Option::is_none")]
+    pub(crate) allow_methods: Option<Vec<String>>,
+    #[serde(rename = "AllowOrigins", skip_serializing_if = "Option::is_none")]
+    pub(crate) allow_origins: Option<Vec<String>>,
+    #[serde(rename = "ExposeHeaders", skip_serializing_if = "Option::is_none")]
+    pub(crate) expose_headers: Option<Vec<String>>,
+    #[serde(rename = "MaxAge", skip_serializing_if = "Option::is_none")]
+    pub(crate) max_age: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -75,6 +88,8 @@ pub struct ApiGatewayV2StageProperties {
 pub struct ApiGatewayV2Integration {
     #[serde(skip)]
     pub(crate) id: String,
+    #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -88,6 +103,10 @@ impl ApiGatewayV2Integration {
     
     pub fn get_ref(&self) -> Value {
         get_ref(self.get_id())
+    }
+
+    pub fn get_referenced_ids(&self) -> Vec<&str> {
+        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 
@@ -119,6 +138,8 @@ pub struct ApiGatewayV2IntegrationProperties {
 pub struct ApiGatewayV2Route {
     #[serde(skip)]
     pub(crate) id: String,
+    #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -133,6 +154,10 @@ impl ApiGatewayV2Route {
     pub fn get_ref(&self) -> Value {
         get_ref(self.get_id())
     }
+
+    pub fn get_referenced_ids(&self) -> Vec<&str> {
+        self.referenced_ids.iter().map(|r| r.as_str()).collect()
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -142,23 +167,7 @@ pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "RouteKey")]
     pub(crate) route_key: String,
     #[serde(rename = "Target", skip_serializing_if = "Option::is_none")]
-    pub(crate) target: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct CorsConfiguration {
-    #[serde(rename = "AllowCredentials", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_credentials: Option<bool>,
-    #[serde(rename = "AllowHeaders", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_headers: Option<Vec<String>>,
-    #[serde(rename = "AllowMethods", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_methods: Option<Vec<String>>,
-    #[serde(rename = "AllowOrigins", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_origins: Option<Vec<String>>,
-    #[serde(rename = "ExposeHeaders", skip_serializing_if = "Option::is_none")]
-    pub(crate) expose_headers: Option<Vec<String>>,
-    #[serde(rename = "MaxAge", skip_serializing_if = "Option::is_none")]
-    pub(crate) max_age: Option<u32>,
+    pub(crate) target: Option<Value>,
 }
 
 #[derive(Debug, Serialize)]

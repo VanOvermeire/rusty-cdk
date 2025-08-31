@@ -5,6 +5,7 @@ use crate::sqs::SqsQueue;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
+use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
 use crate::cloudwatch::LogGroup;
 use crate::sns::dto::{SnsSubscription, SnsTopic};
 use crate::stack::StackBuilder;
@@ -36,6 +37,10 @@ impl Stack {
                 Resource::SnsTopic(_) => vec![],
                 Resource::SnsSubscription(_) => vec![],
                 Resource::LambdaPermission(_) => vec![],
+                Resource::ApiGatewayV2Api(_) => vec![],
+                Resource::ApiGatewayV2Stage(_) => vec![],
+                Resource::ApiGatewayV2Route(_) => vec![],
+                Resource::ApiGatewayV2Integration(_) => vec![],
             })
             .collect()
     }
@@ -64,6 +69,10 @@ pub enum Resource {
     LambdaPermission(LambdaPermission),
     EventSourceMapping(EventSourceMapping),
     IamRole(IamRole),
+    ApiGatewayV2Api(ApiGatewayV2Api),
+    ApiGatewayV2Stage(ApiGatewayV2Stage),
+    ApiGatewayV2Route(ApiGatewayV2Route),
+    ApiGatewayV2Integration(ApiGatewayV2Integration),
 }
 
 impl Resource {
@@ -78,11 +87,16 @@ impl Resource {
             Resource::SnsTopic(s) => s.get_id(),
             Resource::SnsSubscription(s) => s.get_id(),
             Resource::LambdaPermission(l) => l.get_id(),
+            Resource::ApiGatewayV2Api(a) => a.get_id(),
+            Resource::ApiGatewayV2Stage(s) => s.get_id(),
+            Resource::ApiGatewayV2Route(r) => r.get_id(),
+            Resource::ApiGatewayV2Integration(i) => i.get_id(),
         }
     }
 
     pub fn get_ref_ids(&self) -> Vec<&str> {
         match self {
+            // TODO the other resources (except when references are impossible)
             Resource::LambdaFunction(f) => f.get_referenced_ids(),
             Resource::SnsSubscription(s) => s.get_referenced_ids(),
             Resource::LambdaPermission(l) => l.get_referenced_ids(),
@@ -92,6 +106,10 @@ impl Resource {
             Resource::IamRole(_) => vec![],
             Resource::LogGroup(_) => vec![],
             Resource::SnsTopic(_) => vec![],
+            Resource::ApiGatewayV2Api(_) => vec![],
+            Resource::ApiGatewayV2Stage(_) => vec![],
+            Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
+            Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
         }
     }
 
@@ -121,3 +139,7 @@ from_resource!(SnsTopic);
 from_resource!(EventSourceMapping);
 from_resource!(LambdaPermission);
 from_resource!(SnsSubscription);
+from_resource!(ApiGatewayV2Api);
+from_resource!(ApiGatewayV2Stage);
+from_resource!(ApiGatewayV2Route);
+from_resource!(ApiGatewayV2Integration);

@@ -97,15 +97,20 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are supported, with more on the way:
+Currently only a limited number of AWS services are (largely or partly) supported, with more on the way:
 - DynamoDB
 - Lambda
 - SQS
+- SNS
+- Cloudwatch
+- IAM
+
+In other words, you can definitely create simple serverless setups with this library.
 
 Next up:
+- API Gateway
 - S3
 - Secrets Manager
-- API Gateway
 - AppConfig?
 - CloudFront?
 
