@@ -289,3 +289,6 @@ pub struct RetentionInDays(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct LogGroupName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct BucketName(pub String);

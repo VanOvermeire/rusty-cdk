@@ -104,11 +104,11 @@ Currently only a limited number of AWS services are (largely or partly) supporte
 - SNS
 - Cloudwatch
 - IAM
+- API Gateway
 
 In other words, you can definitely create simple serverless setups with this library.
 
 Next up:
-- API Gateway
 - S3
 - Secrets Manager
 - AppConfig?
@@ -119,3 +119,4 @@ Next up:
 - add and update docs
 - borrow all the things? see borrowing-example branch for an example
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
+- UpdateReplacePolicy/DeletionPolicy for storage

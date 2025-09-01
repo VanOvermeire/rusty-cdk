@@ -81,7 +81,7 @@ pub struct CorsRule {
     #[serde(rename = "ExposedHeaders", skip_serializing_if = "Option::is_none")]
     pub(crate) exposed_headers: Option<Vec<String>>,
     #[serde(rename = "MaxAge", skip_serializing_if = "Option::is_none")]
-    pub(crate) max_age: Option<u32>,
+    pub(crate) max_age: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -107,7 +107,7 @@ pub struct NotificationConfiguration {
     #[serde(rename = "TopicConfigurations", skip_serializing_if = "Option::is_none")]
     pub(crate) topic_configurations: Option<Vec<TopicConfiguration>>,
     #[serde(rename = "QueueConfigurations", skip_serializing_if = "Option::is_none")]
-    pub(crate) queue_configurations: Option<Vec<QueueConfiguration>>,
+    pub(crate) queue_configurations: Option<Vec<QueueConfiguration>>, // fifo not allowed!
     #[serde(rename = "LambdaConfigurations", skip_serializing_if = "Option::is_none")]
     pub(crate) lambda_configurations: Option<Vec<LambdaConfiguration>>,
 }

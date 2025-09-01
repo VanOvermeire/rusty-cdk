@@ -6,7 +6,8 @@ use cloud_infra::sqs::SqsQueueBuilder;
 use cloud_infra::stack::StackBuilder;
 use cloud_infra::wrappers::{EnvVarKey, Memory, NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
 use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zipfile, Synth};
-use cloud_infra::apigateway::builder::{HttpApiGatewayBuilder, HttpMethod};
+use cloud_infra::apigateway::builder::{HttpApiGatewayBuilder};
+use cloud_infra::shared::http::HttpMethod;
 
 #[tokio::main]
 async fn main() {

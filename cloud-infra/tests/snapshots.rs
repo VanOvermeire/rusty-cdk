@@ -13,8 +13,9 @@ use cloud_infra_core::wrappers::{Timeout, ZipFile};
 use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zipfile};
 use serde_json::Value;
 use cloud_infra::Synth;
-use cloud_infra_core::apigateway::builder::{HttpApiGatewayBuilder, HttpMethod};
+use cloud_infra_core::apigateway::builder::{HttpApiGatewayBuilder};
 use cloud_infra_core::iam::Permission;
+use cloud_infra_core::shared::http::HttpMethod;
 use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
 use cloud_infra_core::sqs::SqsQueueBuilder;
 

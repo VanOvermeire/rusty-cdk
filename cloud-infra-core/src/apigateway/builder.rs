@@ -3,36 +3,11 @@ use serde_json::Value;
 use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, CorsConfiguration};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionProperties};
+use crate::shared::http::HttpMethod;
 use crate::stack::Resource;
 
 // TODO auth, websockets
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
-
-pub enum HttpMethod {
-    Any,
-    Get,
-    Head,
-    Options,
-    Patch,
-    Post,
-    Put,
-    Delete
-}
-
-impl From<HttpMethod> for String {
-    fn from(value: HttpMethod) -> Self {
-        match value {
-            HttpMethod::Any => "*".to_string(),
-            HttpMethod::Get => "GET".to_string(),
-            HttpMethod::Head => "HEAD".to_string(),
-            HttpMethod::Options => "OPTIONS".to_string(),
-            HttpMethod::Patch => "PATCH".to_string(),
-            HttpMethod::Post => "POST".to_string(),
-            HttpMethod::Put => "PUT".to_string(),
-            HttpMethod::Delete => "DELETE".to_string()
-        }
-    }
-}
 
 pub struct HttpApiGatewayBuilder {
     name: Option<String>,
