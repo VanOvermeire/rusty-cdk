@@ -1,25 +1,24 @@
 use proc_macro::TokenStream;
 use std::collections::HashSet;
-use std::fs::{read_to_string, write};
-use std::path::{PathBuf};
-use dirs::home_dir;
+use std::fs::{read_to_string};
 use quote::quote;
 use syn::{Error, LitStr};
 use serde::{Deserialize, Serialize};
 use crate::bucket::FileStorageOutput::{Invalid, Unknown, Valid};
+use crate::file_util;
 
-const HOME_DIR_CLOUD_BUCKET_FILE: &str = ".cloud_infra_bucket_info";
+const BUCKET_INFO_FILE: &str = ".cloud_infra_bucket_info";
 
 #[derive(Deserialize, Serialize)]
 struct BucketInfo<'a> {
     #[serde(borrow)]
-    valid_bucket_names: HashSet<&'a str>,
-    invalid_bucket_names: HashSet<&'a str>
+    real_bucket_names: HashSet<&'a str>,
+    unknown_bucket_names: HashSet<&'a str>
 }
 
 impl BucketInfo<'_> {
     fn new() -> Self {
-        Self { valid_bucket_names: HashSet::new(), invalid_bucket_names: HashSet::new() }
+        Self { real_bucket_names: HashSet::new(), unknown_bucket_names: HashSet::new() }
     }
 }
 
@@ -35,7 +34,7 @@ pub(crate) enum FileStorageOutput {
 }
 
 pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorageOutput {
-    let full_path = match get_file_path() {
+    let full_path = match file_util::get_file_path(BUCKET_INFO_FILE) {
         Some(p) => p,
         None => {
             return Unknown
@@ -52,8 +51,8 @@ pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorage
         };
         match serde_json::from_str::<BucketInfo>(&file_as_string) {
             Ok(info) => {
-                let valid_bucket_name = info.valid_bucket_names.iter().find(|v| **v == value);
-                let invalid_bucket_name = info.invalid_bucket_names.iter().find(|v| **v == value);
+                let valid_bucket_name = info.real_bucket_names.iter().find(|v| **v == value);
+                let invalid_bucket_name = info.unknown_bucket_names.iter().find(|v| **v == value);
 
                 if valid_bucket_name.is_some() {
                     return Valid
@@ -71,51 +70,32 @@ pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorage
 }
 
 pub(crate) fn update_file_storage(input: FileStorageInput) {
-    let info_as_string = read_bucket_info().unwrap_or("{}".to_string());
+    let info_as_string = file_util::read_info(BUCKET_INFO_FILE).unwrap_or("{}".to_string());
 
     match serde_json::from_str::<BucketInfo>(&info_as_string) {
         Ok(mut info) => {
             match input {
                 FileStorageInput::Valid(name) => {
-                    info.valid_bucket_names.insert(&name);
-                    info.invalid_bucket_names = info.invalid_bucket_names.into_iter().filter(|v| *v == name).collect()
+                    info.real_bucket_names.insert(&name);
+                    info.unknown_bucket_names = info.unknown_bucket_names.into_iter().filter(|v| *v != name).collect()
                 },
                 FileStorageInput::Invalid(name) => {
-                    info.invalid_bucket_names.insert(&name);
-                    info.valid_bucket_names = info.valid_bucket_names.into_iter().filter(|v| *v == name).collect()
+                    info.unknown_bucket_names.insert(&name);
+                    info.real_bucket_names = info.real_bucket_names.into_iter().filter(|v| *v != name).collect()
                 },
             };
-            write_bucket_info(info);
+            file_util::write_info(BUCKET_INFO_FILE, info);
         }
         Err(_) => write_empty_bucket_info(),
     }
 }
 
-fn read_bucket_info() -> Option<String> {
-    get_file_path().and_then(|p| read_to_string(p).ok())
-}
-
 fn write_empty_bucket_info() {
-    write_bucket_info(BucketInfo::new());
+    file_util::write_info(BUCKET_INFO_FILE, BucketInfo::new());
 }
 
-fn write_bucket_info(info: BucketInfo) {
-    match get_file_path() {
-        Some(path) => {
-            let info_as_string = serde_json::to_string(&info).expect("to be able to serialize bucket info");
-            let _result = write(&path, info_as_string);
-        }
-        None => {}
-    }
-}
-
-fn get_file_path() -> Option<PathBuf> {
-    home_dir().map(|home_dir| {
-        home_dir.join(HOME_DIR_CLOUD_BUCKET_FILE)
-    })
-}
-
-pub(crate) async fn find_bucket(input: LitStr, name: &str) -> Result<(), Error> {
+pub(crate) async fn find_bucket(input: LitStr) -> Result<(), Error> {
+    let name = input.value();
     let config = aws_config::load_from_env().await;
     let s3_client = aws_sdk_s3::Client::new(&config);
 
@@ -129,7 +109,7 @@ pub(crate) async fn find_bucket(input: LitStr, name: &str) -> Result<(), Error> 
                 let bucket = buckets.into_iter().find(|b| b.name.iter().any(|n| n.as_str() == name));
 
                 if bucket.is_none() {
-                    return Err(Error::new(input.span(), format!("did not find bucket with name {}", name)))
+                    return Err(Error::new(input.span(), format!("did not find bucket with name {} in your account", name)))
                 }
             } else {
                 return Err(Error::new(input.span(), "no buckets found".to_string()))

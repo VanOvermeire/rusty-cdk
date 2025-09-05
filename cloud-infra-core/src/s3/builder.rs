@@ -64,9 +64,6 @@ impl S3BucketBuilder<StartState> {
 }
 
 impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
-    // TODO lowercase letters, numbers, periods (.), and dashes (-); do bucket name check -> store results, similar to other macro
-    //  https://samvo-some-example-bucket.s3.amazonaws.com/ -> 404
-    //  http://example-bucket.s3.amazonaws.com/ -> 403
     pub fn name(self, name: BucketName) -> Self {
         Self {
             name: Some(name.0),

@@ -1,2 +1,2 @@
 pub mod dto;
-mod builder;
+pub mod builder;

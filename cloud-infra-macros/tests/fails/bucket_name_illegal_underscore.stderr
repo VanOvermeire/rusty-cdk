@@ -1,0 +1,5 @@
+error: value should contain only letters, numbers, periods and dashes
+ --> tests/fails/bucket_name_illegal_underscore.rs:4:31
+  |
+4 |     let bucket = bucket_name!("under_score");
+  |                               ^^^^^^^^^^^^^

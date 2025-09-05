@@ -1,0 +1,5 @@
+error: value contains uppercase letters
+ --> tests/fails/bucket_name_uppercase_letters.rs:4:31
+  |
+4 |     let bucket = bucket_name!("Uppercased");
+  |                               ^^^^^^^^^^^^

@@ -57,6 +57,8 @@
 //! - [`receive_message_wait_time!`] - Long polling wait time (0-20 seconds)
 
 mod bucket;
+mod file_util;
+mod bucket_name;
 
 use proc_macro::{TokenStream};
 use std::env;
@@ -64,7 +66,6 @@ use quote::{quote};
 use std::path::{absolute, Path};
 use quote::__private::Span;
 use syn::{Error, LitInt, LitStr};
-use crate::bucket::{bucket_output, find_bucket, update_file_storage, valid_bucket_according_to_file_storage, FileStorageInput, FileStorageOutput};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -274,48 +275,95 @@ pub fn bucket(input: TokenStream) -> TokenStream {
     let value = input.value();
 
     if value.starts_with("arn:") {
-        return Error::new(input.span(), "expected bucket name, not arn, as input".to_string()).into_compile_error().into()
+        return Error::new(input.span(), "value is an arn, not a bucket name".to_string()).into_compile_error().into()
     }
 
     if value.starts_with("s3:") {
-        return Error::new(input.span(), "expected plain bucket name, remove the s3 prefix".to_string()).into_compile_error().into()
+        return Error::new(input.span(), "value has s3 prefix, should be plain bucket name".to_string()).into_compile_error().into()
     }
 
     let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
 
     if no_remote_check_wanted {
-        return bucket_output(value)
+        return bucket::bucket_output(value)
     }
 
     let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
 
     if !rechecked_wanted {
-        match valid_bucket_according_to_file_storage(&value) {
-            FileStorageOutput::Valid => {
-                return bucket_output(value)
+        match bucket::valid_bucket_according_to_file_storage(&value) {
+            bucket::FileStorageOutput::Valid => {
+                return bucket::bucket_output(value)
             }
-            FileStorageOutput::Invalid => {
-                return Error::new(input.span(), format!("(cached) did not find bucket with name `{value}`. You can rerun the check by adding setting the `{CLOUD_INFRA_RECHECK_ENV_VAR_NAME}` env var to true")).into_compile_error().into()
+            bucket::FileStorageOutput::Invalid => {
+                return Error::new(input.span(), format!("(cached) did not find bucket with name `{value}` in your account. You can rerun this check by adding setting the `{CLOUD_INFRA_RECHECK_ENV_VAR_NAME}` env var to true")).into_compile_error().into()
             }
-            FileStorageOutput::Unknown => {}
+            bucket::FileStorageOutput::Unknown => {}
         }
     }
 
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    match rt.block_on(find_bucket(input.clone(), &value)) {
+    match rt.block_on(bucket::find_bucket(input.clone())) {
         Ok(_) => {
-            update_file_storage(FileStorageInput::Valid(&value));
-            bucket_output(value)
+            bucket::update_file_storage(bucket::FileStorageInput::Valid(&value));
+            bucket::bucket_output(value)
         }
         Err(e) => {
-            update_file_storage(FileStorageInput::Invalid(&value));
+            bucket::update_file_storage(bucket::FileStorageInput::Invalid(&value));
             e.into_compile_error().into()
         }
     }
 }
 
-const VALUES: [u16;22] = [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653];
+const ADDITIONAL_ALLOWED_FOR_BUCKET_NAME: [char; 2] = ['.', '-'];
+
+#[proc_macro]
+pub fn bucket_name(input: TokenStream) -> TokenStream {
+    let input: LitStr = syn::parse(input).unwrap();
+    let value = input.value();
+
+    if value.chars().any(|c| c.is_uppercase()) {
+        return Error::new(input.span(), "value contains uppercase letters".to_string()).into_compile_error().into()
+    }
+    
+    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_BUCKET_NAME.contains(&c)) {
+        return Error::new(input.span(), "value should contain only letters, numbers, periods and dashes".to_string()).into_compile_error().into()
+    }
+
+    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+
+    if no_remote_check_wanted {
+        return bucket_name::bucket_name_output(value)
+    }
+
+    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+
+    if !rechecked_wanted {
+        match bucket_name::valid_bucket_name_according_to_file_storage(&value) {
+            bucket_name::FileStorageOutput::Valid => {
+                return bucket_name::bucket_name_output(value)
+            }
+            bucket_name::FileStorageOutput::Invalid => {
+                return Error::new(input.span(), format!("(cached) bucket name is already taken. You can rerun this check by adding setting the `{CLOUD_INFRA_RECHECK_ENV_VAR_NAME}` env var to true")).into_compile_error().into()
+            }
+            bucket_name::FileStorageOutput::Unknown => {}
+        }
+    }
+
+    match bucket_name::check_bucket_name(input) {
+        Ok(_) => {
+            bucket_name::update_file_storage(bucket_name::FileStorageInput::Valid(&value));
+            bucket_name::bucket_name_output(value)
+        }
+        Err(e) => {
+            bucket_name::update_file_storage(bucket_name::FileStorageInput::Invalid(&value));
+            e.into_compile_error().into()
+        }
+    }
+}
+
+const POSSIBLE_LOG_RETENTION_VALUES: [u16;22] = [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653];
 
 #[proc_macro]
 pub fn log_retention(input: TokenStream) -> TokenStream {
@@ -329,19 +377,19 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
     let as_number: syn::Result<u16> = output.base10_parse();
 
     if let Ok(num) = as_number {
-        if VALUES.contains(&num) {
+        if POSSIBLE_LOG_RETENTION_VALUES.contains(&num) {
             quote! {
                 RetentionInDays(#num)
             }.into()
         } else {
-            Error::new(output.span(), format!("value should be one of {:?}", VALUES)).into_compile_error().into()    
+            Error::new(output.span(), format!("value should be one of {:?}", POSSIBLE_LOG_RETENTION_VALUES)).into_compile_error().into()
         }
     } else {
         Error::new(output.span(), "value is not a valid u16 number".to_string()).into_compile_error().into()
     }
 }
 
-const ADDITIONAL_ALLOWED: [char; 6] = ['.', '-', '_', '#', '/', '\\'];
+const ADDITIONAL_ALLOWED_FOR_LOG_GROUP: [char; 6] = ['.', '-', '_', '#', '/', '\\'];
 
 #[proc_macro]
 pub fn log_group_name(input: TokenStream) -> TokenStream {
@@ -356,8 +404,8 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
         return Error::new(output.span(), "value should not be longer than 512 chars".to_string()).into_compile_error().into()
     }
 
-    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED.contains(&c)) {
-        return Error::new(output.span(), format!("value should only contain alphanumeric characters and {:?}", ADDITIONAL_ALLOWED)).into_compile_error().into()
+    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_LOG_GROUP.contains(&c)) {
+        return Error::new(output.span(), format!("value should only contain alphanumeric characters and {:?}", ADDITIONAL_ALLOWED_FOR_LOG_GROUP)).into_compile_error().into()
     }
     
     quote!(
