@@ -64,7 +64,9 @@ impl S3BucketBuilder<StartState> {
 }
 
 impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
-    // TODO lowercase letters, numbers, periods (.), and dashes (-); do bucket name check
+    // TODO lowercase letters, numbers, periods (.), and dashes (-); do bucket name check -> store results, similar to other macro
+    //  https://samvo-some-example-bucket.s3.amazonaws.com/ -> 404
+    //  http://example-bucket.s3.amazonaws.com/ -> 403
     pub fn name(self, name: BucketName) -> Self {
         Self {
             name: Some(name.0),
@@ -115,7 +117,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
                 status: c.into(),
             }
         });
-        
+
         let website_configuration = if website {
             let redirect_all_requests_to = self.redirect_all_requests_to.map(|r| {
                 RedirectAllRequestsTo {
@@ -123,7 +125,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
                     protocol: r.1.map(Into::into),
                 }
             });
-            
+
             Some(WebsiteConfiguration {
                 index_document: self.index_document,
                 error_document: self.error_document,
@@ -132,7 +134,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         } else {
             None
         };
-        
+
         let properties = S3BucketProperties {
             bucket_name: self.name,
             cors_configuration: self.cors_config,
@@ -143,7 +145,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             bucket_encryption: None,
             notification_configuration: None,
         };
-        
+
         S3Bucket {
             id,
             r#type: "AWS::S3::Bucket".to_string(),
@@ -165,14 +167,14 @@ impl S3BucketBuilder<WebsiteState> {
             ..self
         }
     }
-    
+
     pub fn redirect_all(self, hostname: String, protocol: Option<Protocol>) -> Self {
         Self {
             redirect_all_requests_to: Some((hostname, protocol)),
             ..self
         }
     }
-    
+
     pub fn cors_config(self, config: CorsConfiguration) -> Self {
         Self {
             cors_config: Some(config),
@@ -236,7 +238,7 @@ impl CorsRuleBuilder {
             ..self
         }
     }
-    
+
     pub fn build(self) -> CorsRule {
         CorsRule {
             allowed_headers: self.allow_headers,

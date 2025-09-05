@@ -23,13 +23,13 @@ async fn main() {
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
-    let zipper = zipfile!("./example/output/todo-backend.zip");
-    let memory = memory!(512);
-    let timeout = timeout!(30);
 
     let queue = SqsQueueBuilder::new().standard_queue().build();
     let bucket = bucket!("configuration-of-sam-van-overmeire");
 
+    let zipper = zipfile!("./example/output/todo-backend.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
     let (fun, role, log_group, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zipper))
