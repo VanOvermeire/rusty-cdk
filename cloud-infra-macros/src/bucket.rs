@@ -13,6 +13,7 @@ const BUCKET_INFO_FILE: &str = ".cloud_infra_bucket_info";
 struct BucketInfo<'a> {
     #[serde(borrow)]
     real_bucket_names: HashSet<&'a str>,
+    #[serde(borrow)]
     unknown_bucket_names: HashSet<&'a str>
 }
 

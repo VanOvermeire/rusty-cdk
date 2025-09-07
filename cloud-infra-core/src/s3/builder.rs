@@ -3,6 +3,7 @@ use std::time::Duration;
 use crate::s3::dto;
 use crate::s3::dto::{CorsConfiguration, CorsRule, LifecycleConfiguration, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, WebsiteConfiguration};
 use crate::shared::http::{HttpMethod, Protocol};
+use crate::shared::Id;
 use crate::stack::Resource;
 use crate::wrappers::BucketName;
 
@@ -33,6 +34,7 @@ impl S3BucketBuilderState for WebsiteState {}
 
 pub struct S3BucketBuilder<T: S3BucketBuilderState> {
     phantom_data: PhantomData<T>,
+    id: Id,
     name: Option<String>,
     access: Option<PublicAccessBlockConfiguration>,
     versioning_configuration: Option<VersioningConfiguration>,
@@ -44,8 +46,9 @@ pub struct S3BucketBuilder<T: S3BucketBuilderState> {
 }
 
 impl S3BucketBuilder<StartState> {
-    pub fn new() -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
+            id: Id(id.to_string()),
             phantom_data: Default::default(),
             name: None,
             access: None,
@@ -95,6 +98,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
     pub fn website(self) -> S3BucketBuilder<WebsiteState> {
         S3BucketBuilder {
             phantom_data: Default::default(),
+            id: self.id,
             name: self.name,
             access: self.access,
             versioning_configuration: self.versioning_configuration,
@@ -144,6 +148,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         };
 
         S3Bucket {
+            id: self.id,
             resource_id: id,
             r#type: "AWS::S3::Bucket".to_string(),
             properties,

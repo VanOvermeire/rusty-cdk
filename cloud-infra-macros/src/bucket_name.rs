@@ -15,6 +15,7 @@ const BUCKET_NAMES_INFO_FILE: &str = ".cloud_infra_bucket_name_info";
 struct BucketNameInfo<'a> {
     #[serde(borrow)]
     valid_bucket_names: HashSet<&'a str>,
+    #[serde(borrow)]
     invalid_bucket_names: HashSet<&'a str>
 }
 

@@ -1,6 +1,5 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::intrinsic_functions::get_ref;
 
 #[derive(Debug, Serialize)]
 pub struct LogGroup {

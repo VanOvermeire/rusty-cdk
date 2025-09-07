@@ -72,6 +72,7 @@ impl StackBuilder {
     pub fn build(self) -> Result<Stack, StackBuilderError> {
         let ref_ids: Vec<_> = self.resources.iter().flat_map(|r| r.get_refenced_ids()).collect();
         let ids: Vec<_> = self.resources.iter().map(|r| r.get_resource_id()).collect();
+        let metadata = self.resources.iter().map(|r| (r.get_id().to_string(), r.get_resource_id().to_string())).collect();
 
         let missing_id = ref_ids.iter().find(|r| !ids.contains(r));
         
@@ -80,6 +81,6 @@ impl StackBuilder {
         }
 
         let resources = self.resources.into_iter().map(|r| (r.get_resource_id().to_string(), r)).collect();
-        Ok(Stack { resources })
+        Ok(Stack { resources, metadata })
     }
 }

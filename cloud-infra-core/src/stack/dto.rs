@@ -1,15 +1,16 @@
+use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
+use crate::cloudwatch::LogGroup;
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::{EventSourceMapping, LambdaFunction, LambdaPermission};
+use crate::s3::dto::S3Bucket;
+use crate::shared::Id;
+use crate::sns::dto::{SnsSubscription, SnsTopic};
 use crate::sqs::SqsQueue;
+use crate::stack::StackBuilder;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
-use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
-use crate::cloudwatch::LogGroup;
-use crate::s3::dto::S3Bucket;
-use crate::sns::dto::{SnsSubscription, SnsTopic};
-use crate::stack::StackBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -22,6 +23,8 @@ pub struct Asset {
 pub struct Stack {
     #[serde(rename = "Resources")]
     pub(crate) resources: HashMap<String, Resource>,
+    #[serde(rename = "Metadata")]
+    pub(crate) metadata: HashMap<String, String>,
 }
 
 impl Stack {
@@ -45,6 +48,28 @@ impl Stack {
                 Resource::S3Bucket(_) => vec![],
             })
             .collect()
+    }
+
+    pub fn synth(&self) -> Result<String, String> {
+        serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:?}"))
+    }
+
+    pub fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
+        let current_ids: HashMap<String, String> = self
+            .resources
+            .iter()
+            .map(|(resource_id, resource)| (resource.get_id().0, resource_id.to_string()))
+            .collect();
+
+        existing_ids_with_resource_ids
+            .into_iter()
+            .filter(|(existing_id, _)| current_ids.contains_key(existing_id))
+            .for_each(|(existing_id, existing_resource_id)| {
+                let current_stack_resource_id = current_ids.get(&existing_id).expect("existence to be checked by filter");
+                let removed = self.resources.remove(current_stack_resource_id).expect("resource to exist in stack resources");
+                self.resources.insert(existing_resource_id.clone(), removed);
+                self.metadata.insert(existing_id, existing_resource_id);
+            });
     }
 }
 
@@ -78,6 +103,13 @@ pub enum Resource {
 }
 
 impl Resource {
+    pub fn get_id(&self) -> Id {
+        match self {
+            Resource::S3Bucket(s) => s.get_id().clone(),
+            _ => todo!(),
+        }
+    }
+
     pub fn get_resource_id(&self) -> &str {
         match self {
             Resource::DynamoDBTable(t) => t.get_resource_id(),
@@ -113,7 +145,7 @@ impl Resource {
             Resource::ApiGatewayV2Stage(_) => vec![],
             Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
             Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
-            Resource::S3Bucket(_) => vec![]
+            Resource::S3Bucket(_) => vec![],
         }
     }
 
