@@ -182,7 +182,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         };
         
         DynamoDBTable {
-            id: Resource::generate_id("DynamoDBTable"),
+            resource_id: Resource::generate_id("DynamoDBTable"),
             r#type: "AWS::DynamoDB::Table".to_string(),
             properties,
         }

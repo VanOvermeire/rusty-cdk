@@ -68,7 +68,7 @@ impl LogGroupBuilder {
         };
         
         LogGroup {
-            id: Resource::generate_id("LogGroup"),
+            resource_id: Resource::generate_id("LogGroup"),
             r#type: "AWS::Logs::LogGroup".to_string(),
             properties,
         }

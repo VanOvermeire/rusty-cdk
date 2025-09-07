@@ -48,7 +48,7 @@ impl HttpApiGatewayBuilder {
     }
     
     pub fn add_default_route_lambda(mut self, lambda: &LambdaFunction) -> Self {
-        self.route_info.push(("$default".to_string(), None, lambda.get_id().to_string()));
+        self.route_info.push(("$default".to_string(), None, lambda.get_resource_id().to_string()));
         Self {
             ..self
         }
@@ -61,7 +61,7 @@ impl HttpApiGatewayBuilder {
             format!("/{}", path)  
         };
         
-        self.route_info.push((path, Some(method), lambda.get_id().to_string()));
+        self.route_info.push((path, Some(method), lambda.get_resource_id().to_string()));
         Self {
             ..self
         }
@@ -96,7 +96,7 @@ impl HttpApiGatewayBuilder {
             };
             
             let permission = LambdaPermission {
-                id: permission_id,
+                resource_id: permission_id,
                 referenced_ids: vec![],
                 r#type: "AWS::Lambda::Permission".to_string(),
                 properties,
@@ -116,7 +116,7 @@ impl HttpApiGatewayBuilder {
             };
             
             let integration = ApiGatewayV2Integration {
-                id: integration_id.clone(),
+                resource_id: integration_id.clone(),
                 referenced_ids: vec![api_id.clone()],
                 r#type: "AWS::ApiGatewayV2::Integration".to_string(),
                 properties,
@@ -136,7 +136,7 @@ impl HttpApiGatewayBuilder {
             };
             
             let route = ApiGatewayV2Route {
-                id: route_id,
+                resource_id: route_id,
                 referenced_ids: vec![api_id.clone(), integration_id],
                 r#type: "AWS::ApiGatewayV2::Route".to_string(),
                 properties,
@@ -154,7 +154,7 @@ impl HttpApiGatewayBuilder {
         };
         
         let stage = ApiGatewayV2Stage {
-            id: stage_id,
+            resource_id: stage_id,
             r#type: "AWS::ApiGatewayV2::Stage".to_string(),
             properties,
         };
@@ -167,7 +167,7 @@ impl HttpApiGatewayBuilder {
         };
         
         let api = ApiGatewayV2Api {
-            id: api_id,
+            resource_id: api_id,
             r#type: "AWS::ApiGatewayV2::Api".to_string(),
             properties,
         };

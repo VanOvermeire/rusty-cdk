@@ -5,7 +5,7 @@ use crate::intrinsic_functions::get_ref;
 #[derive(Debug, Serialize)]
 pub struct S3Bucket {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -13,12 +13,12 @@ pub struct S3Bucket {
 }
 
 impl S3Bucket {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+        get_ref(self.get_resource_id())
     }
 }
 

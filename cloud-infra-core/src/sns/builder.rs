@@ -119,7 +119,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
     
     fn add_subscription_internal(&mut self, subscription: Subscription) {
         match subscription {
-            Subscription::Lambda(l) => self.lambda_subscription_ids.push(l.get_id().to_string())
+            Subscription::Lambda(l) => self.lambda_subscription_ids.push(l.get_resource_id().to_string())
         };
     }
     
@@ -134,7 +134,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
                 topic_arn: get_ref(&topic_id),    
             };
             let subscription = SnsSubscription {
-                id: subscription_id,
+                resource_id: subscription_id,
                 referenced_ids: vec![to_subscribe_id.to_string(), topic_id.to_string()],
                 r#type: "AWS::SNS::Subscription".to_string(),
                 properties,
@@ -148,7 +148,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
                 source_arn: Some(get_ref(&topic_id)),
             };
             let permission = LambdaPermission {
-                id: permission_id,
+                resource_id: permission_id,
                 referenced_ids: vec![to_subscribe_id.to_string(), topic_id.to_string()],
                 r#type: "AWS::Lambda::Permission".to_string(),
                 properties,
@@ -165,7 +165,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
         };
         
         let topic = SnsTopic {
-            id: topic_id,
+            resource_id: topic_id,
             r#type: "AWS::SNS::Topic".to_string(),
             properties,
         };

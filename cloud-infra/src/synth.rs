@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use cloud_infra_core::stack::{Asset, Resource, Stack, StackBuilder};
 
-pub struct Synth(pub String, pub(crate) Vec<Asset>);
+pub struct Synth(pub String, pub String, pub(crate) Vec<Asset>);
 
 impl Display for Synth {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -12,10 +12,11 @@ impl Display for Synth {
 impl TryFrom<Stack> for Synth {
     type Error = String;
 
-    fn try_from(value: Stack) -> Result<Self, Self::Error> {
-        let assets = value.get_assets();
-        serde_json::to_string(&value)
-            .map(|s| Synth(s, assets))
+    fn try_from(stack: Stack) -> Result<Self, Self::Error> {
+        let assets = stack.get_assets();
+        // TODO get list of ids
+        serde_json::to_string(&stack)
+            .map(|s| Synth(s, "".to_string(), assets))
             .map_err(|e| format!("Could not serialize resources: {e:?}"))
     }
 }

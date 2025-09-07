@@ -11,7 +11,7 @@ pub struct IamRoleBuilder {}
 impl IamRoleBuilder {
     pub fn new(id: String, properties: IamRoleProperties) -> IamRole {
         IamRole {
-            id,
+            resource_id: id,
             r#type: "AWS::IAM::Role".to_string(),
             properties,
         }
@@ -181,10 +181,10 @@ pub enum Permission<'a> {
 impl Permission<'_> {
     pub(crate) fn get_referenced_id(&self) -> Option<&str> {
         let id = match self {
-            Permission::DynamoDBRead(d) => d.get_id(),
-            Permission::DynamoDBReadWrite(d) => d.get_id(),
-            Permission::SqsRead(s) => s.get_id(),
-            Permission::S3ReadWrite(s) => s.get_id(),
+            Permission::DynamoDBRead(d) => d.get_resource_id(),
+            Permission::DynamoDBReadWrite(d) => d.get_resource_id(),
+            Permission::SqsRead(s) => s.get_resource_id(),
+            Permission::S3ReadWrite(s) => s.get_resource_id(),
         };
         Some(id)
     }
@@ -192,7 +192,7 @@ impl Permission<'_> {
     pub(crate) fn into_policy(self) -> Policy {
         match self {
             Permission::DynamoDBRead(table) => {
-                let id = table.get_id();
+                let id = table.get_resource_id();
                 let statement = Statement {
                     action: vec![
                         "dynamodb:Get*".to_string(),
@@ -210,7 +210,7 @@ impl Permission<'_> {
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::DynamoDBReadWrite(table) => {
-                let id = table.get_id();
+                let id = table.get_resource_id();
                 let statement = Statement {
                     action: vec![
                         "dynamodb:Get*".to_string(),
@@ -232,7 +232,7 @@ impl Permission<'_> {
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
             }
             Permission::SqsRead(queue) => {
-                let id = queue.get_id();
+                let id = queue.get_resource_id();
                 let sqs_permissions_statement = StatementBuilder::new(
                     vec![
                         "sqs:ChangeMessageVisibility".to_string(),
@@ -249,7 +249,7 @@ impl Permission<'_> {
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::S3ReadWrite(bucket) => {
-                let id = bucket.get_id();
+                let id = bucket.get_resource_id();
                 let arn = get_arn(&id);
                 let s3_permissions_statement = StatementBuilder::new(
                     vec![

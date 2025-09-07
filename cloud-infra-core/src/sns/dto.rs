@@ -5,7 +5,7 @@ use crate::intrinsic_functions::get_ref;
 #[derive(Debug, Serialize)]
 pub struct SnsTopic {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -13,12 +13,12 @@ pub struct SnsTopic {
 }
 
 impl SnsTopic {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+        get_ref(self.get_resource_id())
     }
 }
 
@@ -37,7 +37,7 @@ pub struct SnsTopicProperties {
 #[derive(Debug, Serialize)]
 pub struct SnsSubscription {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
@@ -47,8 +47,8 @@ pub struct SnsSubscription {
 }
 
 impl SnsSubscription {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
 
     pub fn get_referenced_ids(&self) -> Vec<&str> {

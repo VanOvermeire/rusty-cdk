@@ -171,7 +171,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         let mapping = if let Some(mapping) = self.sqs_event_source_mapping {
             let event_id = format!("EventSourceMapping{}", function_id);
             let event_source_mapping = EventSourceMapping {
-                id: event_id.clone(),
+                resource_id: event_id.clone(),
                 r#type: "AWS::Lambda::EventSourceMapping".to_string(),
                 properties: EventSourceProperties {
                     event_source_arn: Some(get_arn(&mapping.id)),
@@ -214,7 +214,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             base_builder.build()
         };
         
-        let logging_info = LoggingInfo { log_group: Some(log_group.get_ref()) };
+        let logging_info = LoggingInfo { log_group: Some( get_ref(log_group.get_resource_id())) };
 
         let properties = LambdaFunctionProperties {
             code: code.1,
@@ -231,7 +231,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let function = LambdaFunction {
-            id: function_id,
+            resource_id: function_id,
             referenced_ids: self.referenced_ids,
             asset: code.0,
             r#type: "AWS::Lambda::Function".to_string(),
@@ -328,10 +328,10 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
 impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
     pub fn sqs_event_source_mapping(mut self, sqs_queue: &SqsQueue, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> LambdaFunctionBuilder<EventSourceMappingState>  {
         self.additional_policies.push(Permission::SqsRead(sqs_queue).into_policy());
-        self.referenced_ids.push(sqs_queue.get_id().to_string());
+        self.referenced_ids.push(sqs_queue.get_resource_id().to_string());
         
         let mapping = EventSourceMappingInfo {
-            id: sqs_queue.get_id().to_string(),
+            id: sqs_queue.get_resource_id().to_string(),
             max_concurrency: max_concurrency.map(|c| c.0),
         };
         

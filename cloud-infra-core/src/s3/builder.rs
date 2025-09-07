@@ -144,7 +144,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         };
 
         S3Bucket {
-            id,
+            resource_id: id,
             r#type: "AWS::S3::Bucket".to_string(),
             properties,
         }

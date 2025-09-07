@@ -4,7 +4,7 @@ use serde_json::Value;
 #[derive(Debug, Serialize)]
 pub struct IamRole {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -12,8 +12,8 @@ pub struct IamRole {
 }
 
 impl IamRole {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
 }
 

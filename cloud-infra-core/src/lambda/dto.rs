@@ -6,7 +6,7 @@ use crate::stack::Asset;
 #[derive(Debug, Serialize)]
 pub struct LambdaFunction {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
     #[serde(skip)]
@@ -18,8 +18,8 @@ pub struct LambdaFunction {
 }
 
 impl LambdaFunction {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_referenced_ids(&self) -> Vec<&str> {
@@ -82,7 +82,7 @@ pub struct LoggingInfo {
 #[derive(Debug, Serialize)]
 pub struct EventSourceMapping {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -90,8 +90,8 @@ pub struct EventSourceMapping {
 }
 
 impl EventSourceMapping {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
 }
 
@@ -114,7 +114,7 @@ pub struct ScalingConfig {
 #[derive(Debug, Serialize)]
 pub struct LambdaPermission {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
@@ -124,8 +124,8 @@ pub struct LambdaPermission {
 }
 
 impl LambdaPermission {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
 
     pub fn get_referenced_ids(&self) -> Vec<&str> {

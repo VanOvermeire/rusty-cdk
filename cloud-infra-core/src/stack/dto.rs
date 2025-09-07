@@ -78,26 +78,26 @@ pub enum Resource {
 }
 
 impl Resource {
-    pub fn get_id(&self) -> &str {
+    pub fn get_resource_id(&self) -> &str {
         match self {
-            Resource::DynamoDBTable(t) => t.get_id(),
-            Resource::LambdaFunction(f) => f.get_id(),
-            Resource::IamRole(r) => r.get_id(),
-            Resource::SqsQueue(q) => q.get_id(),
-            Resource::EventSourceMapping(m) => m.get_id(),
-            Resource::LogGroup(l) => l.get_id(),
-            Resource::SnsTopic(s) => s.get_id(),
-            Resource::SnsSubscription(s) => s.get_id(),
-            Resource::LambdaPermission(l) => l.get_id(),
-            Resource::ApiGatewayV2Api(a) => a.get_id(),
-            Resource::ApiGatewayV2Stage(s) => s.get_id(),
-            Resource::ApiGatewayV2Route(r) => r.get_id(),
-            Resource::ApiGatewayV2Integration(i) => i.get_id(),
-            Resource::S3Bucket(s) => s.get_id(),
+            Resource::DynamoDBTable(t) => t.get_resource_id(),
+            Resource::LambdaFunction(f) => f.get_resource_id(),
+            Resource::IamRole(r) => r.get_resource_id(),
+            Resource::SqsQueue(q) => q.get_resource_id(),
+            Resource::EventSourceMapping(m) => m.get_resource_id(),
+            Resource::LogGroup(l) => l.get_resource_id(),
+            Resource::SnsTopic(s) => s.get_resource_id(),
+            Resource::SnsSubscription(s) => s.get_resource_id(),
+            Resource::LambdaPermission(l) => l.get_resource_id(),
+            Resource::ApiGatewayV2Api(a) => a.get_resource_id(),
+            Resource::ApiGatewayV2Stage(s) => s.get_resource_id(),
+            Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
+            Resource::ApiGatewayV2Integration(i) => i.get_resource_id(),
+            Resource::S3Bucket(s) => s.get_resource_id(),
         }
     }
 
-    pub fn get_ref_ids(&self) -> Vec<&str> {
+    pub fn get_refenced_ids(&self) -> Vec<&str> {
         match self {
             // TODO the other resources (except when references are impossible)
             Resource::LambdaFunction(f) => f.get_referenced_ids(),

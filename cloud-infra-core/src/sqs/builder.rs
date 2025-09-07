@@ -205,7 +205,7 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
         };
 
         SqsQueue {
-            id: Resource::generate_id("SqsQueue"),
+            resource_id: Resource::generate_id("SqsQueue"),
             r#type: "AWS::SQS::Queue".to_string(),
             properties,
         }

@@ -5,7 +5,7 @@ use crate::intrinsic_functions::get_ref;
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Api {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -13,12 +13,8 @@ pub struct ApiGatewayV2Api {
 }
 
 impl ApiGatewayV2Api {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
-    
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
 }
 
@@ -53,7 +49,7 @@ pub struct CorsConfiguration {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -61,12 +57,12 @@ pub struct ApiGatewayV2Stage {
 }
 
 impl ApiGatewayV2Stage {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+        get_ref(self.get_resource_id())
     }
 }
 
@@ -87,7 +83,7 @@ pub struct ApiGatewayV2StageProperties {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Integration {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
@@ -97,12 +93,12 @@ pub struct ApiGatewayV2Integration {
 }
 
 impl ApiGatewayV2Integration {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+        get_ref(self.get_resource_id())
     }
 
     pub fn get_referenced_ids(&self) -> Vec<&str> {
@@ -137,7 +133,7 @@ pub struct ApiGatewayV2IntegrationProperties {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Route {
     #[serde(skip)]
-    pub(crate) id: String,
+    pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
@@ -147,12 +143,12 @@ pub struct ApiGatewayV2Route {
 }
 
 impl ApiGatewayV2Route {
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
     }
     
     pub fn get_ref(&self) -> Value {
-        get_ref(self.get_id())
+        get_ref(self.get_resource_id())
     }
 
     pub fn get_referenced_ids(&self) -> Vec<&str> {

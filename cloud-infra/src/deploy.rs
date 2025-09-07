@@ -5,6 +5,7 @@ use std::time::Duration;
 use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
 use tokio::time::sleep;
 
+// TODO store the list of ids and synth after the deploy in an output file
 pub async fn deploy(name: &str, synth: Synth) {
     let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
         // https://github.com/awslabs/aws-sdk-rust/issues/1146
@@ -12,9 +13,9 @@ pub async fn deploy(name: &str, synth: Synth) {
         .load()
         .await;
     let s3_client = Arc::new(aws_sdk_s3::Client::new(&config));
-
+    
     let tasks: Vec<_> = synth
-        .1
+        .2
         .into_iter()
         .map(|a| {
             println!("uploading asset {} to {}/{}", a.path, a.s3_bucket, a.s3_key);
