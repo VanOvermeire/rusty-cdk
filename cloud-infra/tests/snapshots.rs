@@ -10,7 +10,7 @@ use cloud_infra_core::wrappers::Memory;
 use cloud_infra_core::wrappers::NonZeroNumber;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::{Timeout, ZipFile};
-use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zipfile};
+use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip};
 use serde_json::Value;
 use cloud_infra::Synth;
 use cloud_infra_core::apigateway::builder::{HttpApiGatewayBuilder};
@@ -48,7 +48,7 @@ fn test_dynamodb() {
 fn test_lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let zip_file = zip!("./cloud-infra/tests/example.zip");
     // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
     
@@ -99,7 +99,7 @@ fn test_sns() {
 
 #[test]
 fn test_lambda_with_sns_subscription() {
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let zip_file = zip!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
@@ -140,7 +140,7 @@ fn test_lambda_with_sns_subscription() {
 
 #[test]
 fn test_lambda_with_api_gateway() {
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let zip_file = zip!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
@@ -195,7 +195,7 @@ fn test_lambda_with_dynamodb() {
         .write_capacity(write_capacity)
         .build();
     
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let zip_file = zip!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
@@ -245,7 +245,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
         .standard_queue()
         .build();
 
-    let zip_file = zipfile!("./cloud-infra/tests/example.zip");
+    let zip_file = zip!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();

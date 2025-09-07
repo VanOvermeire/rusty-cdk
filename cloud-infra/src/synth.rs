@@ -24,8 +24,7 @@ impl TryFrom<Vec<Resource>> for Synth {
     type Error = String;
 
     fn try_from(resources: Vec<Resource>) -> Result<Self, Self::Error> {
-        let mut stack_builder = StackBuilder::new();
-        resources.into_iter().for_each(|r| stack_builder.add_resource(r));
+        let stack_builder = StackBuilder::new().add_resources(resources);
         let stack = stack_builder.build().map_err(|e| e.to_string())?;
         stack.try_into()
     }

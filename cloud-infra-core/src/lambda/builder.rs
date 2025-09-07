@@ -3,7 +3,7 @@ use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
+use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -108,7 +108,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
 }
 
 impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
-    pub fn function_name(self, name: StringWithOnlyAlphaNumericsAndUnderscores) -> LambdaFunctionBuilder<T> {
+    pub fn function_name(self, name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> LambdaFunctionBuilder<T> {
         Self {
             function_name: Some(name.0),
             ..self
@@ -116,7 +116,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
     }
 
     pub fn permissions(mut self, permission: Permission) -> LambdaFunctionBuilder<T> {
-        if let Some(id) = permission.get_id() {
+        if let Some(id) = permission.get_referenced_id() {
             self.referenced_ids.push(id.to_string());
         }
         self.additional_policies.push(permission.into_policy());

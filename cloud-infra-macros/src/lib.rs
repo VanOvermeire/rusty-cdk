@@ -37,7 +37,7 @@
 //!
 //! ### File Path Macros
 //!
-//! - [`zipfile!`] - ZIP file paths for Lambda deployment packages
+//! - [`zip!`] - ZIP file paths for Lambda deployment packages
 //!
 //! ### Numeric Validation Macros
 //!
@@ -164,12 +164,20 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 /// when the code is compiled. This ensures deployment packages are available before
 /// attempting to deploy infrastructure.
 #[proc_macro]
-pub fn zipfile(input: TokenStream) -> TokenStream {
-    let output: LitStr = syn::parse(input).unwrap();
+pub fn zip_file(input: TokenStream) -> TokenStream {
+    let output: syn::Result<LitStr> = syn::parse(input);
+    
+    let output = match output {
+        Ok(output) => output,
+        Err(_) => {
+            return Error::new(Span::call_site(), format!("zip should contain value")).into_compile_error().into()
+        }
+    };
+
     let value = output.value();
 
     if !value.ends_with(".zip") {
-        return Error::new(output.span(), format!("zip file should end with `.zip`, instead found `{value}`")).into_compile_error().into()
+        return Error::new(output.span(), format!("zip should end with `.zip`, instead found `{value}`")).into_compile_error().into()
     }
 
     let path = Path::new(&value);
@@ -180,7 +188,7 @@ pub fn zipfile(input: TokenStream) -> TokenStream {
 
     let value = if path.is_relative() {
         match absolute(path) {
-            Ok(absolute_path) => absolute_path.to_str().expect("zip file path to be valid unicode").to_string(),
+            Ok(absolute_path) => absolute_path.to_str().expect("zip path to be valid unicode").to_string(),
             Err(e) => {
                 return Error::new(output.span(), format!("failed to convert zip file path to absolute path: {e}")).into_compile_error().into()
             }

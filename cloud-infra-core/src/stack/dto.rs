@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
 use crate::cloudwatch::LogGroup;
+use crate::s3::dto::S3Bucket;
 use crate::sns::dto::{SnsSubscription, SnsTopic};
 use crate::stack::StackBuilder;
 
@@ -41,6 +42,7 @@ impl Stack {
                 Resource::ApiGatewayV2Stage(_) => vec![],
                 Resource::ApiGatewayV2Route(_) => vec![],
                 Resource::ApiGatewayV2Integration(_) => vec![],
+                Resource::S3Bucket(_) => vec![],
             })
             .collect()
     }
@@ -50,8 +52,7 @@ impl TryFrom<Vec<Resource>> for Stack {
     type Error = String;
 
     fn try_from(resources: Vec<Resource>) -> Result<Self, Self::Error> {
-        let mut stack_builder = StackBuilder::new();
-        resources.into_iter().for_each(|r| stack_builder.add_resource(r));
+        let stack_builder = StackBuilder::new().add_resources(resources);
         let stack = stack_builder.build().map_err(|e| e.to_string())?;
         Ok(stack)
     }
@@ -60,6 +61,7 @@ impl TryFrom<Vec<Resource>> for Stack {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
+    S3Bucket(S3Bucket),
     DynamoDBTable(DynamoDBTable),
     LambdaFunction(LambdaFunction),
     LogGroup(LogGroup),
@@ -91,6 +93,7 @@ impl Resource {
             Resource::ApiGatewayV2Stage(s) => s.get_id(),
             Resource::ApiGatewayV2Route(r) => r.get_id(),
             Resource::ApiGatewayV2Integration(i) => i.get_id(),
+            Resource::S3Bucket(s) => s.get_id(),
         }
     }
 
@@ -110,6 +113,7 @@ impl Resource {
             Resource::ApiGatewayV2Stage(_) => vec![],
             Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
             Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
+            Resource::S3Bucket(_) => vec![]
         }
     }
 
@@ -130,6 +134,7 @@ macro_rules! from_resource {
     };
 }
 
+from_resource!(S3Bucket);
 from_resource!(DynamoDBTable);
 from_resource!(LambdaFunction);
 from_resource!(IamRole);

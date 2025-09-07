@@ -1,9 +1,10 @@
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
-use crate::intrinsic_functions::get_arn;
+use crate::intrinsic_functions::{get_arn, join};
+use crate::s3::dto::S3Bucket;
+use crate::sqs::SqsQueue;
 use serde_json::Value;
 use std::vec;
-use crate::sqs::SqsQueue;
 
 pub struct IamRoleBuilder {}
 
@@ -33,21 +34,21 @@ impl IamRolePropertiesBuilder {
             role_name: None,
         }
     }
-    
+
     pub fn policies(self, policies: Vec<Policy>) -> IamRolePropertiesBuilder {
         Self {
             policies: Some(policies),
             ..self
         }
     }
-    
+
     pub fn role_name(self, role_name: String) -> IamRolePropertiesBuilder {
         Self {
             role_name: Some(role_name),
             ..self
         }
     }
-    
+
     pub fn build(self) -> IamRoleProperties {
         IamRoleProperties {
             assumed_role_policy_document: self.assumed_role_policy_document,
@@ -74,7 +75,7 @@ impl PolicyBuilder {
     pub fn build(self) -> Policy {
         Policy {
             policy_name: self.policy_name,
-            policy_document: self.policy_document
+            policy_document: self.policy_document,
         }
     }
 }
@@ -173,19 +174,21 @@ pub enum Permission<'a> {
     DynamoDBRead(&'a DynamoDBTable),
     DynamoDBReadWrite(&'a DynamoDBTable),
     SqsRead(&'a SqsQueue),
+    S3ReadWrite(&'a S3Bucket),
     // TODO custom, add any permission you want...
 }
 
 impl Permission<'_> {
-    pub(crate) fn get_id(&self) -> Option<&str> {
+    pub(crate) fn get_referenced_id(&self) -> Option<&str> {
         let id = match self {
-            Permission::DynamoDBRead(d) => d.get_id(), 
-            Permission::DynamoDBReadWrite(d) => d.get_id(), 
+            Permission::DynamoDBRead(d) => d.get_id(),
+            Permission::DynamoDBReadWrite(d) => d.get_id(),
             Permission::SqsRead(s) => s.get_id(),
+            Permission::S3ReadWrite(s) => s.get_id(),
         };
         Some(id)
     }
-    
+
     pub(crate) fn into_policy(self) -> Policy {
         match self {
             Permission::DynamoDBRead(table) => {
@@ -230,17 +233,44 @@ impl Permission<'_> {
             }
             Permission::SqsRead(queue) => {
                 let id = queue.get_id();
-                let sqs_permissions_statement = StatementBuilder::new(vec![
-                    "sqs:ChangeMessageVisibility".to_string(),
-                    "sqs:DeleteMessage".to_string(),
-                    "sqs:GetQueueAttributes".to_string(),
-                    "sqs:GetQueueUrl".to_string(),
-                    "sqs:ReceiveMessage".to_string(),
-                ], Effect::Allow)
-                    .resources(vec![get_arn(&id)])
-                    .build();
+                let sqs_permissions_statement = StatementBuilder::new(
+                    vec![
+                        "sqs:ChangeMessageVisibility".to_string(),
+                        "sqs:DeleteMessage".to_string(),
+                        "sqs:GetQueueAttributes".to_string(),
+                        "sqs:GetQueueUrl".to_string(),
+                        "sqs:ReceiveMessage".to_string(),
+                    ],
+                    Effect::Allow,
+                )
+                .resources(vec![get_arn(&id)])
+                .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+            }
+            Permission::S3ReadWrite(bucket) => {
+                let id = bucket.get_id();
+                let arn = get_arn(&id);
+                let s3_permissions_statement = StatementBuilder::new(
+                    vec![
+                        "s3:Abort*".to_string(),
+                        "s3:DeleteObject*".to_string(),
+                        "s3:GetBucket*".to_string(),
+                        "s3:GetObject*".to_string(),
+                        "s3:List*".to_string(),
+                        "s3:PutObject".to_string(),
+                        "s3:PutObjectLegalHold".to_string(),
+                        "s3:PutObjectRetention".to_string(),
+                        "s3:PutObjectTagging".to_string(),
+                        "s3:PutObjectVersionTagging".to_string(),
+                    ],
+                    Effect::Allow,
+                )
+                .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
+                .build();
+
+                let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]);
+                PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
             }
         }
     }
