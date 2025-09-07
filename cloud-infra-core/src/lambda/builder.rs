@@ -205,7 +205,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             })
         };
 
-        let log_group_name = self.function_name.clone().map(|fun_name| format!("aws/lambda/{fun_name}"));
+        let log_group_name = self.function_name.clone().map(|fun_name| format!("/aws/lambda/{fun_name}"));
         let base_builder = LogGroupBuilder::new()
             .log_group_retention(RetentionInDays(731));
         let log_group = if let Some(name) = log_group_name {

@@ -2,17 +2,22 @@ use crate::synth::Synth;
 use aws_sdk_cloudformation::types::{Capability, StackStatus};
 use std::sync::Arc;
 use std::time::Duration;
+use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
 use tokio::time::sleep;
 
 pub async fn deploy(name: &str, synth: Synth) {
-    let config = aws_config::load_from_env().await;
+    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+        // https://github.com/awslabs/aws-sdk-rust/issues/1146
+        .stalled_stream_protection(StalledStreamProtectionConfig::disabled())
+        .load()
+        .await;
     let s3_client = Arc::new(aws_sdk_s3::Client::new(&config));
 
     let tasks: Vec<_> = synth
         .1
         .into_iter()
         .map(|a| {
-            println!("Uploading asset {} to {}/{}", a.path, a.s3_bucket, a.s3_key);
+            println!("uploading asset {} to {}/{}", a.path, a.s3_bucket, a.s3_key);
             let s3_client = s3_client.clone();
             tokio::spawn(async move {
                 let body = aws_sdk_s3::primitives::ByteStream::from_path(a.path).await;
@@ -32,7 +37,6 @@ pub async fn deploy(name: &str, synth: Synth) {
         task.await.unwrap();
     }
 
-    println!("Starting stack creation");
     let cloudformation_client = aws_sdk_cloudformation::Client::new(&config);
 
     match cloudformation_client.describe_stacks().stack_name(name).send().await {
@@ -45,7 +49,7 @@ pub async fn deploy(name: &str, synth: Synth) {
                 .send()
                 .await
             {
-                Ok(_) => println!("stack {name} updated started"),
+                Ok(_) => println!("stack {name} update started"),
                 Err(e) => eprintln!("an error occurred while creating the stack: {e:?}"),
             }
         }
@@ -106,6 +110,6 @@ pub async fn deploy(name: &str, synth: Synth) {
             }
         }
 
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(10)).await;
     }
 }

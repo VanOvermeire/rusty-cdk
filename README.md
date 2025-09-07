@@ -116,6 +116,7 @@ Next up:
 
 ## TODO
 
+- when updating a stack, the ids of the resources should stay the same!
 - add and update docs
 - borrow all the things? see borrowing-example branch for an example
 - help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
