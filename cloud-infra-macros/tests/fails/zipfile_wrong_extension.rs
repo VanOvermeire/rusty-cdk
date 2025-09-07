@@ -1,7 +1,7 @@
-use cloud_infra_macros::zipfile;
+use cloud_infra_macros::zip_file;
 
 fn example() {
-    let file = zipfile!("package.tar.gz");
+    let file = zip_file!("package.tar.gz");
 }
 
 fn main() {}

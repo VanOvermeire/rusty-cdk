@@ -1,5 +1,5 @@
 error: did not find file `nonexistent.zip`
- --> tests/fails/zipfile_not_found.rs:4:25
+ --> tests/fails/zipfile_not_found.rs:4:26
   |
-4 |     let file = zipfile!("nonexistent.zip");
-  |                         ^^^^^^^^^^^^^^^^^
+4 |     let file = zip_file!("nonexistent.zip");
+  |                          ^^^^^^^^^^^^^^^^^

@@ -1,23 +1,26 @@
-use cloud_infra::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 use cloud_infra::wrappers::Bucket;
+use cloud_infra::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
+use cloud_infra::Synth;
+use cloud_infra_core::apigateway::builder::HttpApiGatewayBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
+use cloud_infra_core::iam::Permission;
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
-use cloud_infra_core::stack::{StackBuilder};
+use cloud_infra_core::shared::http::HttpMethod;
+use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
+use cloud_infra_core::sqs::SqsQueueBuilder;
+use cloud_infra_core::stack::StackBuilder;
 use cloud_infra_core::wrappers::EnvVarKey;
 use cloud_infra_core::wrappers::Memory;
 use cloud_infra_core::wrappers::NonZeroNumber;
 use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
 use cloud_infra_core::wrappers::{Timeout, ZipFile};
-use cloud_infra_macros::{env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip};
+use cloud_infra_macros::{
+    env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores,
+    string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip_file,
+};
 use serde_json::Value;
-use cloud_infra::Synth;
-use cloud_infra_core::apigateway::builder::{HttpApiGatewayBuilder};
-use cloud_infra_core::iam::Permission;
-use cloud_infra_core::shared::http::HttpMethod;
-use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
-use cloud_infra_core::sqs::SqsQueueBuilder;
 
 #[test]
 fn test_dynamodb() {
@@ -30,8 +33,7 @@ fn test_dynamodb() {
         .write_capacity(non_zero_number!(5))
         .table_name(string_with_only_alpha_numerics_and_underscores!("table_name"))
         .build();
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(table);
+    let stack_builder = StackBuilder::new().add_resource(table);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -48,10 +50,10 @@ fn test_dynamodb() {
 fn test_lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
-    let zip_file = zip!("./cloud-infra/tests/example.zip");
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     // not interested in testing the bucket macro here, so use the wrapper directly
     let bucket = Bucket("some-bucket".to_ascii_lowercase());
-    
+
     let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod".to_string())
         .zip(Zip::new(bucket, zip_file))
@@ -59,11 +61,12 @@ fn test_lambda() {
         .runtime(Runtime::ProvidedAl2023)
         .build();
 
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(fun);
-    stack_builder.add_resource(role);
-    stack_builder.add_resource(log);
-    let stack = stack_builder.build().unwrap();
+    let stack = StackBuilder::new()
+        .add_resource(fun)
+        .add_resource(role)
+        .add_resource(log)
+        .build()
+        .unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
@@ -89,7 +92,7 @@ fn test_sns() {
 
     let synthesized: Synth = vec![sns.into()].try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
-    
+
     insta::with_settings!({filters => vec![
             (r"SnsTopic[0-9]+", "[SnsTopic]"),
         ]},{
@@ -99,27 +102,25 @@ fn test_sns() {
 
 #[test]
 fn test_lambda_with_sns_subscription() {
-    let zip_file = zip!("./cloud-infra/tests/example.zip");
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
-    
+
     let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .build();
 
-    let (sns, subscriptions) = SnsTopicBuilder::new()
-        .add_subscription(Subscription::Lambda(&fun))
-        .build();
+    let (sns, subscriptions) = SnsTopicBuilder::new().add_subscription(Subscription::Lambda(&fun)).build();
 
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(fun);
-    stack_builder.add_resource(role);
-    stack_builder.add_resource(log);
-    stack_builder.add_resource(sns);
-    stack_builder.add_resource_tuples(subscriptions);
+    let stack_builder = StackBuilder::new()
+        .add_resource(fun)
+        .add_resource(role)
+        .add_resource(log)
+        .add_resource(sns)
+        .add_resource_tuples(subscriptions);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -140,11 +141,11 @@ fn test_lambda_with_sns_subscription() {
 
 #[test]
 fn test_lambda_with_api_gateway() {
-    let zip_file = zip!("./cloud-infra/tests/example.zip");
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
-    
+
     let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap".to_string())
@@ -156,13 +157,13 @@ fn test_lambda_with_api_gateway() {
         .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
         .build();
 
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(fun);
-    stack_builder.add_resource(role);
-    stack_builder.add_resource(log);
-    stack_builder.add_resource(api);
-    stack_builder.add_resource(stage);
-    stack_builder.add_resource_triples(routes);
+    let stack_builder = StackBuilder::new()
+        .add_resource(fun)
+        .add_resource(role)
+        .add_resource(log)
+        .add_resource(api)
+        .add_resource(stage)
+        .add_resource_triples(routes);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -189,17 +190,18 @@ fn test_lambda_with_dynamodb() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String)).provisioned_billing()
+    let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+        .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
-    
-    let zip_file = zip!("./cloud-infra/tests/example.zip");
+
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
-    
+
     let (fun, role, log) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
@@ -208,11 +210,11 @@ fn test_lambda_with_dynamodb() {
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .build();
 
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(table);
-    stack_builder.add_resource(fun);
-    stack_builder.add_resource(role);
-    stack_builder.add_resource(log);
+    let stack_builder = StackBuilder::new()
+        .add_resource(table)
+        .add_resource(fun)
+        .add_resource(role)
+        .add_resource(log);
     let stack = stack_builder.build().unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
@@ -235,17 +237,16 @@ fn test_lambda_with_dynamodb_and_sqs() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String)).provisioned_billing()
+    let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+        .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
 
-    let queue = SqsQueueBuilder::new()
-        .standard_queue()
-        .build();
+    let queue = SqsQueueBuilder::new().standard_queue().build();
 
-    let zip_file = zip!("./cloud-infra/tests/example.zip");
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
@@ -259,14 +260,15 @@ fn test_lambda_with_dynamodb_and_sqs() {
         .sqs_event_source_mapping(&queue, None)
         .build();
 
-    let mut stack_builder = StackBuilder::new();
-    stack_builder.add_resource(fun);
-    stack_builder.add_resource(role);
-    stack_builder.add_resource(log);
-    stack_builder.add_resource(table);
-    stack_builder.add_resource(map);
-    stack_builder.add_resource(queue);
-    let stack = stack_builder.build().unwrap();
+    let stack = StackBuilder::new()
+        .add_resource(fun)
+        .add_resource(role)
+        .add_resource(log)
+        .add_resource(table)
+        .add_resource(map)
+        .add_resource(queue)
+        .build()
+        .unwrap();
 
     let synthesized: Synth = stack.try_into().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized.0).unwrap();
