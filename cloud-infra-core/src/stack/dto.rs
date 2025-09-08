@@ -21,6 +21,8 @@ pub struct Asset {
 
 #[derive(Debug, Serialize)]
 pub struct Stack {
+    #[serde(skip)]
+    pub(crate) to_replace: Vec<(String, String)>,
     #[serde(rename = "Resources")]
     pub(crate) resources: HashMap<String, Resource>,
     #[serde(rename = "Metadata")]
@@ -51,7 +53,13 @@ impl Stack {
     }
 
     pub fn synth(&self) -> Result<String, String> {
-        serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))
+        let mut naive_synth = serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))?;
+        // TODO nicer way to do this? for example a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
+        self.to_replace.iter().for_each(|(current, new)| {
+             naive_synth = naive_synth.replace(current, new);
+        });
+        
+        Ok(naive_synth)
     }
 
     // TODO tests
@@ -69,7 +77,8 @@ impl Stack {
                 let current_stack_resource_id = current_ids.get(&existing_id).expect("existence to be checked by filter");
                 let removed = self.resources.remove(current_stack_resource_id).expect("resource to exist in stack resources");
                 self.resources.insert(existing_resource_id.clone(), removed);
-                self.metadata.insert(existing_id, existing_resource_id);
+                self.metadata.insert(existing_id, existing_resource_id.clone());
+                self.to_replace.push((current_stack_resource_id.to_string(), existing_resource_id));
             });
     }
 }
