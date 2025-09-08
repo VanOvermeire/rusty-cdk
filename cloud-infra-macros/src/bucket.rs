@@ -117,7 +117,7 @@ pub(crate) async fn find_bucket(input: LitStr) -> Result<(), Error> {
             }
         }
         Err(e) => {
-            return Err(Error::new(input.span(), format!("could not retrieve buckets: {e:?}")))
+            return Err(Error::new(input.span(), format!("could not retrieve buckets: {e:#?}")))
         }
     }
 

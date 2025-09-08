@@ -6,6 +6,7 @@ use crate::wrappers::{
 };
 use serde_json::Value;
 use std::marker::PhantomData;
+use crate::shared::Id;
 
 const FIFO_SUFFIX: &'static str = ".fifo";
 
@@ -50,6 +51,7 @@ impl SqsQueueBuilderState for FifoState {}
 
 pub struct SqsQueueBuilder<T: SqsQueueBuilderState> {
     state: PhantomData<T>,
+    id: Id,
     queue_name: Option<String>,
     delay_seconds: Option<u32>,
     maximum_message_size: Option<u32>,
@@ -65,9 +67,10 @@ pub struct SqsQueueBuilder<T: SqsQueueBuilderState> {
 }
 
 impl SqsQueueBuilder<StartState> {
-    pub fn new() -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
             state: Default::default(),
+            id: Id(id.to_string()),
             queue_name: None,
             delay_seconds: None,
             maximum_message_size: None,
@@ -86,6 +89,7 @@ impl SqsQueueBuilder<StartState> {
     pub fn standard_queue(self) -> SqsQueueBuilder<StandardState> {
         SqsQueueBuilder {
             state: Default::default(),
+            id: self.id,
             queue_name: self.queue_name,
             delay_seconds: self.delay_seconds,
             maximum_message_size: self.maximum_message_size,
@@ -104,6 +108,7 @@ impl SqsQueueBuilder<StartState> {
     pub fn fifo_queue(self) -> SqsQueueBuilder<FifoState> {
         SqsQueueBuilder {
             state: Default::default(),
+            id: self.id,
             queue_name: self.queue_name,
             delay_seconds: self.delay_seconds,
             maximum_message_size: self.maximum_message_size,
@@ -205,6 +210,7 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
         };
 
         SqsQueue {
+            id: self.id,
             resource_id: Resource::generate_id("SqsQueue"),
             r#type: "AWS::SQS::Queue".to_string(),
             properties,

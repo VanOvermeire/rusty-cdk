@@ -3,6 +3,9 @@ source: cloud-infra/tests/snapshots.rs
 expression: synthesized
 ---
 {
+  "Metadata": {
+    "topic": "[SnsTopic]"
+  },
   "Resources": {
     "[SnsTopic]": {
       "Properties": {

@@ -3,6 +3,16 @@ source: cloud-infra/tests/snapshots.rs
 expression: synthesized
 ---
 {
+  "Metadata": {
+    "AGW": "[HttpApiGateway]",
+    "AGWIntegration": "[HttpApiIntegration]",
+    "AGWPermission": "[LambdaPermission]",
+    "AGWStage": "[HttpApiStage]",
+    "AGWfun": "[HttpApiRoute]",
+    "fun": "[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]"
+  },
   "Resources": {
     "[HttpApiGateway]": {
       "Properties": {

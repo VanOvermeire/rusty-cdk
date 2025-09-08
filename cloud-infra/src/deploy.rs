@@ -81,7 +81,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
                 .await
             {
                 Ok(_) => println!("stack {name} update started"),
-                Err(e) => eprintln!("an error occurred while creating the stack: {e:?}"),
+                Err(e) => eprintln!("an error occurred while creating the stack: {e:#?}"),
             }
         }
         None => {
@@ -97,7 +97,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
             {
                 Ok(_) => println!("stack {name} creation started"),
                 Err(e) => {
-                    eprintln!("an error occurred while creating the stack: {e:?}");
+                    eprintln!("an error occurred while creating the stack: {e:#?}");
                     exit(1);
                 },
             }
@@ -154,7 +154,7 @@ fn get_template_or_exit(stack: &Stack) -> String {
     match stack.synth() {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("{e:?}");
+            eprintln!("{e:#?}");
             exit(1);
         }
     }

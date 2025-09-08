@@ -3,6 +3,11 @@ source: cloud-infra/tests/snapshots.rs
 expression: synthesized
 ---
 {
+  "Metadata": {
+    "fun": "[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]"
+  },
   "Resources": {
     "[LambdaFunction]": {
       "Properties": {

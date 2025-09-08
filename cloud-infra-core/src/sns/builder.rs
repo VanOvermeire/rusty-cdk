@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use crate::intrinsic_functions::{get_arn, get_ref};
 use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionProperties};
+use crate::shared::Id;
 use crate::sns::dto::{SnsSubscription, SnsSubscriptionProperties, SnsTopic, SnsTopicProperties};
 use crate::stack::Resource;
 use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
@@ -41,16 +42,18 @@ impl SnsTopicBuilderState for FifoStateWithSubscriptions {}
 
 pub struct SnsTopicBuilder<T: SnsTopicBuilderState> {
     state: PhantomData<T>,
+    id: Id,
     topic_name: Option<String>,
     content_based_deduplication: Option<bool>,
     fifo_throughput_scope: Option<FifoThroughputScope>,
-    lambda_subscription_ids: Vec<String>,
+    lambda_subscription_ids: Vec<(Id, String)>,
 }
 
 impl SnsTopicBuilder<StartState> {
-    pub fn new() -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
             state: Default::default(),
+            id: Id(id.to_string()),
             topic_name: None,
             content_based_deduplication: None,
             fifo_throughput_scope: None,
@@ -63,6 +66,7 @@ impl SnsTopicBuilder<StartState> {
 
         SnsTopicBuilder {
             state: Default::default(),
+            id: self.id,
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -83,6 +87,7 @@ impl SnsTopicBuilder<StandardStateWithSubscriptions> {
 
         SnsTopicBuilder {
             state: Default::default(),
+            id: self.id,
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -100,6 +105,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
     pub fn topic_name(self, topic_name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> SnsTopicBuilder<T> {
         SnsTopicBuilder {
             topic_name: Some(topic_name.0),
+            id: self.id,
             state: Default::default(),
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -110,6 +116,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
     pub fn fifo(self) -> SnsTopicBuilder<FifoState> {
         SnsTopicBuilder {
             state: Default::default(),
+            id: self.id,
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -119,38 +126,42 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
     
     fn add_subscription_internal(&mut self, subscription: Subscription) {
         match subscription {
-            Subscription::Lambda(l) => self.lambda_subscription_ids.push(l.get_resource_id().to_string())
+            Subscription::Lambda(l) => self.lambda_subscription_ids.push((l.get_id().clone(), l.get_resource_id().to_string()))
         };
     }
     
     fn build_internal(self, fifo: bool) -> (SnsTopic, Vec<(SnsSubscription, LambdaPermission)>) {
-        let topic_id = Resource::generate_id("SnsTopic");
+        let topic_resource_id = Resource::generate_id("SnsTopic");
         
-        let subscriptions: Vec<_> = self.lambda_subscription_ids.iter().map(|to_subscribe_id| {
-            let subscription_id = Resource::generate_id("SnsSubscription");
-            let properties = SnsSubscriptionProperties {
-                protocol: "lambda".to_string(),
-                endpoint: get_arn(to_subscribe_id),
-                topic_arn: get_ref(&topic_id),    
-            };
-            let subscription = SnsSubscription {
-                resource_id: subscription_id,
-                referenced_ids: vec![to_subscribe_id.to_string(), topic_id.to_string()],
-                r#type: "AWS::SNS::Subscription".to_string(),
-                properties,
-            };
-            
-            let permission_id = Resource::generate_id("LambdaPermission");
+        let subscriptions: Vec<_> = self.lambda_subscription_ids.iter().map(|(to_subscribe_id, to_subscribe_resource_id)| {
+            let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
+            let subscription_resource_id = Resource::generate_id("SnsSubscription");
+            let permission_resource_id = Resource::generate_id("LambdaPermission");
+
             let properties = LambdaPermissionProperties {
                 action: "lambda:InvokeFunction".to_string(),
-                function_name: get_arn(to_subscribe_id),
+                function_name: get_arn(to_subscribe_resource_id),
                 principal: "sns.amazonaws.com".to_string(),
-                source_arn: Some(get_ref(&topic_id)),
+                source_arn: Some(get_ref(&topic_resource_id)),
             };
             let permission = LambdaPermission {
-                resource_id: permission_id,
-                referenced_ids: vec![to_subscribe_id.to_string(), topic_id.to_string()],
+                id: Id::generate_id(&subscription_id, "Permission"),
+                resource_id: permission_resource_id,
+                referenced_ids: vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()],
                 r#type: "AWS::Lambda::Permission".to_string(),
+                properties,
+            };
+
+            let properties = SnsSubscriptionProperties {
+                protocol: "lambda".to_string(),
+                endpoint: get_arn(to_subscribe_resource_id),
+                topic_arn: get_ref(&topic_resource_id),
+            };
+            let subscription = SnsSubscription {
+                id: subscription_id,
+                resource_id: subscription_resource_id,
+                referenced_ids: vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()],
+                r#type: "AWS::SNS::Subscription".to_string(),
                 properties,
             };
 
@@ -165,7 +176,8 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
         };
         
         let topic = SnsTopic {
-            resource_id: topic_id,
+            id: self.id,
+            resource_id: topic_resource_id,
             r#type: "AWS::SNS::Topic".to_string(),
             properties,
         };
@@ -194,6 +206,7 @@ impl SnsTopicBuilder<FifoState> {
 
         SnsTopicBuilder {
             state: Default::default(),
+            id: self.id,
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -233,6 +246,7 @@ impl SnsTopicBuilder<FifoStateWithSubscriptions> {
 
         SnsTopicBuilder {
             state: Default::default(),
+            id: self.id,
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,

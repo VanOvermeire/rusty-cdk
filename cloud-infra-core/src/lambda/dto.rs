@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 use serde::Serialize;
 use serde_json::Value;
+use crate::shared::Id;
 use crate::stack::Asset;
 
 #[derive(Debug, Serialize)]
 pub struct LambdaFunction {
+    #[serde(skip)]
+    pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
@@ -18,6 +21,10 @@ pub struct LambdaFunction {
 }
 
 impl LambdaFunction {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -82,6 +89,8 @@ pub struct LoggingInfo {
 #[derive(Debug, Serialize)]
 pub struct EventSourceMapping {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
@@ -90,6 +99,10 @@ pub struct EventSourceMapping {
 }
 
 impl EventSourceMapping {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -114,6 +127,8 @@ pub struct ScalingConfig {
 #[derive(Debug, Serialize)]
 pub struct LambdaPermission {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
@@ -124,6 +139,10 @@ pub struct LambdaPermission {
 }
 
 impl LambdaPermission {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }

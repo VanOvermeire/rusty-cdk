@@ -1,9 +1,12 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
+use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
 pub struct SnsTopic {
+    #[serde(skip)]
+    pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
@@ -13,6 +16,10 @@ pub struct SnsTopic {
 }
 
 impl SnsTopic {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -37,6 +44,8 @@ pub struct SnsTopicProperties {
 #[derive(Debug, Serialize)]
 pub struct SnsSubscription {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
@@ -47,6 +56,10 @@ pub struct SnsSubscription {
 }
 
 impl SnsSubscription {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }

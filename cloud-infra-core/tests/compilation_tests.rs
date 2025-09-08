@@ -14,7 +14,7 @@ use cloud_infra_macros::{
 #[test]
 fn dynamodb_builder_should_compile() {
     let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let _ = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+    let _ = DynamoDBTableBuilder::new("myTable", DynamoDBKey::new(key, AttributeType::String))
         .pay_per_request_billing()
         .build();
 }
@@ -29,7 +29,7 @@ fn sqs_standard_queue_builder_should_compile() {
     let wait_time = receive_message_wait_time!(10);
     let max_receive = non_zero_number!(3);
     
-    let _ = SqsQueueBuilder::new()
+    let _ = SqsQueueBuilder::new("myQueue")
         .standard_queue()
         .queue_name(queue_name)
         .delay_seconds(delay)
@@ -48,7 +48,7 @@ fn sqs_fifo_queue_builder_should_compile() {
     let delay = delay_seconds!(60);
     let timeout = visibility_timeout!(120);
     
-    let _ = SqsQueueBuilder::new()
+    let _ = SqsQueueBuilder::new("myQueue")
         .fifo_queue()
         .queue_name(queue_name)
         .delay_seconds(delay)

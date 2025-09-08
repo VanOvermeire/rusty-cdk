@@ -4,21 +4,31 @@ use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGate
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionProperties};
 use crate::shared::http::HttpMethod;
+use crate::shared::Id;
 use crate::stack::Resource;
 
 // TODO auth, websockets
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
 
+struct RouteInfo {
+    lambda_id: Id,
+    path: String,
+    method: Option<HttpMethod>,
+    resource_id: String,
+}
+
 pub struct HttpApiGatewayBuilder {
+    id: Id,
     name: Option<String>,
     disable_execute_api_endpoint: Option<bool>,
     cors_configuration: Option<CorsConfiguration>,
-    route_info: Vec<(String, Option<HttpMethod>, String)>
+    route_info: Vec<RouteInfo>
 }
 
 impl HttpApiGatewayBuilder {
-    pub fn new() -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
+            id: Id(id.to_string()),
             name: None,
             disable_execute_api_endpoint: None,
             cors_configuration: None,
@@ -48,7 +58,12 @@ impl HttpApiGatewayBuilder {
     }
     
     pub fn add_default_route_lambda(mut self, lambda: &LambdaFunction) -> Self {
-        self.route_info.push(("$default".to_string(), None, lambda.get_resource_id().to_string()));
+        self.route_info.push(RouteInfo {
+            lambda_id: lambda.get_id().clone(),
+            path: "$default".to_string(),
+            method: None,
+            resource_id: lambda.get_resource_id().to_string(),
+        });
         Self {
             ..self
         }
@@ -60,25 +75,35 @@ impl HttpApiGatewayBuilder {
         } else {
             format!("/{}", path)  
         };
-        
-        self.route_info.push((path, Some(method), lambda.get_resource_id().to_string()));
+
+        self.route_info.push(RouteInfo {
+            lambda_id: lambda.get_id().clone(),
+            path,
+            method: Some(method),
+            resource_id: lambda.get_resource_id().to_string(),
+        });
         Self {
             ..self
         }
     }
     
     pub fn build(self) -> (ApiGatewayV2Api, ApiGatewayV2Stage, Vec<(ApiGatewayV2Route, ApiGatewayV2Integration, LambdaPermission)>) {
-        let api_id = Resource::generate_id("HttpApiGateway");
-        let stage_id = Resource::generate_id("HttpApiStage");
+        let api_resource_id = Resource::generate_id("HttpApiGateway");
+        let stage_resource_id = Resource::generate_id("HttpApiStage");
+        let stage_id = Id::generate_id(&self.id, "Stage");
         
         let routes: Vec<_> = self.route_info.into_iter().map(|info| {
-            let integration_id = Resource::generate_id("HttpApiIntegration");
-            let route_id = Resource::generate_id("HttpApiRoute");
-            let permission_id = Resource::generate_id("LambdaPermission");
+            let route_id = Id::combine_ids(&self.id, &info.lambda_id);
+            let route_permission_id = Id::generate_id(&self.id, "Permission");
+            let route_integration_id = Id::generate_id(&self.id, "Integration");
+            
+            let integration_resource_id = Resource::generate_id("HttpApiIntegration");
+            let route_resource_id = Resource::generate_id("HttpApiRoute");
+            let permission_resource_id = Resource::generate_id("LambdaPermission");
 
             let properties = LambdaPermissionProperties {
                 action: "lambda:InvokeFunction".to_string(),
-                function_name: get_arn(&info.2),
+                function_name: get_arn(&info.resource_id),
                 principal: "apigateway.amazonaws.com".to_string(),
                 source_arn: Some(
                     join("", vec![
@@ -89,24 +114,24 @@ impl HttpApiGatewayBuilder {
                         Value::String(":".to_string()),
                         get_ref("AWS::AccountId"),
                         Value::String(":".to_string()),
-                        get_ref(&api_id),
-                        Value::String(format!("*/*{}", info.0)),
+                        get_ref(&api_resource_id),
+                        Value::String(format!("*/*{}", info.path)),
                     ])
                 ),
             };
-            
             let permission = LambdaPermission {
-                resource_id: permission_id,
+                id: route_permission_id,
+                resource_id: permission_resource_id,
                 referenced_ids: vec![],
                 r#type: "AWS::Lambda::Permission".to_string(),
                 properties,
             };
 
             let properties = ApiGatewayV2IntegrationProperties {
-                api_id: get_ref(&api_id),
+                api_id: get_ref(&api_resource_id),
                 integration_type: "AWS_PROXY".to_string(),
                 payload_format_version: Some("2.0".to_string()),
-                integration_uri: Some(get_arn(&info.2)),
+                integration_uri: Some(get_arn(&info.resource_id)),
                 integration_method: None,
                 passthrough_behavior: None,
                 request_parameters: None,
@@ -116,28 +141,30 @@ impl HttpApiGatewayBuilder {
             };
             
             let integration = ApiGatewayV2Integration {
-                resource_id: integration_id.clone(),
-                referenced_ids: vec![api_id.clone()],
+                id: route_integration_id,
+                resource_id: integration_resource_id.clone(),
+                referenced_ids: vec![api_resource_id.clone()],
                 r#type: "AWS::ApiGatewayV2::Integration".to_string(),
                 properties,
             };
             
-            let route_key = if let Some(method) = info.1 {
+            let route_key = if let Some(method) = info.method {
                 let method: String = method.into();
-                format!("{} {}", method, info.0)
+                format!("{} {}", method, info.path)
             } else {
-                info.0  
+                info.path
             };
             
             let properties = ApiGatewayV2RouteProperties {
-                api_id: get_ref(&api_id),
+                api_id: get_ref(&api_resource_id),
                 route_key,
-                target: Some(join("", vec![Value::String("integrations/".to_string()), get_ref(&integration_id)]))
+                target: Some(join("", vec![Value::String("integrations/".to_string()), get_ref(&integration_resource_id)]))
             };
             
             let route = ApiGatewayV2Route {
-                resource_id: route_id,
-                referenced_ids: vec![api_id.clone(), integration_id],
+                id: route_id,
+                resource_id: route_resource_id,
+                referenced_ids: vec![api_resource_id.clone(), integration_resource_id],
                 r#type: "AWS::ApiGatewayV2::Route".to_string(),
                 properties,
             };
@@ -146,7 +173,7 @@ impl HttpApiGatewayBuilder {
         }).collect();
 
         let properties = ApiGatewayV2StageProperties {
-            api_id: get_ref(&api_id),
+            api_id: get_ref(&api_resource_id),
             stage_name: "$default".to_string(),
             auto_deploy: true,
             default_route_settings: None,
@@ -154,7 +181,8 @@ impl HttpApiGatewayBuilder {
         };
         
         let stage = ApiGatewayV2Stage {
-            resource_id: stage_id,
+            id: stage_id,
+            resource_id: stage_resource_id,
             r#type: "AWS::ApiGatewayV2::Stage".to_string(),
             properties,
         };
@@ -167,7 +195,8 @@ impl HttpApiGatewayBuilder {
         };
         
         let api = ApiGatewayV2Api {
-            resource_id: api_id,
+            id: self.id,
+            resource_id: api_resource_id,
             r#type: "AWS::ApiGatewayV2::Api".to_string(),
             properties,
         };

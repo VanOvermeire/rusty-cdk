@@ -19,3 +19,13 @@ impl Display for Id {
         f.write_str(self.0.as_str())
     }
 }
+
+impl Id {
+    pub fn generate_id(id: &Id, suffix: &str) -> Id {
+        Id(format!("{}{}", id.0, suffix))
+    }
+    
+    pub fn combine_ids(first: &Id, second: &Id) -> Id {
+        Id(format!("{}{}", first.0, second.0))
+    }
+}

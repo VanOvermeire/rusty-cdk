@@ -17,20 +17,20 @@ async fn main() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+    let table = DynamoDBTableBuilder::new("myTable", DynamoDBKey::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
 
-    let queue = SqsQueueBuilder::new().standard_queue().build();
+    let queue = SqsQueueBuilder::new("myQueue").standard_queue().build();
     let bucket = bucket!("configuration-of-sam-van-overmeire");
 
     let zipper = zip_file!("./example/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    let (fun, role, log_group, map) = LambdaFunctionBuilder::new(Architecture::ARM64, memory, timeout)
+    let (fun, role, log_group, map) = LambdaFunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zipper))
         .handler("bootstrap".to_string())
@@ -39,7 +39,7 @@ async fn main() {
         .sqs_event_source_mapping(&queue, None)
         .build();
 
-    let (api, stage, routes) = HttpApiGatewayBuilder::new()
+    let (api, stage, routes) = HttpApiGatewayBuilder::new("myAGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
         .build();

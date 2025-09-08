@@ -1,5 +1,6 @@
 use serde_json::Value;
 use crate::cloudwatch::{LogGroup, LogGroupProperties};
+use crate::shared::Id;
 use crate::stack::Resource;
 use crate::wrappers::{LogGroupName, RetentionInDays};
 
@@ -18,14 +19,16 @@ impl From<LogGroupClass> for String {
 }
 
 pub struct LogGroupBuilder {
+    id: Id,
     log_group_name: Option<Value>,
     log_group_class: Option<LogGroupClass>,
     log_group_retention: Option<u16>
 }
 
 impl LogGroupBuilder {
-    pub fn new() -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
+            id: Id(id.to_string()),
             log_group_name: None,
             log_group_class: None,
             log_group_retention: None,
@@ -68,6 +71,7 @@ impl LogGroupBuilder {
         };
         
         LogGroup {
+            id: self.id,
             resource_id: Resource::generate_id("LogGroup"),
             r#type: "AWS::Logs::LogGroup".to_string(),
             properties,

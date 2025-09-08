@@ -51,9 +51,10 @@ impl Stack {
     }
 
     pub fn synth(&self) -> Result<String, String> {
-        serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:?}"))
+        serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))
     }
 
+    // TODO tests
     pub fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
         let current_ids: HashMap<String, String> = self
             .resources
@@ -105,8 +106,20 @@ pub enum Resource {
 impl Resource {
     pub fn get_id(&self) -> Id {
         match self {
-            Resource::S3Bucket(s) => s.get_id().clone(),
-            _ => todo!(),
+            Resource::S3Bucket(r) => r.get_id().clone(),
+            Resource::DynamoDBTable(r) => r.get_id().clone(),
+            Resource::LambdaFunction(r) => r.get_id().clone(),
+            Resource::LogGroup(r) => r.get_id().clone(),
+            Resource::SqsQueue(r) => r.get_id().clone(),
+            Resource::SnsTopic(r) => r.get_id().clone(),
+            Resource::SnsSubscription(r) => r.get_id().clone(),
+            Resource::LambdaPermission(r) => r.get_id().clone(),
+            Resource::EventSourceMapping(r) => r.get_id().clone(),
+            Resource::IamRole(r) => r.get_id().clone(),
+            Resource::ApiGatewayV2Api(r) => r.get_id().clone(),
+            Resource::ApiGatewayV2Stage(r) => r.get_id().clone(),
+            Resource::ApiGatewayV2Route(r) => r.get_id().clone(),
+            Resource::ApiGatewayV2Integration(r) => r.get_id().clone(),
         }
     }
 

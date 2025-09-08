@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use crate::dynamodb::dto::{AttributeDefinition, DynamoDBTable, DynamoDBTableProperties, KeySchema};
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput};
+use crate::shared::Id;
 use crate::stack::Resource;
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 
@@ -66,6 +67,7 @@ impl DynamoDBTableBuilderState for PayPerRequestState {}
 
 pub struct DynamoDBTableBuilder<T: DynamoDBTableBuilderState> {
     state: PhantomData<T>,
+    id: Id,
     table_name: Option<String>,
     partition_key: Option<DynamoDBKey>,
     sort_key: Option<DynamoDBKey>,
@@ -77,9 +79,10 @@ pub struct DynamoDBTableBuilder<T: DynamoDBTableBuilderState> {
 }
 
 impl DynamoDBTableBuilder<StartState> {
-    pub fn new(key: DynamoDBKey) -> Self {
+    pub fn new(id: &str, key: DynamoDBKey) -> Self {
         DynamoDBTableBuilder {
             state: Default::default(),
+            id: Id(id.to_string()),
             table_name: None,
             partition_key: Some(key),
             sort_key: None,
@@ -111,6 +114,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         DynamoDBTableBuilder {
             billing_mode: Some(BillingMode::PayPerRequest),
             state: Default::default(),
+            id: self.id,
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
@@ -125,6 +129,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         DynamoDBTableBuilder {
             billing_mode: Some(BillingMode::Provisioned),
             state: Default::default(),
+            id: self.id,
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
@@ -182,6 +187,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         };
         
         DynamoDBTable {
+            id: self.id,
             resource_id: Resource::generate_id("DynamoDBTable"),
             r#type: "AWS::DynamoDB::Table".to_string(),
             properties,
@@ -215,6 +221,7 @@ impl DynamoDBTableBuilder<ProvisionedStateStart> {
         DynamoDBTableBuilder {
             read_capacity: Some(capacity.0),
             state: Default::default(),
+            id: self.id,
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
@@ -231,6 +238,7 @@ impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
         DynamoDBTableBuilder {
             write_capacity: Some(capacity.0),
             state: Default::default(),
+            id: self.id,
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,

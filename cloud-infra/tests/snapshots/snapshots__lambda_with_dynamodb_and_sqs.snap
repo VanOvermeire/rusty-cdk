@@ -3,6 +3,14 @@ source: cloud-infra/tests/snapshots.rs
 expression: synthesized
 ---
 {
+  "Metadata": {
+    "fun": "[LambdaFunction]",
+    "funESM": "EventSourceMapping[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]",
+    "queue": "[SqsQueue]",
+    "table": "[DynamoDBTable]"
+  },
   "Resources": {
     "[DynamoDBTable]": {
       "Properties": {

@@ -5,13 +5,15 @@ use crate::s3::dto::S3Bucket;
 use crate::sqs::SqsQueue;
 use serde_json::Value;
 use std::vec;
+use crate::shared::Id;
 
 pub struct IamRoleBuilder {}
 
 impl IamRoleBuilder {
-    pub fn new(id: String, properties: IamRoleProperties) -> IamRole {
+    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> IamRole {
         IamRole {
-            resource_id: id,
+            id: Id(id.to_string()),
+            resource_id: resource_id.to_string(),
             r#type: "AWS::IAM::Role".to_string(),
             properties,
         }

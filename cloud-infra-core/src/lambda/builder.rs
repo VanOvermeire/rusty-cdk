@@ -8,6 +8,7 @@ use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
 use crate::cloudwatch::{LogGroup, LogGroupBuilder};
+use crate::shared::Id;
 
 pub enum Runtime {
     NodeJs22,
@@ -93,6 +94,7 @@ struct EventSourceMappingInfo {
 
 pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     state: PhantomData<T>,
+    id: Id,
     architecture: Architecture,
     memory: u16,
     timeout: u16,
@@ -147,7 +149,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
     }
     
     fn build_internal(mut self) -> (LambdaFunction, IamRole, LogGroup, Option<EventSourceMapping>) {
-        let function_id = Resource::generate_id("LambdaFunction");
+        let function_resource_id = Resource::generate_id("LambdaFunction");
+        
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
                 let asset_id = Resource::generate_id("Asset");
@@ -169,17 +172,19 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let mapping = if let Some(mapping) = self.sqs_event_source_mapping {
-            let event_id = format!("EventSourceMapping{}", function_id);
+            let event_id = Id::generate_id(&self.id, "ESM");
+            let event_resource_id = format!("EventSourceMapping{}", function_resource_id);
             let event_source_mapping = EventSourceMapping {
-                resource_id: event_id.clone(),
+                id: event_id,
+                resource_id: event_resource_id.clone(),
                 r#type: "AWS::Lambda::EventSourceMapping".to_string(),
                 properties: EventSourceProperties {
                     event_source_arn: Some(get_arn(&mapping.id)),
-                    function_name: Some(get_ref(&function_id)),
+                    function_name: Some(get_ref(&function_resource_id)),
                     scaling_config: mapping.max_concurrency.map(|c| ScalingConfig { max_concurrency: c }),
                 },
             };
-            self.referenced_ids.push(event_id);
+            self.referenced_ids.push(event_resource_id);
             Some(event_source_mapping)
         } else {
             None
@@ -192,10 +197,11 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let props = IamRolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
 
-        let role_id = Resource::generate_id("LambdaFunctionRole");
-        let role_ref = get_arn(&role_id);
-        let role = IamRoleBuilder::new(role_id.clone(), props);
-        self.referenced_ids.push(role_id);
+        let role_id = Id::generate_id(&self.id, "Role");
+        let role_resource_id = Resource::generate_id("LambdaFunctionRole");
+        let role_ref = get_arn(&role_resource_id);
+        let role = IamRoleBuilder::new(&role_id, &role_resource_id, props);
+        self.referenced_ids.push(role_resource_id);
 
         let environment = if self.env_vars.is_empty() {
             None
@@ -205,8 +211,9 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             })
         };
 
+        let log_group_id = Id::generate_id(&self.id, "LogGroup");
         let log_group_name = self.function_name.clone().map(|fun_name| format!("/aws/lambda/{fun_name}"));
-        let base_builder = LogGroupBuilder::new()
+        let base_builder = LogGroupBuilder::new(&log_group_id)
             .log_group_retention(RetentionInDays(731));
         let log_group = if let Some(name) = log_group_name {
             base_builder.log_group_name_string(LogGroupName(name)).build()
@@ -231,7 +238,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
 
         let function = LambdaFunction {
-            resource_id: function_id,
+            id: self.id,
+            resource_id: function_resource_id,
             referenced_ids: self.referenced_ids,
             asset: code.0,
             r#type: "AWS::Lambda::Function".to_string(),
@@ -248,12 +256,13 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
 }
 
 impl LambdaFunctionBuilder<StartState> {
-    pub fn new(architecture: Architecture, memory: Memory, timeout: Timeout) -> LambdaFunctionBuilder<StartState> {
+    pub fn new(id: &str, architecture: Architecture, memory: Memory, timeout: Timeout) -> LambdaFunctionBuilder<StartState> {
         LambdaFunctionBuilder {
+            state: Default::default(),
+            id: Id(id.to_string()),
             architecture,
             memory: memory.0,
             timeout: timeout.0,
-            state: Default::default(),
             code: None,
             handler: None,
             runtime: None,
@@ -270,6 +279,7 @@ impl LambdaFunctionBuilder<StartState> {
         LambdaFunctionBuilder {
             code: Some(Code::Zip(zip)),
             state: Default::default(),
+            id: self.id,
             architecture: self.architecture,
             memory: self.memory,
             timeout: self.timeout,
@@ -288,6 +298,7 @@ impl LambdaFunctionBuilder<StartState> {
 impl LambdaFunctionBuilder<ZipState> {
     pub fn handler(self, handler: String) -> LambdaFunctionBuilder<ZipStateWithHandler> {
         LambdaFunctionBuilder {
+            id: self.id,
             handler: Some(handler),
             state: Default::default(),
             architecture: self.architecture,
@@ -308,6 +319,7 @@ impl LambdaFunctionBuilder<ZipState> {
 impl LambdaFunctionBuilder<ZipStateWithHandler> {
     pub fn runtime(self, runtime: Runtime) -> LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
         LambdaFunctionBuilder {
+            id: self.id,
             runtime: Some(runtime),
             state: Default::default(),
             architecture: self.architecture,
@@ -336,6 +348,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
         };
         
         LambdaFunctionBuilder {
+            id: self.id,
             sqs_event_source_mapping: Some(mapping),
             state: Default::default(),
             runtime: self.runtime,

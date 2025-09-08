@@ -48,7 +48,7 @@ use cloud_infra::wrappers::{NonZeroNumber,StringWithOnlyAlphaNumericsAndUndersco
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
 use cloud_infra::stack::Resource;
-use cloud_infra::Synth;
+use cloud_infra::stack::Stack;
 
 fn iac() {
     let key = string_with_only_alpha_numerics_and_underscores!("test");
@@ -56,14 +56,14 @@ fn iac() {
     let write_capacity = non_zero_number!(1);
   
     let resources: Vec<Resource> = vec![
-      DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
+      DynamoDBTableBuilder::new("table", DynamoDBKey::new(key, AttributeType::String))
               .provisioned_billing()
               .read_capacity(read_capacity)
               .write_capacity(write_capacity)
               .build()
               .into()
     ];
-    let synthesized: Synth = resources.try_into().unwrap();
+    let stack: Stack = resources.try_into().unwrap();
 }
 ```
 

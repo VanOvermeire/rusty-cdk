@@ -1,8 +1,8 @@
 error[E0599]: no method named `read_capacity` found for struct `DynamoDBTableBuilder<PayPerRequestState>` in the current scope
  --> tests/fails/no_read_capacity_for_pay_per_request.rs:9:10
   |
-7 |       DynamoDBTableBuilder::new(DynamoDBKey::new(key, AttributeType::String))
-  |       -----------------------------------------------------------------------
+7 |       DynamoDBTableBuilder::new("myTable", DynamoDBKey::new(key, AttributeType::String))
+  |       ----------------------------------------------------------------------------------
   |       |
   |  _____method `read_capacity` is available on `DynamoDBTableBuilder<cloud_infra_core::dynamodb::StartState>`
   | |

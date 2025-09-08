@@ -1,9 +1,12 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
+use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
 pub struct SqsQueue {
+    #[serde(skip)]
+    pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
@@ -13,6 +16,10 @@ pub struct SqsQueue {
 }
 
 impl SqsQueue {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }

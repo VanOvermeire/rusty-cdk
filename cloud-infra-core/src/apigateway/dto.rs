@@ -1,9 +1,12 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
+use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Api {
+    #[serde(skip)]
+    pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
@@ -13,6 +16,10 @@ pub struct ApiGatewayV2Api {
 }
 
 impl ApiGatewayV2Api {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -49,6 +56,8 @@ pub struct CorsConfiguration {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
@@ -57,6 +66,10 @@ pub struct ApiGatewayV2Stage {
 }
 
 impl ApiGatewayV2Stage {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -83,6 +96,8 @@ pub struct ApiGatewayV2StageProperties {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Integration {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
@@ -93,6 +108,10 @@ pub struct ApiGatewayV2Integration {
 }
 
 impl ApiGatewayV2Integration {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+    
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -133,6 +152,8 @@ pub struct ApiGatewayV2IntegrationProperties {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Route {
     #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
@@ -143,6 +164,10 @@ pub struct ApiGatewayV2Route {
 }
 
 impl ApiGatewayV2Route {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }

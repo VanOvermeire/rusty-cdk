@@ -3,6 +3,12 @@ source: cloud-infra/tests/snapshots.rs
 expression: synthesized
 ---
 {
+  "Metadata": {
+    "Dynamo": "[DynamoDBTable]",
+    "fun": "[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]"
+  },
   "Resources": {
     "[DynamoDBTable]": {
       "Properties": {
