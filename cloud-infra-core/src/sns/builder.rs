@@ -6,7 +6,7 @@ use crate::sns::dto::{SnsSubscription, SnsSubscriptionProperties, SnsTopic, SnsT
 use crate::stack::Resource;
 use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 
-const FIFO_SUFFIX: &'static str = ".fifo";
+const FIFO_SUFFIX: &str = ".fifo";
 
 pub enum FifoThroughputScope {
     Topic,

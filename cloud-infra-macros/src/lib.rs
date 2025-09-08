@@ -170,7 +170,7 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
     let output = match output {
         Ok(output) => output,
         Err(_) => {
-            return Error::new(Span::call_site(), format!("zip should contain value")).into_compile_error().into()
+            return Error::new(Span::call_site(), "zip should contain value".to_string()).into_compile_error().into()
         }
     };
 
@@ -273,8 +273,8 @@ number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
 number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);
 
 
-const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_NO_REMOTE";
-const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &'static str = "CLOUD_INFRA_RECHECK";
+const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
+const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
 
 // TODO documentation
 #[proc_macro]

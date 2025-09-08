@@ -79,12 +79,12 @@ pub(crate) fn update_file_storage(input: FileStorageInput) {
         Ok(mut info) => {
             match input {
                 FileStorageInput::Valid(name) => {
-                    info.valid_bucket_names.insert(&name);
-                    info.invalid_bucket_names = info.invalid_bucket_names.into_iter().filter(|v| *v != name).collect()
+                    info.valid_bucket_names.insert(name);
+                    info.invalid_bucket_names.retain(|v| *v != name);
                 },
                 FileStorageInput::Invalid(name) => {
-                    info.invalid_bucket_names.insert(&name);
-                    info.valid_bucket_names = info.valid_bucket_names.into_iter().filter(|v| *v != name).collect()
+                    info.invalid_bucket_names.insert(name);
+                    info.valid_bucket_names.retain(|v| *v != name);
                 },
             };
             file_util::write_info(BUCKET_NAMES_INFO_FILE, info);

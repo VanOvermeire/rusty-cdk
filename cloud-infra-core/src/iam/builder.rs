@@ -206,7 +206,7 @@ impl Permission<'_> {
                     ],
                     effect: "Allow".to_string(),
                     principal: None,
-                    resource: Some(vec![get_arn(&id)]),
+                    resource: Some(vec![get_arn(id)]),
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
@@ -228,7 +228,7 @@ impl Permission<'_> {
                     ],
                     effect: "Allow".to_string(),
                     principal: None,
-                    resource: Some(vec![get_arn(&id)]),
+                    resource: Some(vec![get_arn(id)]),
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
@@ -245,14 +245,14 @@ impl Permission<'_> {
                     ],
                     Effect::Allow,
                 )
-                .resources(vec![get_arn(&id)])
+                .resources(vec![get_arn(id)])
                 .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::S3ReadWrite(bucket) => {
                 let id = bucket.get_resource_id();
-                let arn = get_arn(&id);
+                let arn = get_arn(id);
                 let s3_permissions_statement = StatementBuilder::new(
                     vec![
                         "s3:Abort*".to_string(),

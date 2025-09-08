@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::marker::PhantomData;
 use crate::shared::Id;
 
-const FIFO_SUFFIX: &'static str = ".fifo";
+const FIFO_SUFFIX: &str = ".fifo";
 
 pub enum DeduplicationScope {
     Queue,

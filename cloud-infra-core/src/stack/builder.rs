@@ -25,6 +25,12 @@ pub struct StackBuilder {
     resources: Vec<Resource>,
 }
 
+impl Default for StackBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StackBuilder {
     pub fn new() -> Self {
         Self { resources: vec![] }
@@ -51,7 +57,6 @@ impl StackBuilder {
         self.add_resource_quadruples(vec![resources])
     }
 
-    // TODO does not need vec, only array?
     pub fn add_resources<T: Into<Resource>>(mut self, resources: Vec<T>) -> Self {
         let mut resources: Vec<_> = resources.into_iter().map(Into::into).collect();
         self.resources.append(&mut resources);

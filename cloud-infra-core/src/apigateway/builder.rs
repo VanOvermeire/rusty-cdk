@@ -214,6 +214,12 @@ pub struct CorsConfigurationBuilder {
     max_age: Option<u64>,
 }
 
+impl Default for CorsConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CorsConfigurationBuilder {
     pub fn new() -> Self {
         Self {

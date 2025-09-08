@@ -69,7 +69,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
         Some(existing) => {
             let meta: StackOnlyMetadata = serde_json::from_str(existing.as_str()).expect("an existing stack should have our 'id' metadata");
             stack.update_resource_ids_for_existing_stack(meta.metadata);
-            let body = get_template_or_exit(&mut stack);
+            let body = get_template_or_exit(&stack);
 
             match cloudformation_client
                 .update_stack()
@@ -84,7 +84,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
             }
         }
         None => {
-            let body = get_template_or_exit(&mut stack);
+            let body = get_template_or_exit(&stack);
 
             match cloudformation_client
                 .create_stack()

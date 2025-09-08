@@ -262,6 +262,12 @@ pub struct PublicAccessBlockConfigurationBuilder {
     restrict_public_buckets: Option<bool>,
 }
 
+impl Default for PublicAccessBlockConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PublicAccessBlockConfigurationBuilder {
     pub fn new() -> Self {
         Self {

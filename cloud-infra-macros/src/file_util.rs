@@ -1,24 +1,19 @@
+use dirs::home_dir;
 use serde::Serialize;
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use dirs::home_dir;
 
 pub(crate) fn read_info(file_name: &str) -> Option<String> {
     get_file_path(file_name).and_then(|p| read_to_string(p).ok())
 }
 
 pub(crate) fn write_info<T: Serialize>(file_name: &str, info: T) {
-    match get_file_path(file_name) {
-        Some(path) => {
-            let info_as_string = serde_json::to_string(&info).expect("to be able to serialize bucket info");
-            let _result = write(&path, info_as_string);
-        }
-        None => {}
+    if let Some(path) = get_file_path(file_name) {
+        let info_as_string = serde_json::to_string(&info).expect("to be able to serialize bucket info");
+        let _result = write(&path, info_as_string);
     }
 }
 
 pub(crate) fn get_file_path(file_name: &str) -> Option<PathBuf> {
-    home_dir().map(|home_dir| {
-        home_dir.join(file_name)
-    })
+    home_dir().map(|home_dir| home_dir.join(file_name))
 }
