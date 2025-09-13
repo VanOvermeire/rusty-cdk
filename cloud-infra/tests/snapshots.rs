@@ -21,6 +21,8 @@ use cloud_infra_macros::{
 };
 use serde_json::Value;
 
+// TODO check if this covers all basic cases
+
 #[test]
 fn test_dynamodb() {
     let pk = string_with_only_alpha_numerics_and_underscores!("pk");

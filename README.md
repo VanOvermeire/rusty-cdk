@@ -116,6 +116,7 @@ Next up:
 
 ## TODO
 
+- when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found, error?
 - maybe good advice to just import all the wrappers
 - don't really need syn? something more lightweight
 - and serde? facet could also work?
