@@ -62,7 +62,6 @@ impl Stack {
         Ok(naive_synth)
     }
 
-    // TODO tests
     pub fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
         let current_ids: HashMap<String, String> = self
             .resources
@@ -202,3 +201,82 @@ from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Stage);
 from_resource!(ApiGatewayV2Route);
 from_resource!(ApiGatewayV2Integration);
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use crate::sns::builder::SnsTopicBuilder;
+    use crate::sqs::SqsQueueBuilder;
+    use crate::stack::StackBuilder;
+
+    #[test]
+    fn should_do_nothing_for_empty_stack_and_empty_existing_ids() {
+        let mut stack = StackBuilder::new()
+            .build()
+            .unwrap();
+        let existing_ids = HashMap::new();
+
+        stack.update_resource_ids_for_existing_stack(existing_ids);
+
+        assert_eq!(stack.resources.len(), 0);
+        assert_eq!(stack.metadata.len(), 0);
+        assert_eq!(stack.to_replace.len(), 0);
+    }
+
+    #[test]
+    fn should_do_nothing_for_empty_stack() {
+        let mut stack = StackBuilder::new()
+            .build()
+            .unwrap();
+        let mut existing_ids = HashMap::new();
+        existing_ids.insert("fun".to_string(), "abc123".to_string());
+
+        stack.update_resource_ids_for_existing_stack(existing_ids);
+
+        assert_eq!(stack.resources.len(), 0);
+        assert_eq!(stack.metadata.len(), 0);
+        assert_eq!(stack.to_replace.len(), 0);
+    }
+
+    #[test]
+    fn should_replace_topic_resource_id_with_the_existing_id() {
+        let topic = SnsTopicBuilder::new("topic")
+            .build();
+        let mut stack = StackBuilder::new()
+            .add_resource(topic)
+            .build()
+            .unwrap();
+        let mut existing_ids = HashMap::new();
+        existing_ids.insert("topic".to_string(), "abc123".to_string());
+
+        stack.update_resource_ids_for_existing_stack(existing_ids);
+
+        assert_eq!(stack.resources.len(), 1);
+        assert_eq!(stack.to_replace.len(), 1);
+        assert_eq!(stack.metadata.len(), 1);
+        assert_eq!(stack.metadata.get("topic").unwrap(), &"abc123".to_string());
+    }
+
+    #[test]
+    fn should_replace_topic_resource_id_with_the_existing_id_keeping_new_queue_id() {
+        let topic = SnsTopicBuilder::new("topic")
+            .build();
+        let sqs = SqsQueueBuilder::new("queue")
+            .standard_queue()
+            .build();
+        let mut stack = StackBuilder::new()
+            .add_resource(topic)
+            .add_resource(sqs)
+            .build()
+            .unwrap();
+        let mut existing_ids = HashMap::new();
+        existing_ids.insert("topic".to_string(), "abc123".to_string());
+
+        stack.update_resource_ids_for_existing_stack(existing_ids);
+
+        assert_eq!(stack.resources.len(), 2);
+        assert_eq!(stack.to_replace.len(), 1);
+        assert_eq!(stack.metadata.len(), 2);
+        assert_eq!(stack.metadata.get("topic").unwrap(), &"abc123".to_string());
+    }
+}

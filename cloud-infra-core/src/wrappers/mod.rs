@@ -161,7 +161,7 @@ pub struct EnvVarKey(pub String);
 ///
 /// ```rust,compile_fail
 /// use cloud_infra_core::wrappers::ZipFile;
-/// use cloud_infra_macros::zipfile;
+/// use cloud_infra_macros::zip_file;
 /// 
 /// let lambda_code = zipfile!("./target/lambda/function.zip");   // Compile-time validated
 /// ```
