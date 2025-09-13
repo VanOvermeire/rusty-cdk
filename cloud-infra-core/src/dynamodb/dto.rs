@@ -23,8 +23,7 @@ impl DynamoDBTable {
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
-    
-    // TODO decide whether we want this indirection (currently sometimes used, sometimes not)
+
     pub fn get_ref(&self) -> Value {
         get_ref(self.get_resource_id())
     }

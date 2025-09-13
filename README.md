@@ -116,6 +116,9 @@ Next up:
 
 ## TODO
 
+- maybe good advice to just import all the wrappers
+- don't really need syn? something more lightweight
+- and serde? facet could also work?
 - switch to uploading template to s3? helps avoid the 51 kb limit...
 - add and update docs
 - borrow all the things? see borrowing-example branch for an example

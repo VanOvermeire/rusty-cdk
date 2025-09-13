@@ -118,10 +118,10 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             table_name: self.table_name,
             partition_key: self.partition_key,
             sort_key: self.sort_key,
-            read_capacity: self.read_capacity,
-            write_capacity: self.write_capacity,
             max_read_capacity: self.max_read_capacity,
             max_write_capacity: self.max_write_capacity,
+            read_capacity: None,
+            write_capacity: None,
         }
     }
 
@@ -135,8 +135,8 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             sort_key: self.sort_key,
             read_capacity: self.read_capacity,
             write_capacity: self.write_capacity,
-            max_read_capacity: self.max_read_capacity,
-            max_write_capacity: self.max_write_capacity,
+            max_read_capacity: None,
+            max_write_capacity: None,
         }
     }
 

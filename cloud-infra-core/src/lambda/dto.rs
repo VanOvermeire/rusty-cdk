@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use serde::Serialize;
 use serde_json::Value;
+use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 use crate::stack::Asset;
 
@@ -28,7 +29,11 @@ impl LambdaFunction {
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
-    
+
+    pub fn get_ref(&self) -> Value {
+        get_ref(self.get_resource_id())
+    }
+
     pub fn get_referenced_ids(&self) -> Vec<&str> {
         self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
