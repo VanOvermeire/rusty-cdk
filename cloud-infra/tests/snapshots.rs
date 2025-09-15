@@ -1,5 +1,3 @@
-use cloud_infra::wrappers::Bucket;
-use cloud_infra::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 use cloud_infra_core::apigateway::builder::HttpApiGatewayBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
@@ -10,18 +8,9 @@ use cloud_infra_core::shared::http::HttpMethod;
 use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
 use cloud_infra_core::sqs::SqsQueueBuilder;
 use cloud_infra_core::stack::{Stack, StackBuilder};
-use cloud_infra_core::wrappers::EnvVarKey;
-use cloud_infra_core::wrappers::Memory;
-use cloud_infra_core::wrappers::NonZeroNumber;
-use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
-use cloud_infra_core::wrappers::{Timeout, ZipFile};
-use cloud_infra_macros::{
-    env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores,
-    string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip_file,
-};
+use cloud_infra_core::wrappers::*;
+use cloud_infra_macros::{delay_seconds, env_var_key, memory, message_retention_period, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip_file};
 use serde_json::Value;
-
-// TODO check if this covers all basic cases
 
 #[test]
 fn test_dynamodb() {
@@ -52,8 +41,7 @@ fn test_lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
-    // not interested in testing the bucket macro here, so use the wrapper directly
-    let bucket = Bucket("some-bucket".to_ascii_lowercase());
+    let bucket = get_bucket();
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod".to_string())
         .zip(Zip::new(bucket, zip_file))
@@ -95,6 +83,26 @@ fn test_sns() {
 
     insta::with_settings!({filters => vec![
             (r"SnsTopic[0-9]+", "[SnsTopic]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn test_sqs() {
+    let sqs = SqsQueueBuilder::new("queue")
+        .fifo_queue()
+        .content_based_deduplication(true)
+        .delay_seconds(delay_seconds!(30))
+        .message_retention_period(message_retention_period!(600))
+        .build();
+    let stack: Stack = vec![sqs.into()].try_into().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"SqsQueue[0-9]+", "[SqsQueue]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
@@ -283,5 +291,6 @@ fn test_lambda_with_dynamodb_and_sqs() {
 
 fn get_bucket() -> Bucket {
     // not interested in testing the bucket macro here, so use the wrapper directly
+    // if you want safety, you should use the bucket macro instead
     Bucket("some-bucket".to_ascii_lowercase())
 }
