@@ -1,0 +1,10 @@
+[package]
+name = "iam-docs-scraper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+reqwest = {  version = "0.12.3", features = ["blocking"] }
+scraper = "0.24.0"
+serde = { version = "1.0.228", features = ["derive"] }
