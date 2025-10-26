@@ -123,5 +123,6 @@ Next up:
 - switch to uploading template to s3? helps avoid the 51 kb limit...
 - add and update docs
 - borrow all the things? see borrowing-example branch for an example
-- help with avoiding missing IAM permissions? would at least need to check dependencies used by the code
+- help with avoiding missing IAM permissions? perhaps by having user optionally pass in cargo toml(s)
+- check permissions/policies against a list of services (scraper probably needed)
 - UpdateReplacePolicy/DeletionPolicy for storage

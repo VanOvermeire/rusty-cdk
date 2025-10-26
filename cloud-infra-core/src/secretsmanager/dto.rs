@@ -41,10 +41,10 @@ pub struct SecretsManagerSecretProperties {
     pub(crate) generate_secret_string: Option<GenerateSecretString>,
     #[serde(rename = "SecretString", skip_serializing_if = "Option::is_none")]
     pub(crate) secret_string: Option<String>,
-    #[serde(rename = "KmsKeyId", skip_serializing_if = "Option::is_none")]
-    pub(crate) kms_key_id: Option<String>,
-    #[serde(rename = "ReplicaRegions", skip_serializing_if = "Option::is_none")]
-    pub(crate) replica_regions: Option<Vec<ReplicaRegion>>,
+    // #[serde(rename = "KmsKeyId", skip_serializing_if = "Option::is_none")]
+    // pub(crate) kms_key_id: Option<String>,
+    // #[serde(rename = "ReplicaRegions", skip_serializing_if = "Option::is_none")]
+    // pub(crate) replica_regions: Option<Vec<ReplicaRegion>>,
 }
 
 #[derive(Debug, Serialize)]
