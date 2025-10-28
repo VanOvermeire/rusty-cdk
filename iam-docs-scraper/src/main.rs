@@ -4,30 +4,26 @@ use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
 use scraper::{Html, Selector};
 use scraper::selectable::Selectable;
-use serde::Serialize;
 
 const START_URL: &str = "https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html";
 const BASE_SERVICE_URL: &str = "https://docs.aws.amazon.com/service-authorization/latest/reference";
-
-#[derive(Serialize)]
-struct Record<'a> {
-    service: &'a str,
-    actions: Vec<&'a str>,
-}
 
 fn main() -> Result<()> {
     let client = Client::new();
 
     let all_service_links = retrieve_all_services(&client)?;
-    // make parallel if needed. if so, separate file for each output
-    all_service_links.iter().map(|l| {
+
+    let output = all_service_links.iter().map(|l| {
+        println!("Retrieving info for {}", l);
         retrieve_service(&client, l)
     }).collect::<Result<Vec<_>>>()?;
+
+    fs::write("output/iam.csv", output.join("\n").as_bytes())?;
 
     Ok(())
 }
 
-fn retrieve_service(client: &Client, link: &String) -> Result<()> {
+fn retrieve_service(client: &Client, link: &String) -> Result<String> {
     let service_html = client.get(format!("{}/{}", BASE_SERVICE_URL, link))
         .header(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36")
         .send()
@@ -53,10 +49,9 @@ fn retrieve_service(client: &Client, link: &String) -> Result<()> {
     }
 
     let actions = actions.join(",");
-    let code_plus_actions = format!("{},{}", service_code, actions);
-    fs::write("output/iam.csv", code_plus_actions.as_bytes())?;
+    let code_plus_actions = format!("{};{}", service_code, actions);
     
-    Ok(())
+    Ok(code_plus_actions)
 }
 
 fn retrieve_all_services(client: &Client) -> Result<Vec<String>> {
