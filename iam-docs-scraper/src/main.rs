@@ -1,9 +1,11 @@
-use std::fs;
 use anyhow::{Context, Result};
 use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
-use scraper::{Html, Selector};
 use scraper::selectable::Selectable;
+use scraper::{Html, Selector};
+use std::fs;
+use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
 
 const START_URL: &str = "https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html";
 const BASE_SERVICE_URL: &str = "https://docs.aws.amazon.com/service-authorization/latest/reference";
@@ -13,7 +15,7 @@ fn main() -> Result<()> {
 
     let all_service_links = retrieve_all_services(&client)?;
 
-    let output = all_service_links.iter().map(|l| {
+    let output = all_service_links.par_iter().map(|l| {
         println!("Retrieving info for {}", l);
         retrieve_service(&client, l)
     }).collect::<Result<Vec<_>>>()?;
@@ -50,7 +52,7 @@ fn retrieve_service(client: &Client, link: &String) -> Result<String> {
 
     let actions = actions.join(",");
     let code_plus_actions = format!("{};{}", service_code, actions);
-    
+
     Ok(code_plus_actions)
 }
 
@@ -60,12 +62,12 @@ fn retrieve_all_services(client: &Client) -> Result<Vec<String>> {
         .send()
         .context(format!("getting start url failed: {}", START_URL))?
         .text()?;
-
+    
     let document = Html::parse_document(&start_html);
     let link_selector = Selector::parse("a").unwrap();
-
+    
     let mut selected = document.select(&link_selector);
-
+    
     let mut all_services = vec![];
     
     while let Some(link) = selected.next() {
