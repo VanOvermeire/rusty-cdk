@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
 use scraper::selectable::Selectable;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
 use std::fs;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
@@ -46,7 +46,9 @@ fn retrieve_service(client: &Client, link: &String) -> Result<String> {
         let mut tds = el.select(&td_selector);
 
         if let Some(first_td) = tds.next() {
-            actions.push(first_td.inner_html());
+            if is_permission(first_td) {
+                actions.push(first_td.inner_html());
+            }
         }
     }
 
@@ -54,6 +56,10 @@ fn retrieve_service(client: &Client, link: &String) -> Result<String> {
     let code_plus_actions = format!("{};{}", service_code, actions);
 
     Ok(code_plus_actions)
+}
+
+fn is_permission(first_td: ElementRef) -> bool {
+    first_td.inner_html().chars().next().map(|c| c.is_uppercase()).unwrap_or(false)
 }
 
 fn retrieve_all_services(client: &Client) -> Result<Vec<String>> {

@@ -59,6 +59,7 @@
 mod bucket;
 mod file_util;
 mod bucket_name;
+mod iam_validation;
 
 use proc_macro::{TokenStream};
 use std::env;
