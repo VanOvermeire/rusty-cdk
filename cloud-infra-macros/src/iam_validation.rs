@@ -21,7 +21,6 @@ impl PermissionValidator {
 
     pub(crate) fn is_valid_action(&self, action: &str) -> ValidationResponse {
         // TODO is whitespace before/after an action valid?
-        // TODO is wildcard valid anywhere? if only at end, throw error. if valid anywhere, change code
         let mut service_and_permission: Vec<_> = action.split(':').collect();
         let permission = service_and_permission.pop();
         let service = service_and_permission.pop();
