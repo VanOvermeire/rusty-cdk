@@ -31,24 +31,45 @@ impl PermissionValidator {
                 let valid_permissions = self.services_with_permissions.get(service);
                 
                 if let Some(valid_permissions) = valid_permissions {
-                    if permission.ends_with("*") {
-                        let permission_without_wildcard = permission.replace("*", "");
-                        
-                        if valid_permissions.iter().any(|v| v.starts_with(&permission_without_wildcard)) {
-                            ValidationResponse::Valid
-                        } else {
-                            ValidationResponse::Invalid(format!("{} does not exist for {}", permission, service))
-                        }
+                    if permission.contains("*") {
+                        self.handle_wildcards(service, permission, valid_permissions)   
                     } else if valid_permissions.contains(&permission) {
                         ValidationResponse::Valid
                     } else {
-                        ValidationResponse::Invalid(format!("{} does not exist for {}", permission, service))
+                        ValidationResponse::Invalid(format!("{} LOL not exist for {}", permission, service))
                     }
                 } else {
                     ValidationResponse::Invalid(format!("unknown AWS service name: {}", service))
                 }
             },
             _ => ValidationResponse::Invalid("expected a service and its permission separated by :".to_string())
+        }
+    }
+    
+    // Does not cover the (rare) case of wildcards in the middle of permissions.
+    // To handle that without writing too much code, I'd need to add regex. 
+    // For now, accept that a user who adds a lot of wildcards knows what he or she's doing :)
+    fn handle_wildcards(&self, service: &str, permission: &str, valid_permissions: &Vec<&str>) -> ValidationResponse {
+        if permission == "*" {
+            ValidationResponse::Valid
+        } else {
+            let permission_without_wildcard = permission.replace("*", "");
+            
+            if permission.starts_with("*") && permission.ends_with("*") {
+                let part_of_valid_permission = valid_permissions.iter().any(|v| v.contains(&permission_without_wildcard));
+                
+                if part_of_valid_permission {
+                    ValidationResponse::Valid
+                } else {
+                    ValidationResponse::Invalid(format!("no valid permission contains {} (for service: {})", permission_without_wildcard, service))
+                }
+            } else if permission.starts_with("*") && !valid_permissions.iter().any(|v| v.ends_with(&permission_without_wildcard)) {
+                ValidationResponse::Invalid(format!("no valid permission ends with {} (for service: {})", permission_without_wildcard, service))
+            } else if permission.ends_with("*") && !valid_permissions.iter().any(|v| v.starts_with(&permission_without_wildcard)) {
+                ValidationResponse::Invalid(format!("no valid permission starts with {} (for service: {})", permission_without_wildcard, service))
+            } else {
+                ValidationResponse::Valid
+            }
         }
     }
 }
@@ -100,37 +121,19 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_invalid_action_string() {
+    fn test_validates_valid_action_string_with_wildcard_only() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
         };
 
-        let result = validator.is_valid_action("dynamodb:Fake");
+        let result = validator.is_valid_action("dynamodb:*");
 
-        match result {
-            ValidationResponse::Valid => unreachable!("output should be invalid"),
-            ValidationResponse::Invalid(_) => {}
-        }
+        assert_eq!(result, ValidationResponse::Valid);
     }
 
     #[test]
-    fn test_validates_unknown_service() {
-        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
-        let validator = PermissionValidator {
-            services_with_permissions: create_permissions_map_for(list),
-        };
-
-        let result = validator.is_valid_action("unknown:BatchWriteItem");
-
-        match result {
-            ValidationResponse::Valid => unreachable!("output should be invalid"),
-            ValidationResponse::Invalid(_) => {}
-        }
-    }
-
-    #[test]
-    fn test_validates_valid_action_string_with_wildcard() {
+    fn test_validates_valid_action_string_with_wildcard_at_end() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -142,6 +145,54 @@ mod tests {
     }
 
     #[test]
+    fn test_validates_valid_action_string_with_wildcard_at_start() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("dynamodb:*GetItem");
+
+        assert_eq!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
+    fn test_validates_valid_action_string_with_multiple_wildcards() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("dynamodb:*Get*");
+
+        assert_eq!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
+    fn test_validates_invalid_action_string() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("dynamodb:Fake");
+
+        assert_ne!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
+    fn test_validates_unknown_service() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("unknown:BatchWriteItem");
+
+        assert_ne!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
     fn test_validates_invalid_action_string_with_wildcard() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
@@ -150,9 +201,18 @@ mod tests {
 
         let result = validator.is_valid_action("dynamodb:Fake*");
 
-        match result {
-            ValidationResponse::Valid => unreachable!("output should be 'invalid'"),
-            ValidationResponse::Invalid(_) => {}
-        }
+        assert_ne!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
+    fn test_validates_invalid_action_string_with_multiple_wildcards() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("dynamodb:*Fake*");
+
+        assert_ne!(result, ValidationResponse::Valid);
     }
 }
