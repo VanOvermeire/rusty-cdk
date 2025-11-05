@@ -3,8 +3,6 @@ use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
-// TODO builder
-
 #[derive(Debug, Serialize)]
 pub struct SecretsManagerSecret {
     #[serde(skip)]

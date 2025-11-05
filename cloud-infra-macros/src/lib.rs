@@ -57,17 +57,19 @@
 //! - [`receive_message_wait_time!`] - Long polling wait time (0-20 seconds)
 
 mod bucket;
-mod file_util;
 mod bucket_name;
+mod file_util;
 mod iam_validation;
+mod strings;
 
-use proc_macro::{TokenStream};
-use std::env;
-use quote::{quote};
-use std::path::{absolute, Path};
-use quote::__private::Span;
-use syn::{Error, LitInt, LitStr};
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
+use crate::strings::{check_string_requirements, StringRequirements};
+use proc_macro::TokenStream;
+use quote::__private::Span;
+use quote::quote;
+use std::env;
+use std::path::{absolute, Path};
+use syn::{Error, LitInt, LitStr};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -85,17 +87,15 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    if value.is_empty() {
-        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
+    let requirements = StringRequirements::not_empty(vec!['_']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            StringWithOnlyAlphaNumericsAndUnderscores(#value.to_string())
+        )
+        .into(),
+        Some(e) => e.into_compile_error().into(),
     }
-    
-    if value.chars().any(|c| !c.is_alphanumeric() && c != '_') {
-        return Error::new(output.span(), "value should only contain alphanumeric characters and underscores".to_string()).into_compile_error().into()
-    }
-    
-    quote!(
-        StringWithOnlyAlphaNumericsAndUnderscores(#value.to_string())
-    ).into()
 }
 
 #[proc_macro]
@@ -103,17 +103,31 @@ pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStrea
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    if value.is_empty() {
-        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
-    }
+    let requirements = StringRequirements::not_empty(vec!['_', '-']);
 
-    if value.chars().any(|c| !c.is_alphanumeric() && c != '_' && c != '-') {
-        return Error::new(output.span(), "value should only contain alphanumeric characters, underscores and hyphens".to_string()).into_compile_error().into()
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
+        )
+        .into(),
+        Some(e) => e.into_compile_error().into(),
     }
+}
 
-    quote!(
-        StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
-    ).into()
+#[proc_macro]
+pub fn string_for_secret(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty(vec!['/', '_', '+', '=', '.', '@', '-']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            StringForSecret(#value.to_string())
+        )
+        .into(),
+        Some(e) => e.into_compile_error().into(),
+    }
 }
 
 /// Creates a validated `EnvVarKey` wrapper for AWS Lambda environment variable keys at compile time.
@@ -132,20 +146,30 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if value.len() < 2 {
-        return Error::new(output.span(), "env var key should be at least two characters long".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "env var key should be at least two characters long".to_string())
+            .into_compile_error()
+            .into();
     }
 
     if value.get(0..1).expect("just checked that length is at least 2") == "_" {
-        return Error::new(output.span(), "env var key should not start with an underscore".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "env var key should not start with an underscore".to_string())
+            .into_compile_error()
+            .into();
     }
 
     if value.chars().any(|c| !c.is_alphanumeric() && c != '_') {
-        return Error::new(output.span(), "env var key should only contain alphanumeric characters and underscores".to_string()).into_compile_error().into()
+        return Error::new(
+            output.span(),
+            "env var key should only contain alphanumeric characters and underscores".to_string(),
+        )
+        .into_compile_error()
+        .into();
     }
 
     quote!(
         EnvVarKey(#value.to_string())
-    ).into()
+    )
+    .into()
 }
 
 /// Creates a validated `ZipFile` wrapper for AWS Lambda deployment packages at compile time.
@@ -168,31 +192,39 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn zip_file(input: TokenStream) -> TokenStream {
     let output: syn::Result<LitStr> = syn::parse(input);
-    
+
     let output = match output {
         Ok(output) => output,
         Err(_) => {
-            return Error::new(Span::call_site(), "zip should contain value".to_string()).into_compile_error().into()
+            return Error::new(Span::call_site(), "zip should contain value".to_string())
+                .into_compile_error()
+                .into();
         }
     };
 
     let value = output.value();
 
     if !value.ends_with(".zip") {
-        return Error::new(output.span(), format!("zip should end with `.zip`, instead found `{value}`")).into_compile_error().into()
+        return Error::new(output.span(), format!("zip should end with `.zip`, instead found `{value}`"))
+            .into_compile_error()
+            .into();
     }
 
     let path = Path::new(&value);
 
     if !path.exists() {
-        return Error::new(output.span(), format!("did not find file `{value}`")).into_compile_error().into()
+        return Error::new(output.span(), format!("did not find file `{value}`"))
+            .into_compile_error()
+            .into();
     }
 
     let value = if path.is_relative() {
         match absolute(path) {
             Ok(absolute_path) => absolute_path.to_str().expect("zip path to be valid unicode").to_string(),
             Err(e) => {
-                return Error::new(output.span(), format!("failed to convert zip file path to absolute path: {e}")).into_compile_error().into()
+                return Error::new(output.span(), format!("failed to convert zip file path to absolute path: {e}"))
+                    .into_compile_error()
+                    .into();
             }
         }
     } else {
@@ -201,7 +233,8 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
 
     quote!(
         ZipFile(#value.to_string())
-    ).into()
+    )
+    .into()
 }
 
 /// Creates a validated `NonZeroNumber` wrapper for positive integers at compile time.
@@ -214,7 +247,9 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
     let output = match syn::parse::<LitInt>(input) {
         Ok(v) => v,
         Err(_) => {
-            return Error::new(Span::call_site(), "value is not a valid number".to_string()).into_compile_error().into()
+            return Error::new(Span::call_site(), "value is not a valid number".to_string())
+                .into_compile_error()
+                .into();
         }
     };
 
@@ -222,16 +257,21 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
 
     let num = if let Ok(num) = as_number {
         if num == 0 {
-            return Error::new(output.span(), "value should not be null".to_string()).into_compile_error().into()
+            return Error::new(output.span(), "value should not be null".to_string())
+                .into_compile_error()
+                .into();
         }
         num
     } else {
-        return Error::new(output.span(), "value is not a valid u32 number".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "value is not a valid u32 number".to_string())
+            .into_compile_error()
+            .into();
     };
 
     quote!(
         NonZeroNumber(#num)
-    ).into()
+    )
+    .into()
 }
 
 macro_rules! number_check {
@@ -245,9 +285,9 @@ macro_rules! number_check {
         #[proc_macro]
         pub fn $name(input: TokenStream) -> TokenStream {
             let output: LitInt = syn::parse(input).unwrap();
-        
+
             let as_number: syn::Result<$type> = output.base10_parse();
-        
+
             if let Ok(num) = as_number {
                 if num < $min {
                     Error::new(output.span(), format!("value should be at least {}", $min)).into_compile_error().into()
@@ -274,7 +314,6 @@ number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
 number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
 number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);
 
-
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
 
@@ -285,20 +324,30 @@ pub fn bucket(input: TokenStream) -> TokenStream {
     let value = input.value();
 
     if value.starts_with("arn:") {
-        return Error::new(input.span(), "value is an arn, not a bucket name".to_string()).into_compile_error().into()
+        return Error::new(input.span(), "value is an arn, not a bucket name".to_string())
+            .into_compile_error()
+            .into();
     }
 
     if value.starts_with("s3:") {
-        return Error::new(input.span(), "value has s3 prefix, should be plain bucket name".to_string()).into_compile_error().into()
+        return Error::new(input.span(), "value has s3 prefix, should be plain bucket name".to_string())
+            .into_compile_error()
+            .into();
     }
 
-    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(false);
 
     if no_remote_check_wanted {
-        return bucket::bucket_output(value)
+        return bucket::bucket_output(value);
     }
 
-    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(false);
 
     if !rechecked_wanted {
         match bucket::valid_bucket_according_to_file_storage(&value) {
@@ -334,20 +383,36 @@ pub fn bucket_name(input: TokenStream) -> TokenStream {
     let value = input.value();
 
     if value.chars().any(|c| c.is_uppercase()) {
-        return Error::new(input.span(), "value contains uppercase letters".to_string()).into_compile_error().into()
-    }
-    
-    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_BUCKET_NAME.contains(&c)) {
-        return Error::new(input.span(), "value should contain only letters, numbers, periods and dashes".to_string()).into_compile_error().into()
+        return Error::new(input.span(), "value contains uppercase letters".to_string())
+            .into_compile_error()
+            .into();
     }
 
-    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+    if value
+        .chars()
+        .any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_BUCKET_NAME.contains(&c))
+    {
+        return Error::new(
+            input.span(),
+            "value should contain only letters, numbers, periods and dashes".to_string(),
+        )
+        .into_compile_error()
+        .into();
+    }
+
+    let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(false);
 
     if no_remote_check_wanted {
-        return bucket_name::bucket_name_output(value)
+        return bucket_name::bucket_name_output(value);
     }
 
-    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME).ok().and_then(|v| v.parse().ok()).unwrap_or(false);
+    let rechecked_wanted = env::var(CLOUD_INFRA_RECHECK_ENV_VAR_NAME)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(false);
 
     if !rechecked_wanted {
         match bucket_name::valid_bucket_name_according_to_file_storage(&value) {
@@ -373,14 +438,18 @@ pub fn bucket_name(input: TokenStream) -> TokenStream {
     }
 }
 
-const POSSIBLE_LOG_RETENTION_VALUES: [u16;22] = [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653];
+const POSSIBLE_LOG_RETENTION_VALUES: [u16; 22] = [
+    1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653,
+];
 
 #[proc_macro]
 pub fn log_retention(input: TokenStream) -> TokenStream {
     let output = match syn::parse::<LitInt>(input) {
         Ok(v) => v,
         Err(_) => {
-            return Error::new(Span::call_site(), "value is not a valid number".to_string()).into_compile_error().into()
+            return Error::new(Span::call_site(), "value is not a valid number".to_string())
+                .into_compile_error()
+                .into();
         }
     };
 
@@ -390,12 +459,17 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
         if POSSIBLE_LOG_RETENTION_VALUES.contains(&num) {
             quote! {
                 RetentionInDays(#num)
-            }.into()
+            }
+            .into()
         } else {
-            Error::new(output.span(), format!("value should be one of {:?}", POSSIBLE_LOG_RETENTION_VALUES)).into_compile_error().into()
+            Error::new(output.span(), format!("value should be one of {:?}", POSSIBLE_LOG_RETENTION_VALUES))
+                .into_compile_error()
+                .into()
         }
     } else {
-        Error::new(output.span(), "value is not a valid u16 number".to_string()).into_compile_error().into()
+        Error::new(output.span(), "value is not a valid u16 number".to_string())
+            .into_compile_error()
+            .into()
     }
 }
 
@@ -407,20 +481,36 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if value.is_empty() {
-        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
-    }
-    
-    if value.len() > 512 {
-        return Error::new(output.span(), "value should not be longer than 512 chars".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "value should not be blank".to_string())
+            .into_compile_error()
+            .into();
     }
 
-    if value.chars().any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_LOG_GROUP.contains(&c)) {
-        return Error::new(output.span(), format!("value should only contain alphanumeric characters and {:?}", ADDITIONAL_ALLOWED_FOR_LOG_GROUP)).into_compile_error().into()
+    if value.len() > 512 {
+        return Error::new(output.span(), "value should not be longer than 512 chars".to_string())
+            .into_compile_error()
+            .into();
     }
-    
+
+    if value
+        .chars()
+        .any(|c| !c.is_alphanumeric() && !ADDITIONAL_ALLOWED_FOR_LOG_GROUP.contains(&c))
+    {
+        return Error::new(
+            output.span(),
+            format!(
+                "value should only contain alphanumeric characters and {:?}",
+                ADDITIONAL_ALLOWED_FOR_LOG_GROUP
+            ),
+        )
+        .into_compile_error()
+        .into();
+    }
+
     quote!(
         LogGroupName(#value.to_string())
-    ).into()
+    )
+    .into()
 }
 
 #[proc_macro]
@@ -429,18 +519,17 @@ pub fn iam_action(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if value.is_empty() {
-        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
+        return Error::new(output.span(), "value should not be blank".to_string())
+            .into_compile_error()
+            .into();
     }
 
     let validator = PermissionValidator::new();
     match validator.is_valid_action(&value) {
-        ValidationResponse::Valid => {
-            quote!(
-                IamAction(#value.to_string())
-            ).into()
-        }
-        ValidationResponse::Invalid(message) => {
-            Error::new(output.span(), message).into_compile_error().into()
-        }
+        ValidationResponse::Valid => quote!(
+            IamAction(#value.to_string())
+        )
+        .into(),
+        ValidationResponse::Invalid(message) => Error::new(output.span(), message).into_compile_error().into(),
     }
 }

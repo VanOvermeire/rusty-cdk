@@ -52,6 +52,9 @@ pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 #[derive(Debug, Clone)]
 pub struct StringWithOnlyAlphaNumericsUnderscoresAndHyphens(pub String);
 
+#[derive(Debug, Clone)]
+pub struct StringForSecret(pub String);
+
 /// A wrapper for positive integers that must be greater than zero.
 ///
 /// This wrapper ensures that numeric configuration values are always positive,
@@ -215,7 +218,7 @@ pub struct MaximumMessageSize(pub u32);
 /// Message retention period wrapper for AWS SQS queue configuration.
 ///
 /// This wrapper ensures type safety when configuring SQS queue message retention settings.
-/// AWS SQS has specific constraints on retention period that this wrapper helps enforce.
+/// AWS SQS has specific constraints on the retention period that this wrapper helps enforce.
 ///
 /// # AWS SQS MessageRetentionPeriod Constraints
 /// - Minimum: 60 seconds (1 minute)
