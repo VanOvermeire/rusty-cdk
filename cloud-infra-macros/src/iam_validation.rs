@@ -75,7 +75,7 @@ impl PermissionValidator {
 
 fn create_permissions_map_for(list: &'static str) -> HashMap<&'static str, Vec<&'static str>> {
     let services_and_permissions: Vec<(&str, Vec<&str>)> = list
-        .split('\n')
+        .split("\n")
         .filter(|m| !m.is_empty())
         .map(|m| {
             let mut service_and_permissions: Vec<_> = m.split(';').collect();

@@ -1,0 +1,5 @@
+error: value should not be blank
+ --> tests/fails/iam_action_empty_string.rs:4:30
+  |
+4 |     let action = iam_action!("");
+  |                              ^^

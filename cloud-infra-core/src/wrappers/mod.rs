@@ -292,3 +292,6 @@ pub struct LogGroupName(pub String);
 
 #[derive(Debug, Clone)]
 pub struct BucketName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct IamAction(pub String);

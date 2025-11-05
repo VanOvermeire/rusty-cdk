@@ -67,6 +67,7 @@ use quote::{quote};
 use std::path::{absolute, Path};
 use quote::__private::Span;
 use syn::{Error, LitInt, LitStr};
+use crate::iam_validation::{PermissionValidator, ValidationResponse};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -420,4 +421,26 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
     quote!(
         LogGroupName(#value.to_string())
     ).into()
+}
+
+#[proc_macro]
+pub fn iam_action(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.is_empty() {
+        return Error::new(output.span(), "value should not be blank".to_string()).into_compile_error().into()
+    }
+
+    let validator = PermissionValidator::new();
+    match validator.is_valid_action(&value) {
+        ValidationResponse::Valid => {
+            quote!(
+                IamAction(#value.to_string())
+            ).into()
+        }
+        ValidationResponse::Invalid(message) => {
+            Error::new(output.span(), message).into_compile_error().into()
+        }
+    }
 }

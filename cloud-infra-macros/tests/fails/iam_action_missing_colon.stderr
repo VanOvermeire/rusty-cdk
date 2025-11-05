@@ -1,0 +1,5 @@
+error: expected a service and its permission separated by :
+ --> tests/fails/iam_action_missing_colon.rs:4:30
+  |
+4 |     let action = iam_action!("s3GetObject");
+  |                              ^^^^^^^^^^^^^
