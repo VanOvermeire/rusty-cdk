@@ -98,6 +98,16 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     }
 }
 
+/// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
+///
+/// This macro ensures that the input string contains only alphanumeric characters (a-z, A-Z, 0-9),
+/// underscores (_), and hyphens (-). It's designed for creating safe identifiers for AWS resources
+/// that allow hyphens in their naming conventions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters, underscores, and hyphens are allowed
 #[proc_macro]
 pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -114,6 +124,15 @@ pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStrea
     }
 }
 
+/// Creates a validated `StringForSecret` wrapper for AWS Secrets Manager secret names at compile time.
+///
+/// This macro ensures that the input string is a valid name for AWS Secrets Manager secrets,
+/// following AWS naming conventions and character restrictions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters, and the following special characters are allowed: /, _, +, =, ., @, -
 #[proc_macro]
 pub fn string_for_secret(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -317,6 +336,28 @@ number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcur
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
 
+/// Creates a validated `Bucket` wrapper for existing AWS S3 bucket references at compile time.
+///
+/// This macro ensures that the input string refers to an existing S3 bucket in your AWS account.
+/// It queries S3 to verify the bucket exists.
+///
+/// # Validation Rules
+///
+/// - Value must not be an ARN (cannot start with "arn:")
+/// - Value must not include the "s3:" prefix
+/// - Bucket must exist in your AWS account (verified at compile time)
+///
+/// # Environment Variables
+///
+/// - `CLOUD_INFRA_NO_REMOTE`: Set to `true` to skip remote AWS checks (for offline development)
+/// - `CLOUD_INFRA_RECHECK`: Set to `true` to force revalidation of cached bucket names
+///
+/// # Note
+///
+/// This macro caches validation results to improve compile times. The first compilation will
+/// query AWS to verify the bucket exists. Later compilations will use the cached result unless `CLOUD_INFRA_RECHECK` is set to true.
+/// 
+/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so. 
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -376,6 +417,29 @@ pub fn bucket(input: TokenStream) -> TokenStream {
 
 const ADDITIONAL_ALLOWED_FOR_BUCKET_NAME: [char; 2] = ['.', '-'];
 
+/// Creates a validated `BucketName` wrapper for new AWS S3 bucket names at compile time.
+///
+/// This macro ensures that the input string is a valid S3 bucket name that follows AWS naming
+/// requirements and verifies the name is available at compile time.
+///
+/// # Validation Rules
+///
+/// - Must contain only lowercase letters, numbers, periods (.), and hyphens (-)
+/// - No uppercase letters are allowed
+/// - Bucket name must be globally unique and available (verified at compile time)
+///
+/// # Environment Variables
+///
+/// - `CLOUD_INFRA_NO_REMOTE`: Set to `true` to skip remote AWS checks (for offline development)
+/// - `CLOUD_INFRA_RECHECK`: Set to `true` to force revalidation of cached bucket name availability
+///
+/// # Note
+///
+/// This macro caches validation results to improve compile times. The first compilation will
+/// query AWS to verify the bucket name is available. Later compilations will use the cached
+/// result unless `CLOUD_INFRA_RECHECK` is set to true.
+/// 
+/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket_name(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -441,6 +505,14 @@ const POSSIBLE_LOG_RETENTION_VALUES: [u16; 22] = [
     1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653,
 ];
 
+/// Creates a validated `RetentionInDays` wrapper for AWS CloudWatch Logs retention periods at compile time.
+///
+/// This macro ensures that the input number is one of the valid retention periods allowed by AWS
+/// CloudWatch Logs. AWS only allows specific discrete values for log retention periods.
+///
+/// # Validation Rules
+///
+/// - Value must be a number, and of the AWS-approved retention periods (in days)
 #[proc_macro]
 pub fn log_retention(input: TokenStream) -> TokenStream {
     let output = match syn::parse::<LitInt>(input) {
@@ -474,6 +546,16 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
 
 const ADDITIONAL_ALLOWED_FOR_LOG_GROUP: [char; 6] = ['.', '-', '_', '#', '/', '\\'];
 
+/// Creates a validated `LogGroupName` wrapper for AWS CloudWatch Logs log group names at compile time.
+///
+/// This macro ensures that the input string is a valid CloudWatch Logs log group name following
+/// AWS naming conventions and length restrictions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - The maximum length is 512 characters
+/// - Only alphanumeric characters, and the following special characters are allowed: . - _ # / \
 #[proc_macro]
 pub fn log_group_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -512,6 +594,23 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates a validated `IamAction` wrapper for AWS IAM permissions at compile time.
+///
+/// This macro ensures that the input string represents a valid AWS IAM action permission.
+/// It validates the action against a comprehensive list of AWS service permissions to catch
+/// typos and invalid permissions at compile time.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Action must be a valid AWS IAM action (e.g., "s3:GetObject", "s3:Put*")
+/// - Action is validated against AWS's official permission list
+/// - Wildcards are supported
+///
+/// # Note
+///
+/// This macro helps prevent runtime IAM policy errors by validating permissions at compile time.
+/// Invalid or misspelled actions will cause compilation to fail with a helpful error message.
 #[proc_macro]
 pub fn iam_action(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
