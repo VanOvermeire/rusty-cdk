@@ -41,10 +41,10 @@ But the code will fail at compile time, because it contains various errors:
 Fixing these errors will cost you a lot of time because CloudFormation will only notice these issues when creating the change set or deploying the template.
 That leads to a slow feedback loop, where you're constantly fixing errors and going through synth and deploy steps, waiting for AWS to tell you where the next issue might be. In other cases, you might not be notified at all, and everything will deploy, but it won't work. In the above example, you do not want to allow writes, but your value of `0` is not valid and simply ignored.
 
-Compare the above with this example:
+Compare the above with the following:
 
 ```rust
-use cloud_infra::wrappers::{NonZeroNumber,StringWithOnlyAlphaNumericsAndUnderscores};
+use cloud_infra::wrappers::*; // importing all wrappers is a good idea to simplify larger setups
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
 use cloud_infra::stack::Resource;
@@ -97,7 +97,7 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are (largely or partly) supported, with more on the way:
+Currently only a limited number of AWS services are (largely or partly) supported:
 - DynamoDB
 - Lambda
 - SQS
@@ -106,24 +106,22 @@ Currently only a limited number of AWS services are (largely or partly) supporte
 - IAM
 - API Gateway
 
-In other words, you can definitely create simple serverless setups with this library.
+In other words, you can definitely create serverless applications with this library.
 
 Next up:
-- S3
-- Secrets Manager
 - AppConfig?
 - CloudFront?
 
 ## TODO
 
-- when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found, error?
-- maybe good advice to just import all the wrappers
-- don't really need syn? something more lightweight
-- and serde? facet could also work?
-- switch to uploading template to s3? helps avoid the 51 kb limit...
-- add and update docs
+- try to replace syn and serde with more something more lightweight (at compile time) - facet?
+- switch to uploading template to s3? helps avoid the 51 kb limit
+- add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples (generate?)
 - borrow all the things? see borrowing-example branch for an example
+  - the gain in performance was not that impressive
 - help with avoiding missing IAM permissions? perhaps by having user optionally pass in cargo toml(s)
-- check permissions/policies against a list of services (scraper probably needed)
+  - when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found, error?
+  - similar for secret
+  - additional checks for structure of iam policies
+    - for example resources is not required in all cases, but in most contexts it is
 - UpdateReplacePolicy/DeletionPolicy for storage
-- Additional checks for iam policies (probably can't enforce all of them via macros, requirements depend on context)
