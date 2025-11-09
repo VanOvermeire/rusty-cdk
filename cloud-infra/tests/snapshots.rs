@@ -2,7 +2,7 @@ use cloud_infra_core::apigateway::builder::HttpApiGatewayBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
-use cloud_infra_core::iam::{Effect, Permission, StatementBuilder};
+use cloud_infra_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
 use cloud_infra_core::secretsmanager::builder::{SecretsManagerGenerateSecretStringBuilder, SecretsManagerSecretBuilder};
 use cloud_infra_core::shared::http::HttpMethod;
@@ -165,10 +165,7 @@ fn test_lambda_with_secret_and_custom_permissions() {
         .handler("bootstrap".to_string())
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("SECRET"), secret.get_ref())
-        .permissions(Permission::Custom {
-            id: "my-perm".to_string(),
-            statement,
-        })
+        .permissions(Permission::Custom(CustomPermission::new("my-perm", statement)))
         .build();
     let stack_builder = StackBuilder::new().add_resource(fun).add_resource(role).add_resource(log);
     let stack = stack_builder.build().unwrap();

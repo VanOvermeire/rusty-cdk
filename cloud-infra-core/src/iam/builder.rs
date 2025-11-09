@@ -4,9 +4,9 @@ use crate::intrinsic_functions::{get_arn, join};
 use crate::s3::dto::S3Bucket;
 use crate::shared::Id;
 use crate::sqs::SqsQueue;
+use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::vec;
-use crate::wrappers::IamAction;
 
 pub struct IamRoleBuilder {}
 
@@ -140,7 +140,7 @@ impl StatementBuilder {
             resource: None,
         }
     }
-    
+
     pub fn new(actions: Vec<IamAction>, effect: Effect) -> Self {
         Self {
             action: actions.into_iter().map(|a| a.0).collect(),
@@ -181,16 +181,26 @@ impl StatementBuilder {
     }
 }
 
-// TODO should this also be a builder for conformity?
+pub struct CustomPermission {
+    id: String,
+    statement: Statement,
+}
+
+impl CustomPermission {
+    pub fn new(id: &str, statement: Statement) -> Self {
+        Self {
+            id: id.to_string(),
+            statement,
+        }
+    }
+}
+
 pub enum Permission<'a> {
     DynamoDBRead(&'a DynamoDBTable),
     DynamoDBReadWrite(&'a DynamoDBTable),
     SqsRead(&'a SqsQueue),
     S3ReadWrite(&'a S3Bucket),
-    Custom {
-        id: String,
-        statement: Statement
-    },
+    Custom(CustomPermission),
 }
 
 impl Permission<'_> {
@@ -259,8 +269,8 @@ impl Permission<'_> {
                     ],
                     Effect::Allow,
                 )
-                    .resources(vec![get_arn(id)])
-                    .build();
+                .resources(vec![get_arn(id)])
+                .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
@@ -282,13 +292,13 @@ impl Permission<'_> {
                     ],
                     Effect::Allow,
                 )
-                    .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
-                    .build();
+                .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
+                .build();
 
                 let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]);
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
             }
-            Permission::Custom { id, statement } => {
+            Permission::Custom(CustomPermission { id, statement }) => {
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
                 PolicyBuilder::new(id, policy_document).build()
             }
