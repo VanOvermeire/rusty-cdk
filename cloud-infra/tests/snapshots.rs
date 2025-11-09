@@ -11,7 +11,7 @@ use cloud_infra_core::sqs::SqsQueueBuilder;
 use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[test]
 fn test_dynamodb() {
@@ -157,8 +157,15 @@ fn test_lambda_with_secret_and_custom_permissions() {
     let statement = StatementBuilder::new(vec![action], Effect::Allow)
         .resources(vec!["*".into()])
         .build();
+    let mut template_for_string = Map::new();
+    template_for_string.insert("user".to_string(), Value::String("me".to_string()));
     let secret = SecretsManagerSecretBuilder::new("my-secret")
-        .generate_secret_string(SecretsManagerGenerateSecretStringBuilder::new().exclude_punctuation(true).build())
+        .generate_secret_string(SecretsManagerGenerateSecretStringBuilder::new()
+            .exclude_punctuation(true)
+            .generate_string_key("password".to_string())
+            .secret_string_template(Value::Object(template_for_string))
+            .build()
+        )
         .build();
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
@@ -167,7 +174,7 @@ fn test_lambda_with_secret_and_custom_permissions() {
         .env_var(env_var_key!("SECRET"), secret.get_ref())
         .permissions(Permission::Custom(CustomPermission::new("my-perm", statement)))
         .build();
-    let stack_builder = StackBuilder::new().add_resource(fun).add_resource(role).add_resource(log);
+    let stack_builder = StackBuilder::new().add_resource(fun).add_resource(role).add_resource(log).add_resource(secret);
     let stack = stack_builder.build().unwrap();
 
     let synthesized = stack.synth().unwrap();

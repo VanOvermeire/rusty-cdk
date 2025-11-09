@@ -115,6 +115,7 @@ Next up:
 ## TODO
 
 - try to replace syn and serde with more something more lightweight (at compile time) - facet?
+  - note that `Value` is exposed in some cases...
 - switch to uploading template to s3? helps avoid the 51 kb limit
 - add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples (generate?)
 - borrow all the things? see borrowing-example branch for an example

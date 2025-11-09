@@ -62,7 +62,8 @@ impl LogGroupBuilder {
             ..self
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> LogGroup {
         let properties = LogGroupProperties {
             log_group_name: self.log_group_name,

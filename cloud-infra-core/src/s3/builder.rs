@@ -61,6 +61,7 @@ impl S3BucketBuilder<StartState> {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> S3Bucket {
         self.build_internal(false)
     }
@@ -184,6 +185,7 @@ impl S3BucketBuilder<WebsiteState> {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> S3Bucket {
         self.build_internal(true)
     }
@@ -241,6 +243,7 @@ impl CorsRuleBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> CorsRule {
         CorsRule {
             allowed_headers: self.allow_headers,
@@ -306,6 +309,7 @@ impl PublicAccessBlockConfigurationBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> PublicAccessBlockConfiguration {
         PublicAccessBlockConfiguration {
             block_public_acls: self.ignore_public_acls,

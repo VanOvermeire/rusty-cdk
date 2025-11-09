@@ -86,7 +86,8 @@ impl HttpApiGatewayBuilder {
             ..self
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> (ApiGatewayV2Api, ApiGatewayV2Stage, Vec<(ApiGatewayV2Route, ApiGatewayV2Integration, LambdaPermission)>) {
         let api_resource_id = Resource::generate_id("HttpApiGateway");
         let stage_resource_id = Resource::generate_id("HttpApiStage");
@@ -273,7 +274,8 @@ impl CorsConfigurationBuilder {
             ..self
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> CorsConfiguration {
         CorsConfiguration {
             allow_credentials: self.allow_credentials,

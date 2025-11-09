@@ -52,6 +52,7 @@ impl IamRolePropertiesBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> IamRoleProperties {
         IamRoleProperties {
             assumed_role_policy_document: self.assumed_role_policy_document,
@@ -75,6 +76,7 @@ impl PolicyBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> Policy {
         Policy {
             policy_name: self.policy_name,
@@ -171,6 +173,7 @@ impl StatementBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> Statement {
         Statement {
             action: self.action,
