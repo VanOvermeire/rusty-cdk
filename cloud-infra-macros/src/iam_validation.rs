@@ -20,7 +20,10 @@ impl PermissionValidator {
     }
 
     pub(crate) fn is_valid_action(&self, action: &str) -> ValidationResponse {
-        // TODO is whitespace before/after an action valid?
+        if action.chars().any(|c| c.is_whitespace()) {
+            return ValidationResponse::Invalid(format!("whitespaces (`{}`) are not allowed in an IAM action", action))
+        }
+        
         let mut service_and_permission: Vec<_> = action.split(':').collect();
         let permission = service_and_permission.pop();
         let service = service_and_permission.pop();
@@ -35,10 +38,10 @@ impl PermissionValidator {
                     } else if valid_permissions.contains(&permission) {
                         ValidationResponse::Valid
                     } else {
-                        ValidationResponse::Invalid(format!("{} LOL not exist for {}", permission, service))
+                        ValidationResponse::Invalid(format!("`{}` action does not exist for service `{}`", permission, service))
                     }
                 } else {
-                    ValidationResponse::Invalid(format!("unknown AWS service name: {}", service))
+                    ValidationResponse::Invalid(format!("unknown AWS service name `{}`", service))
                 }
             },
             _ => ValidationResponse::Invalid("expected a service and its permission separated by :".to_string())
@@ -95,7 +98,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_create_permissions_map_creates_map_with_entries_by_method_name_containing_hashmaps_by_service_key() {
+    fn create_permissions_map_creates_map_with_entries_by_method_name_containing_hashmaps_by_service_key() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
 
         let permissions = create_permissions_map_for(list);
@@ -108,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_valid_action_string() {
+    fn validates_valid_action_string() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -120,7 +123,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_valid_action_string_with_wildcard_only() {
+    fn validates_valid_action_string_with_wildcard_only() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -132,7 +135,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_valid_action_string_with_wildcard_at_end() {
+    fn validates_valid_action_string_with_wildcard_at_end() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -144,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_valid_action_string_with_wildcard_at_start() {
+    fn validates_valid_action_string_with_wildcard_at_start() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -156,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_valid_action_string_with_multiple_wildcards() {
+    fn validates_valid_action_string_with_multiple_wildcards() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -168,7 +171,19 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_invalid_action_string() {
+    fn whitespaces_not_allowed() {
+        let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
+        let validator = PermissionValidator {
+            services_with_permissions: create_permissions_map_for(list),
+        };
+
+        let result = validator.is_valid_action("dax: BatchWriteItem");
+
+        assert_ne!(result, ValidationResponse::Valid);
+    }
+
+    #[test]
+    fn validates_invalid_action_string() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -180,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_unknown_service() {
+    fn validates_unknown_service() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -192,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_invalid_action_string_with_wildcard() {
+    fn validates_invalid_action_string_with_wildcard() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),
@@ -204,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validates_invalid_action_string_with_multiple_wildcards() {
+    fn validates_invalid_action_string_with_multiple_wildcards() {
         let list = "dynamodb;BatchGetItem,Scan\ndax;BatchWriteItem";
         let validator = PermissionValidator {
             services_with_permissions: create_permissions_map_for(list),

@@ -1,4 +1,4 @@
-error: InvalidAction LOL not exist for s3
+error: `InvalidAction` action does not exist for service `s3`
  --> tests/fails/iam_action_invalid_permission.rs:4:30
   |
 4 |     let action = iam_action!("s3:InvalidAction");

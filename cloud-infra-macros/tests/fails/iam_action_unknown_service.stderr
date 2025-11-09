@@ -1,4 +1,4 @@
-error: unknown AWS service name: fakeservice
+error: unknown AWS service name `fakeservice`
  --> tests/fails/iam_action_unknown_service.rs:4:30
   |
 4 |     let action = iam_action!("fakeservice:GetItem");
