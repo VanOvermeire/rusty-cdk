@@ -21,8 +21,8 @@ pub struct SecretsManagerSecretBuilder<T: SecretsManagerSecretBuilderState> {
     secret_string: Option<String>,
 }
 
-impl<T: SecretsManagerSecretBuilderState> SecretsManagerSecretBuilder<T> {
-    pub fn new(id: &str) -> SecretsManagerSecretBuilder<StartState> {
+impl SecretsManagerSecretBuilder<StartState> {
+    pub fn new(id: &str) -> Self {
         SecretsManagerSecretBuilder {
             phantom_data: Default::default(),
             id: Id(id.to_string()),
@@ -39,14 +39,14 @@ impl<T: SecretsManagerSecretBuilderState> SecretsManagerSecretBuilder<T> {
             ..self
         }
     }
-    
+
     pub fn description(self, description: String) -> Self {
         Self {
             description: Some(description),
             ..self
         }
     }
-    
+
     pub fn secret_string(self, value: String) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
         SecretsManagerSecretBuilder {
             phantom_data: Default::default(),
@@ -57,7 +57,7 @@ impl<T: SecretsManagerSecretBuilderState> SecretsManagerSecretBuilder<T> {
             generate_secret_string: None,
         }
     }
-    
+
     pub fn generate_secret_string(self, value: GenerateSecretString) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
         SecretsManagerSecretBuilder {
             phantom_data: Default::default(),
@@ -89,7 +89,7 @@ impl SecretsManagerSecretBuilder<SelectedSecretTypeState> {
 }
 
 // TODO check restrictions
-pub struct SecretsManagerGenerateSecretString {
+pub struct SecretsManagerGenerateSecretStringBuilder {
     exclude_characters: Option<String>,
     exclude_lowercase: Option<bool>,
     exclude_numbers: Option<bool>,
@@ -102,7 +102,22 @@ pub struct SecretsManagerGenerateSecretString {
     secret_string_template: Option<String>,
 }
 
-impl SecretsManagerGenerateSecretString {
+impl SecretsManagerGenerateSecretStringBuilder {
+    pub fn new() -> Self {
+        Self {
+            exclude_characters: None,
+            exclude_lowercase: None,
+            exclude_numbers: None,
+            exclude_punctuation: None,
+            exclude_uppercase: None,
+            generate_string_key: None,
+            include_space: None,
+            password_length: None,
+            require_each_included_type: None,
+            secret_string_template: None,
+        }
+    }
+    
     pub fn exclude_characters(self, exclude_characters: String) -> Self {
         Self {
             exclude_characters: Some(exclude_characters),

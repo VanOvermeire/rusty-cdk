@@ -60,6 +60,6 @@ async fn main() {
     } else {
         let synthesized = stack.unwrap().synth().unwrap();
         println!("{}", synthesized);
-        // cloud_infra::deploy("ExampleRemove", synthesized).await;
+        // cloud_infra::deploy("ExampleRemove", stack.unwrap()).await;
     }
 }

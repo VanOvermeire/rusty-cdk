@@ -190,7 +190,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             None
         };
 
-        let assume_role_statement = StatementBuilder::new(vec!["sts:AssumeRole".to_string()], Effect::Allow).principal(Principal {
+        let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow).principal(Principal {
             service: "lambda.amazonaws.com".to_string(),
         }).build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);

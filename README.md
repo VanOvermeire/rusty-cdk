@@ -126,3 +126,4 @@ Next up:
 - help with avoiding missing IAM permissions? perhaps by having user optionally pass in cargo toml(s)
 - check permissions/policies against a list of services (scraper probably needed)
 - UpdateReplacePolicy/DeletionPolicy for storage
+- Additional checks for iam policies (probably can't enforce all of them via macros, requirements depend on context)

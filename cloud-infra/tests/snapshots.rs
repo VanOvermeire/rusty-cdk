@@ -2,14 +2,15 @@ use cloud_infra_core::apigateway::builder::HttpApiGatewayBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
-use cloud_infra_core::iam::Permission;
+use cloud_infra_core::iam::{Effect, Permission, StatementBuilder};
 use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
+use cloud_infra_core::secretsmanager::builder::{SecretsManagerGenerateSecretStringBuilder, SecretsManagerSecretBuilder};
 use cloud_infra_core::shared::http::HttpMethod;
 use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
 use cloud_infra_core::sqs::SqsQueueBuilder;
 use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
-use cloud_infra_macros::{delay_seconds, env_var_key, memory, message_retention_period, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, timeout, zip_file};
+use cloud_infra_macros::*;
 use serde_json::Value;
 
 #[test]
@@ -140,6 +141,48 @@ fn test_lambda_with_sns_subscription() {
             (r"SnsTopic[0-9]+", "[SnsTopic]"),
             (r"SnsSubscription[0-9]+", "[SnsSubscription]"),
             (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn test_lambda_with_secret_and_custom_permissions() {
+    let zip_file = zip_file!("./cloud-infra/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let bucket = get_bucket();
+
+    let action = iam_action!("secretsmanager:Get*");
+    let statement = StatementBuilder::new(vec![action], Effect::Allow)
+        .resources(vec!["*".into()])
+        .build();
+    let secret = SecretsManagerSecretBuilder::new("my-secret")
+        .generate_secret_string(SecretsManagerGenerateSecretStringBuilder::new().exclude_punctuation(true).build())
+        .build();
+    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+        .zip(Zip::new(bucket, zip_file))
+        .handler("bootstrap".to_string())
+        .runtime(Runtime::ProvidedAl2023)
+        .env_var(env_var_key!("SECRET"), secret.get_ref())
+        .permissions(Permission::Custom {
+            id: "my-perm".to_string(),
+            statement,
+        })
+        .build();
+    let stack_builder = StackBuilder::new().add_resource(fun).add_resource(role).add_resource(log);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"SecretsManagerSecret[0-9]+", "[SecretsManagerSecret]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

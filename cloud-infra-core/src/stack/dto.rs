@@ -4,6 +4,7 @@ use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::{EventSourceMapping, LambdaFunction, LambdaPermission};
 use crate::s3::dto::S3Bucket;
+use crate::secretsmanager::dto::SecretsManagerSecret;
 use crate::shared::Id;
 use crate::sns::dto::{SnsSubscription, SnsTopic};
 use crate::sqs::SqsQueue;
@@ -48,6 +49,7 @@ impl Stack {
                 Resource::ApiGatewayV2Route(_) => vec![],
                 Resource::ApiGatewayV2Integration(_) => vec![],
                 Resource::S3Bucket(_) => vec![],
+                Resource::SecretsManagerSecret(_) => vec![],
             })
             .collect()
     }
@@ -56,9 +58,9 @@ impl Stack {
         let mut naive_synth = serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))?;
         // TODO nicer way to do this? for example a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
         self.to_replace.iter().for_each(|(current, new)| {
-             naive_synth = naive_synth.replace(current, new);
+            naive_synth = naive_synth.replace(current, new);
         });
-        
+
         Ok(naive_synth)
     }
 
@@ -74,7 +76,10 @@ impl Stack {
             .filter(|(existing_id, _)| current_ids.contains_key(existing_id))
             .for_each(|(existing_id, existing_resource_id)| {
                 let current_stack_resource_id = current_ids.get(&existing_id).expect("existence to be checked by filter");
-                let removed = self.resources.remove(current_stack_resource_id).expect("resource to exist in stack resources");
+                let removed = self
+                    .resources
+                    .remove(current_stack_resource_id)
+                    .expect("resource to exist in stack resources");
                 self.resources.insert(existing_resource_id.clone(), removed);
                 self.metadata.insert(existing_id, existing_resource_id.clone());
                 self.to_replace.push((current_stack_resource_id.to_string(), existing_resource_id));
@@ -109,6 +114,7 @@ pub enum Resource {
     ApiGatewayV2Stage(ApiGatewayV2Stage),
     ApiGatewayV2Route(ApiGatewayV2Route),
     ApiGatewayV2Integration(ApiGatewayV2Integration),
+    SecretsManagerSecret(SecretsManagerSecret),
 }
 
 impl Resource {
@@ -128,6 +134,7 @@ impl Resource {
             Resource::ApiGatewayV2Stage(r) => r.get_id().clone(),
             Resource::ApiGatewayV2Route(r) => r.get_id().clone(),
             Resource::ApiGatewayV2Integration(r) => r.get_id().clone(),
+            Resource::SecretsManagerSecret(r) => r.get_id().clone(),
         }
     }
 
@@ -147,6 +154,7 @@ impl Resource {
             Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Integration(i) => i.get_resource_id(),
             Resource::S3Bucket(s) => s.get_resource_id(),
+            Resource::SecretsManagerSecret(s) => s.get_resource_id(),
         }
     }
 
@@ -167,6 +175,7 @@ impl Resource {
             Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
             Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
             Resource::S3Bucket(_) => vec![],
+            Resource::SecretsManagerSecret(_) => vec![],
         }
     }
 
@@ -201,19 +210,18 @@ from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Stage);
 from_resource!(ApiGatewayV2Route);
 from_resource!(ApiGatewayV2Integration);
+from_resource!(SecretsManagerSecret);
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use crate::sns::builder::SnsTopicBuilder;
     use crate::sqs::SqsQueueBuilder;
     use crate::stack::StackBuilder;
+    use std::collections::HashMap;
 
     #[test]
     fn should_do_nothing_for_empty_stack_and_empty_existing_ids() {
-        let mut stack = StackBuilder::new()
-            .build()
-            .unwrap();
+        let mut stack = StackBuilder::new().build().unwrap();
         let existing_ids = HashMap::new();
 
         stack.update_resource_ids_for_existing_stack(existing_ids);
@@ -225,9 +233,7 @@ mod tests {
 
     #[test]
     fn should_do_nothing_for_empty_stack() {
-        let mut stack = StackBuilder::new()
-            .build()
-            .unwrap();
+        let mut stack = StackBuilder::new().build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("fun".to_string(), "abc123".to_string());
 
@@ -240,12 +246,8 @@ mod tests {
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id() {
-        let topic = SnsTopicBuilder::new("topic")
-            .build();
-        let mut stack = StackBuilder::new()
-            .add_resource(topic)
-            .build()
-            .unwrap();
+        let topic = SnsTopicBuilder::new("topic").build();
+        let mut stack = StackBuilder::new().add_resource(topic).build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
 
@@ -259,16 +261,9 @@ mod tests {
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id_keeping_new_queue_id() {
-        let topic = SnsTopicBuilder::new("topic")
-            .build();
-        let sqs = SqsQueueBuilder::new("queue")
-            .standard_queue()
-            .build();
-        let mut stack = StackBuilder::new()
-            .add_resource(topic)
-            .add_resource(sqs)
-            .build()
-            .unwrap();
+        let topic = SnsTopicBuilder::new("topic").build();
+        let sqs = SqsQueueBuilder::new("queue").standard_queue().build();
+        let mut stack = StackBuilder::new().add_resource(topic).add_resource(sqs).build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
 

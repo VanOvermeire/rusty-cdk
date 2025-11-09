@@ -2,10 +2,11 @@ use crate::dynamodb::DynamoDBTable;
 use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
 use crate::intrinsic_functions::{get_arn, join};
 use crate::s3::dto::S3Bucket;
+use crate::shared::Id;
 use crate::sqs::SqsQueue;
 use serde_json::Value;
 use std::vec;
-use crate::shared::Id;
+use crate::wrappers::IamAction;
 
 pub struct IamRoleBuilder {}
 
@@ -131,9 +132,18 @@ pub struct StatementBuilder {
 }
 
 impl StatementBuilder {
-    pub fn new(action: Vec<String>, effect: Effect) -> Self {
+    pub(crate) fn internal_new(action: Vec<String>, effect: Effect) -> Self {
         Self {
             action,
+            effect,
+            principal: None,
+            resource: None,
+        }
+    }
+    
+    pub fn new(actions: Vec<IamAction>, effect: Effect) -> Self {
+        Self {
+            action: actions.into_iter().map(|a| a.0).collect(),
             effect,
             principal: None,
             resource: None,
@@ -171,13 +181,16 @@ impl StatementBuilder {
     }
 }
 
-// should this also be a builder for conformity?
+// TODO should this also be a builder for conformity?
 pub enum Permission<'a> {
     DynamoDBRead(&'a DynamoDBTable),
     DynamoDBReadWrite(&'a DynamoDBTable),
     SqsRead(&'a SqsQueue),
     S3ReadWrite(&'a S3Bucket),
-    // TODO custom, add any permission you want...
+    Custom {
+        id: String,
+        statement: Statement
+    },
 }
 
 impl Permission<'_> {
@@ -187,6 +200,7 @@ impl Permission<'_> {
             Permission::DynamoDBReadWrite(d) => d.get_resource_id(),
             Permission::SqsRead(s) => s.get_resource_id(),
             Permission::S3ReadWrite(s) => s.get_resource_id(),
+            Permission::Custom { .. } => return None,
         };
         Some(id)
     }
@@ -235,7 +249,7 @@ impl Permission<'_> {
             }
             Permission::SqsRead(queue) => {
                 let id = queue.get_resource_id();
-                let sqs_permissions_statement = StatementBuilder::new(
+                let sqs_permissions_statement = StatementBuilder::internal_new(
                     vec![
                         "sqs:ChangeMessageVisibility".to_string(),
                         "sqs:DeleteMessage".to_string(),
@@ -245,15 +259,15 @@ impl Permission<'_> {
                     ],
                     Effect::Allow,
                 )
-                .resources(vec![get_arn(id)])
-                .build();
+                    .resources(vec![get_arn(id)])
+                    .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::S3ReadWrite(bucket) => {
                 let id = bucket.get_resource_id();
                 let arn = get_arn(id);
-                let s3_permissions_statement = StatementBuilder::new(
+                let s3_permissions_statement = StatementBuilder::internal_new(
                     vec![
                         "s3:Abort*".to_string(),
                         "s3:DeleteObject*".to_string(),
@@ -268,11 +282,15 @@ impl Permission<'_> {
                     ],
                     Effect::Allow,
                 )
-                .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
-                .build();
+                    .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
+                    .build();
 
                 let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]);
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
+            }
+            Permission::Custom { id, statement } => {
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]);
+                PolicyBuilder::new(id, policy_document).build()
             }
         }
     }
