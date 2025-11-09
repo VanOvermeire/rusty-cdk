@@ -124,4 +124,5 @@ Next up:
   - similar for secret
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
-- UpdateReplacePolicy/DeletionPolicy for storage
+- UpdateReplacePolicy/DeletionPolicy for storage (will slow down testing, so not yet)
+- Tagging

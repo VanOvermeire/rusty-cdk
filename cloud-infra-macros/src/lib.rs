@@ -317,7 +317,6 @@ number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcur
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
 
-// TODO documentation
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();

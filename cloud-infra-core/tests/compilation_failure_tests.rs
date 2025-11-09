@@ -1,4 +1,3 @@
-// TODO more of these tests
 #[test]
 fn should_not_compile() {
     let t = trybuild::TestCases::new();
