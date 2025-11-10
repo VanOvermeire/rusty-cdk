@@ -1,11 +1,14 @@
 use std::marker::PhantomData;
 use std::time::Duration;
 use crate::s3::dto;
-use crate::s3::dto::{CorsConfiguration, CorsRule, LifecycleConfiguration, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, WebsiteConfiguration};
+use crate::s3::dto::{CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, WebsiteConfiguration};
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::stack::Resource;
-use crate::wrappers::BucketName;
+use crate::wrappers::{BucketName, S3LifecycleObjectSizes};
+
+// TODO bucket encryption
+// TODO notifications will require custom work to avoid circular dependencies... Maybe borrow code from cdk?
 
 pub enum VersioningConfiguration {
     Enabled,
@@ -20,9 +23,6 @@ impl From<VersioningConfiguration> for String {
         }
     }
 }
-
-// TODO bucket encryption
-// TODO notifications will require custom work to avoid circular dependencies... Maybe borrow code from cdk?
 
 pub trait S3BucketBuilderState {}
 
@@ -255,8 +255,265 @@ impl CorsRuleBuilder {
     }
 }
 
+pub enum TransitionDefaultMinimumObjectSize {
+    VariesByStorageClass,
+    AllStorageClasses128k
+}
+
+impl From<TransitionDefaultMinimumObjectSize> for String {
+    fn from(value: TransitionDefaultMinimumObjectSize) -> Self {
+        match value {
+            TransitionDefaultMinimumObjectSize::VariesByStorageClass => "varies_by_storage_class".to_string(),
+            TransitionDefaultMinimumObjectSize::AllStorageClasses128k => "all_storage_classes_128K".to_string()
+        }
+    }
+}
+
+pub enum LifecycleStorageClass {
+    IntelligentTiering,
+    OneZoneIA,
+    StandardIA,
+    GlacierDeepArchive,
+    Glacier,
+    GlacierInstantRetrieval,
+}
+
+impl From<LifecycleStorageClass> for String {
+    fn from(value: LifecycleStorageClass) -> Self {
+        match value {
+            LifecycleStorageClass::GlacierDeepArchive => "DEEP_ARCHIVE".to_string(),
+            LifecycleStorageClass::Glacier => "GLACIER".to_string(),
+            LifecycleStorageClass::GlacierInstantRetrieval => "GLACIER_IR".to_string(),
+            LifecycleStorageClass::IntelligentTiering => "INTELLIGENT_TIERING".to_string(),
+            LifecycleStorageClass::OneZoneIA => "ONEZONE_IA".to_string(),
+            LifecycleStorageClass::StandardIA => "STANDARD_IA".to_string(),
+        }
+    }
+}
+
+pub struct LifecycleRuleTransitionBuilder {
+    storage_class: LifecycleStorageClass,
+    transition_in_days: Option<u32>
+}
+
+impl LifecycleRuleTransitionBuilder {
+    pub fn new(storage_class: LifecycleStorageClass) -> Self {
+        Self {
+            storage_class,
+            transition_in_days: None,
+        }
+    }
+
+    // TODO should validate that it's >30 for standard and onezone
+    pub fn transition_in_days(self, days: u32) -> Self {
+        Self {
+            transition_in_days: Some(days),
+            ..self
+        }
+    }
+    
+    pub fn build(self) -> LifecycleRuleTransition {
+        LifecycleRuleTransition {
+            storage_class: self.storage_class.into(),
+            transition_in_days: self.transition_in_days.unwrap_or(0),
+        }
+    }
+}
+
+pub struct NonCurrentVersionTransitionBuilder {
+    storage_class: LifecycleStorageClass,
+    transition_in_days: u32,
+    newer_non_current_versions: Option<u32>,
+}
+
+impl NonCurrentVersionTransitionBuilder {
+    pub fn new(storage_class: LifecycleStorageClass, transition_in_days: u32) -> Self {
+        Self {
+            storage_class,
+            transition_in_days,
+            newer_non_current_versions: None,
+        }
+    }
+    
+    pub fn newer_non_current_versions(self, versions: u32) -> Self {
+        Self {
+            newer_non_current_versions: Some(versions),
+            ..self
+        }
+    }
+    
+    pub fn build(self) -> NonCurrentVersionTransition {
+        NonCurrentVersionTransition {
+            storage_class: self.storage_class.into(),
+            transition_in_days: self.transition_in_days,
+            newer_non_current_versions: self.newer_non_current_versions,
+        }
+    }
+}
+
+pub enum LifecycleRuleStatus {
+    Enabled,
+    Disabled,
+}
+
+impl From<LifecycleRuleStatus> for String {
+    fn from(value: LifecycleRuleStatus) -> Self {
+        match value {
+            LifecycleRuleStatus::Enabled => "Enabled".to_string(),
+            LifecycleRuleStatus::Disabled => "Disabled".to_string(),
+        }
+    }
+}
+
+// TODO u16 prob makes more sense for the days (even though aws allows more)
+pub struct LifecycleRuleBuilder {
+    id: Option<String>,
+    status: LifecycleRuleStatus,
+    expiration_in_days: Option<u32>, // TODO expiration must be > than expiration in transition (ow boy...)
+    prefix: Option<String>,
+    object_size_greater_than: Option<u32>, // TODO make sure one is < than the other => macro!
+    object_size_less_than: Option<u32>,
+    abort_incomplete_multipart_upload: Option<u32>,
+    non_current_version_expiration: Option<u32>,
+    transitions: Option<Vec<LifecycleRuleTransition>>,
+    non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>,
+}
+
 // TODO
-pub struct LifecycleConfigurationBuilder {}
+impl LifecycleRuleBuilder {
+    pub fn new(status: LifecycleRuleStatus) -> Self {
+        Self {
+            status,
+            id: None,
+            expiration_in_days: None,
+            prefix: None,
+            object_size_greater_than: None,
+            object_size_less_than: None,
+            abort_incomplete_multipart_upload: None,
+            non_current_version_expiration: None,
+            transitions: None,
+            non_current_version_transitions: None,
+        }
+    }
+    
+    pub fn id(self, id: String) -> Self {
+        Self {
+            id: Some(id), 
+            ..self
+        }
+    }
+    
+    
+    pub fn expiration_in_days(self, days: u32) -> Self {
+        Self {
+            expiration_in_days: Some(days),
+            ..self
+        }
+    }
+    
+    pub fn prefix(self, prefix: String) -> Self {
+        Self {
+            prefix: Some(prefix),
+            ..self
+        }
+    }
+    
+    pub fn object_size(self, sizes: S3LifecycleObjectSizes) -> Self {
+        Self {
+            object_size_less_than: sizes.0,
+            object_size_greater_than: sizes.1,
+            ..self
+        }
+    }
+    
+    pub fn abort_incomplete_multipart_upload(self, days: u32) -> Self {
+        Self {
+            abort_incomplete_multipart_upload: Some(days),
+            ..self
+        }
+    }
+    
+    pub fn non_current_version_expiration(self, days: u32) -> Self {
+        Self {
+            non_current_version_expiration: Some(days),
+            ..self
+        }
+    }
+    
+    pub fn add_transition(mut self, transition: LifecycleRuleTransition) -> Self {
+        if let Some(mut transitions) = self.transitions {
+            transitions.push(transition);
+            self.transitions = Some(transitions);
+        } else {
+            self.transitions = Some(vec![transition]);
+        }
+        
+        Self {
+            ..self
+        }
+    }
+    
+    pub fn add_non_current_version_transitions(mut self, transition: NonCurrentVersionTransition) -> Self {
+        if let Some(mut transitions) = self.non_current_version_transitions {
+            transitions.push(transition);
+            self.non_current_version_transitions = Some(transitions);
+        } else {
+            self.non_current_version_transitions = Some(vec![transition]);
+        }
+
+        Self {
+            ..self
+        }
+    }
+    
+    pub fn build(self) -> LifecycleRule {
+        LifecycleRule {
+            id: self.id,
+            status: self.status.into(),
+            expiration_in_days: self.expiration_in_days,
+            prefix: self.prefix,
+            object_size_greater_than: self.object_size_greater_than,
+            object_size_less_than: self.object_size_less_than,
+            transitions: self.transitions,
+            abort_incomplete_multipart_upload: self.abort_incomplete_multipart_upload,
+            non_current_version_expiration: self.non_current_version_expiration,
+            non_current_version_transitions: self.non_current_version_transitions,
+        }
+    }
+}
+
+pub struct LifecycleConfigurationBuilder {
+    rules: Vec<LifecycleRule>,
+    transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>
+}
+
+impl LifecycleConfigurationBuilder {
+    pub fn new() -> Self {
+        Self {
+            rules: vec![],
+            transition_minimum_size: None,
+        }
+    }
+
+    pub fn transition_minimum_size(self, size: TransitionDefaultMinimumObjectSize) -> Self {
+        Self {
+            transition_minimum_size: Some(size),
+            ..self
+        }
+    }
+
+    pub fn add_rule(mut self, rule: LifecycleRule) -> Self {
+        self.rules.push(rule);
+        self
+    }
+
+    pub fn build(self) -> LifecycleConfiguration {
+        LifecycleConfiguration {
+            rules: self.rules,
+            transition_minimum_size: self.transition_minimum_size.map(|v| v.into()),
+        }
+    }
+}
 
 pub struct PublicAccessBlockConfigurationBuilder {
     block_public_acls: Option<bool>,

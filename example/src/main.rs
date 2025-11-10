@@ -5,8 +5,7 @@ use cloud_infra::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
 use cloud_infra::shared::http::HttpMethod;
 use cloud_infra::sqs::SqsQueueBuilder;
 use cloud_infra::stack::StackBuilder;
-use cloud_infra::wrappers::Bucket;
-use cloud_infra::wrappers::{EnvVarKey, Memory, NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores, Timeout, ZipFile};
+use cloud_infra::wrappers::*;
 use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zip_file};
 
 #[tokio::main]

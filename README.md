@@ -13,20 +13,22 @@ Install using cargo:
 This is some CDK code that is valid at compile time (i.e. it synthesizes to a CloudFormation template).
 
 ```typescript
+// imports
+
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
-
-    new Table(this, 'someId', {
-        tableName: "example!!!",
-        partitionKey: {
-            name: '',
-            type: AttributeType.BINARY
-        },
-        billingMode: BillingMode.PAY_PER_REQUEST,
-        maxReadRequestUnits: -1,
-        maxWriteRequestUnits: 0,
-    })
+      super(scope, id, props);
+  
+      new Table(this, 'someId', {
+          tableName: "example!!!",
+          partitionKey: {
+              name: '',
+              type: AttributeType.BINARY
+          },
+          billingMode: BillingMode.PAY_PER_REQUEST,
+          maxReadRequestUnits: -1,
+          maxWriteRequestUnits: 0,
+      })
   }
 }
 ```
@@ -47,23 +49,22 @@ Compare the above with the following:
 use cloud_infra::wrappers::*; // importing all wrappers is a good idea to simplify larger setups
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
-use cloud_infra::stack::Resource;
-use cloud_infra::stack::Stack;
+use cloud_infra::stack::{Resource, Stack};
 
 fn iac() {
-    let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let read_capacity = non_zero_number!(5);
-    let write_capacity = non_zero_number!(1);
+  let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
   
-    let resources: Vec<Resource> = vec![
-      DynamoDBTableBuilder::new("table", DynamoDBKey::new(key, AttributeType::String))
-              .provisioned_billing()
-              .read_capacity(read_capacity)
-              .write_capacity(write_capacity)
-              .build()
-              .into()
-    ];
-    let stack: Stack = resources.try_into().unwrap();
+  let resources: Vec<Resource> = vec![
+    DynamoDBTableBuilder::new("table", DynamoDBKey::new(dynamo_key, AttributeType::String))
+            .provisioned_billing()
+            .read_capacity(non_zero_number!(5))
+            .write_capacity(non_zero_number!(1))
+            .build()
+            .into()
+  ];
+  
+  let stack_builder = StackBuilder::new().add_resource(table).unwrap();
+  // ready to synth / deploy
 }
 ```
 
@@ -117,7 +118,8 @@ Next up:
 - try to replace syn and serde with more something more lightweight (at compile time) - facet?
   - note that `Value` is exposed in some cases...
 - switch to uploading template to s3? helps avoid the 51 kb limit
-- add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples (generate?)
+- add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples with more info
+- add docs with example code to all builders
 - borrow all the things? see borrowing-example branch for an example
   - the gain in performance was not that impressive
 - help with avoiding missing IAM permissions? perhaps by having user optionally pass in cargo toml(s)
@@ -125,5 +127,5 @@ Next up:
   - similar for secret
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
-- UpdateReplacePolicy/DeletionPolicy for storage (will slow down testing, so not yet)
-- Tagging
+- UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
+  - Tagging

@@ -7,8 +7,8 @@ use crate::shared::http::HttpMethod;
 use crate::shared::Id;
 use crate::stack::Resource;
 
-// TODO auth, websockets
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
+// auth also still to do
 
 struct RouteInfo {
     lambda_id: Id,

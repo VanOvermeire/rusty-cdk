@@ -56,7 +56,7 @@ impl Stack {
 
     pub fn synth(&self) -> Result<String, String> {
         let mut naive_synth = serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))?;
-        // TODO nicer way to do this? for example a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
+        // nicer way to do this? for example, a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
         self.to_replace.iter().for_each(|(current, new)| {
             naive_synth = naive_synth.replace(current, new);
         });

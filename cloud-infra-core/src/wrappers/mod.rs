@@ -298,3 +298,6 @@ pub struct BucketName(pub String);
 
 #[derive(Debug, Clone)]
 pub struct IamAction(pub String);
+
+#[derive(Debug, Clone)]
+pub struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);

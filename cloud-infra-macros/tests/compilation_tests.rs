@@ -1,12 +1,6 @@
 #![allow(dead_code)]
 
-use cloud_infra_macros::{
-    iam_action, non_zero_number, string_with_only_alpha_numerics_and_underscores,
-    string_with_only_alpha_numerics_underscores_and_hyphens, env_var_key,
-    memory, timeout, delay_seconds, maximum_message_size, message_retention_period,
-    visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency,
-    log_retention, log_group_name
-};
+use cloud_infra_macros::{iam_action, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -24,6 +18,7 @@ struct ReceiveMessageWaitTime(u16);
 struct SqsEventSourceMaxConcurrency(u16);
 struct RetentionInDays(u16);
 struct LogGroupName(String);
+struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -103,4 +98,28 @@ fn create_log_retention_with_valid_value() {
 #[test]
 fn create_log_group_name_with_valid_value() {
     log_group_name!("/aws/lambda/my-function");
+}
+
+#[test]
+fn create_object_sizes_two_sizes() {
+    let val = lifecycle_object_sizes!(5000,10000);
+
+    assert_eq!(Some(5000), val.0);
+    assert_eq!(Some(10000), val.1);
+}
+
+#[test]
+fn create_object_sizes_first_size() {
+    let val = lifecycle_object_sizes!(5000);
+
+    assert_eq!(Some(5000), val.0);
+    assert_eq!(None, val.1);
+}
+
+#[test]
+fn create_object_sizes_second_size() {
+    let val = lifecycle_object_sizes!(,10000);
+
+    assert_eq!(None, val.0);
+    assert_eq!(Some(10000), val.1);
 }

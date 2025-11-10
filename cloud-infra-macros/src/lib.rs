@@ -61,15 +61,19 @@ mod bucket_name;
 mod file_util;
 mod iam_validation;
 mod strings;
+mod object_sizes;
 
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
+use crate::object_sizes::ObjectSizes;
 use crate::strings::{check_string_requirements, StringRequirements};
 use proc_macro::TokenStream;
 use quote::__private::Span;
 use quote::quote;
 use std::env;
 use std::path::{absolute, Path};
-use syn::{Error, LitInt, LitStr};
+use syn::parse::Parse;
+use syn::token::Token;
+use syn::{parse_macro_input, Error, LitInt, LitStr};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -630,4 +634,36 @@ pub fn iam_action(input: TokenStream) -> TokenStream {
         .into(),
         ValidationResponse::Invalid(message) => Error::new(output.span(), message).into_compile_error().into(),
     }
+}
+
+#[proc_macro]
+pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
+    let ObjectSizes {  first, second } = parse_macro_input!(input);
+
+    // replace with if let Some
+    if first.is_some() && second.is_some() && first.unwrap() > second.unwrap() {
+        return Error::new(Span::call_site(), format!("first number in `lifecycle_object_sizes` should be smaller than second"))
+            .into_compile_error()
+            .into();
+    }
+    
+    let first_output = if let Some(first) = first {
+        quote! {
+            Some(#first)
+        }
+    } else {
+        quote! { None }
+    };
+    
+    let second_output = if let Some(second) = second {
+        quote! {
+            Some(#second)
+        }
+    } else {
+        quote! { None }
+    };
+
+    quote! {
+        S3LifecycleObjectSizes(#first_output, #second_output)
+    }.into()
 }

@@ -95,6 +95,28 @@ pub struct CorsRule {
 pub struct LifecycleConfiguration {
     #[serde(rename = "Rules")]
     pub(crate) rules: Vec<LifecycleRule>,
+    #[serde(rename = "TransitionDefaultMinimumObjectSize")]
+    pub(crate) transition_minimum_size: Option<String>
+}
+
+#[derive(Debug, Serialize)]
+pub struct LifecycleRuleTransition {
+    #[serde(rename = "StorageClass")]
+    pub(crate) storage_class: String,
+    #[serde(rename = "TransitionInDays")]
+    pub(crate) transition_in_days: u32, // will become optional once `TransitionDate` is added
+    // #[serde(rename = "TransitionDate")]
+    // pub(crate) transition_date: String => add and check the regex
+}
+
+#[derive(Debug, Serialize)]
+pub struct NonCurrentVersionTransition {
+    #[serde(rename = "StorageClass")]
+    pub(crate) storage_class: String,
+    #[serde(rename = "TransitionInDays")]
+    pub(crate) transition_in_days: u32,
+    #[serde(rename = "NewerNoncurrentVersions")]
+    pub(crate) newer_non_current_versions: Option<u32>
 }
 
 #[derive(Debug, Serialize)]
@@ -107,6 +129,22 @@ pub struct LifecycleRule {
     pub(crate) expiration_in_days: Option<u32>,
     #[serde(rename = "Prefix", skip_serializing_if = "Option::is_none")]
     pub(crate) prefix: Option<String>,
+    #[serde(rename = "ObjectSizeGreaterThan", skip_serializing_if = "Option::is_none")]
+    pub(crate) object_size_greater_than: Option<u32>,
+    #[serde(rename = "ObjectSizeLessThan", skip_serializing_if = "Option::is_none")]
+    pub(crate) object_size_less_than: Option<u32>,
+    #[serde(rename = "AbortIncompleteMultipartUpload", skip_serializing_if = "Option::is_none")]
+    pub(crate) abort_incomplete_multipart_upload: Option<u32>, // TODO days
+    #[serde(rename = "NoncurrentVersionExpiration", skip_serializing_if = "Option::is_none")]
+    pub(crate) non_current_version_expiration: Option<u32>, // TODO days
+    #[serde(rename = "Transitions", skip_serializing_if = "Option::is_none")]
+    pub(crate) transitions: Option<Vec<LifecycleRuleTransition>>,
+    #[serde(rename = "NoncurrentVersionTransitions", skip_serializing_if = "Option::is_none")]
+    pub(crate) non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>
+    
+    // #[serde(rename = "ExpiredObjectDeleteMarker", skip_serializing_if = "Option::is_none")]
+    // pub(crate) expire_object_delete_marker: Option<bool> => cannot be specified with ExpirationInDays, ExpirationDate, or TagFilters.
+    // "ExpirationDate": String => check the regex
 }
 
 #[derive(Debug, Serialize)]
