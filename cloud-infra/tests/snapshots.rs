@@ -12,6 +12,7 @@ use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
+use cloud_infra_core::s3::builder::{LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, S3BucketBuilder, S3Encryption};
 
 #[test]
 fn test_dynamodb() {
@@ -32,6 +33,34 @@ fn test_dynamodb() {
 
     insta::with_settings!({filters => vec![
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn test_bucket() {
+    let bucket = S3BucketBuilder::new("bucket")
+        .encryption(S3Encryption::S3Managed)
+        .lifecycle_configuration(LifecycleConfigurationBuilder::new()
+            .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
+                .prefix("/prefix".to_string())
+                .add_transition(LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
+                    .transition_in_days(30)
+                    .build()
+                )
+                .build())
+            .build()
+        )
+        .build();
+    let stack_builder = StackBuilder::new().add_resource(bucket);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
