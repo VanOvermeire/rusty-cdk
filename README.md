@@ -115,6 +115,8 @@ Next up:
 
 ## TODO
 
+- probably want to do some more validation when building the stack, for stuff we cannot do at compile time 
+- accept &str or similar where we now require String => Into<String>?
 - try to replace syn and serde with more something more lightweight (at compile time) - facet?
   - note that `Value` is exposed in some cases...
 - switch to uploading template to s3? helps avoid the 51 kb limit

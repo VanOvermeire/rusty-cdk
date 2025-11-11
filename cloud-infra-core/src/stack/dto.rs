@@ -160,7 +160,7 @@ impl Resource {
 
     pub fn get_refenced_ids(&self) -> Vec<&str> {
         match self {
-            // TODO the other resources (except when references are impossible)
+            // TODO check resources (except when references are impossible)
             Resource::LambdaFunction(f) => f.get_referenced_ids(),
             Resource::SnsSubscription(s) => s.get_referenced_ids(),
             Resource::LambdaPermission(l) => l.get_referenced_ids(),

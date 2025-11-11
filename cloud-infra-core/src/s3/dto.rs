@@ -95,7 +95,7 @@ pub struct CorsRule {
 pub struct LifecycleConfiguration {
     #[serde(rename = "Rules")]
     pub(crate) rules: Vec<LifecycleRule>,
-    #[serde(rename = "TransitionDefaultMinimumObjectSize")]
+    #[serde(rename = "TransitionDefaultMinimumObjectSize", skip_serializing_if = "Option::is_none")]
     pub(crate) transition_minimum_size: Option<String>
 }
 

@@ -1,13 +1,12 @@
 use std::marker::PhantomData;
 use std::time::Duration;
 use crate::s3::dto;
-use crate::s3::dto::{CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, WebsiteConfiguration};
+use crate::s3::dto::{BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration};
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::stack::Resource;
 use crate::wrappers::{BucketName, S3LifecycleObjectSizes};
 
-// TODO bucket encryption
 // TODO notifications will require custom work to avoid circular dependencies... Maybe borrow code from cdk?
 
 pub enum VersioningConfiguration {
@@ -20,6 +19,24 @@ impl From<VersioningConfiguration> for String {
         match value {
             VersioningConfiguration::Enabled => "Enabled".to_string(),
             VersioningConfiguration::Suspended => "Suspended".to_string()
+        }
+    }
+}
+
+pub enum S3Encryption {
+    S3Managed,
+    KmsManaged,
+    DsseManaged,
+    // KMS, => add, this requires creating a kms key and passing it to the bucket
+    // DSSE, => add, similar
+}
+
+impl From<S3Encryption> for String {
+    fn from(value: S3Encryption) -> Self {
+        match value {
+            S3Encryption::S3Managed => "AES256".to_string(),
+            S3Encryption::KmsManaged => "aws:kms".to_string(),
+            S3Encryption::DsseManaged => "aws:kms:dsse".to_string(),
         }
     }
 }
@@ -43,6 +60,7 @@ pub struct S3BucketBuilder<T: S3BucketBuilderState> {
     error_document: Option<String>,
     redirect_all_requests_to: Option<(String, Option<Protocol>)>,
     cors_config: Option<CorsConfiguration>,
+    bucket_encryption: Option<S3Encryption>,
 }
 
 impl S3BucketBuilder<StartState> {
@@ -58,6 +76,7 @@ impl S3BucketBuilder<StartState> {
             error_document: None,
             redirect_all_requests_to: None,
             cors_config: None,
+            bucket_encryption: None,
         }
     }
 
@@ -96,6 +115,13 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
+    pub fn encryption(self, encryption: S3Encryption) -> Self {
+        Self {
+            bucket_encryption: Some(encryption),
+            ..self
+        }
+    }
+
     pub fn website(self) -> S3BucketBuilder<WebsiteState> {
         S3BucketBuilder {
             phantom_data: Default::default(),
@@ -108,6 +134,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             error_document: self.error_document,
             redirect_all_requests_to: self.redirect_all_requests_to,
             cors_config: self.cors_config,
+            bucket_encryption: self.bucket_encryption,
         }
     }
 
@@ -137,6 +164,20 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             None
         };
 
+        let encryption = self.bucket_encryption.map(|v| {
+            let rule = ServerSideEncryptionRule {
+                server_side_encryption_by_default: ServerSideEncryptionByDefault {
+                    sse_algorithm: v.into(),
+                    kms_master_key_id: None
+                },
+                bucket_key_enabled: None,
+            };
+
+            BucketEncryption {
+                server_side_encryption_configuration: vec![rule],
+            }
+        });
+
         let properties = S3BucketProperties {
             bucket_name: self.name,
             cors_configuration: self.cors_config,
@@ -144,7 +185,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             public_access_block_configuration: self.access,
             versioning_configuration,
             website_configuration,
-            bucket_encryption: None,
+            bucket_encryption: encryption,
             notification_configuration: None,
         };
 
@@ -293,7 +334,7 @@ impl From<LifecycleStorageClass> for String {
 
 pub struct LifecycleRuleTransitionBuilder {
     storage_class: LifecycleStorageClass,
-    transition_in_days: Option<u32>
+    transition_in_days: Option<u32> // TODO should validate that it's >30 for standard and onezone => macro that combines both...
 }
 
 impl LifecycleRuleTransitionBuilder {
@@ -304,7 +345,6 @@ impl LifecycleRuleTransitionBuilder {
         }
     }
 
-    // TODO should validate that it's >30 for standard and onezone
     pub fn transition_in_days(self, days: u32) -> Self {
         Self {
             transition_in_days: Some(days),

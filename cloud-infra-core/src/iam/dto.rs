@@ -77,7 +77,7 @@ pub struct Statement {
     pub(crate) resource: Option<Vec<Value>>,
 }
 
-// TODO does not have to contain service per se (that's only one option)
+// TODO service is only one option
 #[derive(Debug, Serialize)]
 pub struct Principal {
     #[serde(rename = "Service")]
