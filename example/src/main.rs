@@ -43,7 +43,8 @@ async fn main() {
         .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
         .build();
 
-    let stack = stack_builder.add_resource(fun)
+    let stack = stack_builder
+        .add_resource(fun)
         .add_resource(role)
         .add_resource(log_group)
         .add_resource(table)
