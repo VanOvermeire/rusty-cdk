@@ -71,8 +71,6 @@ use quote::__private::Span;
 use quote::quote;
 use std::env;
 use std::path::{absolute, Path};
-use syn::parse::Parse;
-use syn::token::Token;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
@@ -84,7 +82,7 @@ use syn::{parse_macro_input, Error, LitInt, LitStr};
 /// # Validation Rules
 ///
 /// - String must not be empty
-/// - Only alphanumeric characters and underscores are allowed
+/// - Only alphanumeric characters, and underscores are allowed
 /// - Underscores can appear in any position (beginning, middle, or end)
 #[proc_macro]
 pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> TokenStream {

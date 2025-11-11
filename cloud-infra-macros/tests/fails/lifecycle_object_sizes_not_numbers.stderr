@@ -1,0 +1,5 @@
+error: expected integer literal
+ --> tests/fails/lifecycle_object_sizes_not_numbers.rs:4:41
+  |
+4 |     let sizes = lifecycle_object_sizes!(a, b);
+  |                                         ^
