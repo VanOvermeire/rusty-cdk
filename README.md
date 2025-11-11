@@ -50,20 +50,18 @@ use cloud_infra::wrappers::*; // importing all wrappers is a good idea to simpli
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
 use cloud_infra::stack::{Resource, Stack};
+use cloud_infra::stack::StackBuilder;
 
 fn iac() {
   let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
   
-  let resources: Vec<Resource> = vec![
-    DynamoDBTableBuilder::new("table", DynamoDBKey::new(dynamo_key, AttributeType::String))
+  let table = DynamoDBTableBuilder::new("table", DynamoDBKey::new(dynamo_key, AttributeType::String))
             .provisioned_billing()
             .read_capacity(non_zero_number!(5))
             .write_capacity(non_zero_number!(1))
-            .build()
-            .into()
-  ];
+            .build();
   
-  let stack_builder = StackBuilder::new().add_resource(table).unwrap();
+  let stack_builder = StackBuilder::new().add_resource(table).build().unwrap();
   // ready to synth / deploy
 }
 ```
