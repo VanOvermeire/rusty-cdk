@@ -1,13 +1,53 @@
-use std::marker::PhantomData;
-use std::time::Duration;
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, ServicePrincipal, PrincipalWrapper, StatementBuilder};
 use crate::s3::dto;
-use crate::s3::dto::{BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration};
+use crate::s3::dto::{
+    BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
+    NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketPolicy, S3BucketPolicyProperties,
+    S3BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
+};
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::stack::Resource;
-use crate::wrappers::{BucketName, S3LifecycleObjectSizes};
+use crate::wrappers::{BucketName, IamAction, S3LifecycleObjectSizes};
+use serde_json::Value;
+use std::marker::PhantomData;
+use std::time::Duration;
+use crate::intrinsic_functions::{join};
 
-// TODO notifications will require custom work to avoid circular dependencies... Maybe borrow code from cdk?
+// TODO notifications will require custom work to avoid circular dependencies
+//  CDK approach with custom resources is one way
+//  other way would be for the deploy to do extra work... but then the cloudformation template can only work correctly with our deploy method
+
+pub struct S3BucketPolicyBuilder {
+    id: Id,
+    bucket_name: Value,
+    policy_document: PolicyDocument,
+}
+
+impl S3BucketPolicyBuilder {
+    pub fn new(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            bucket_name,
+            policy_document,
+        }
+    }
+
+    #[must_use]
+    pub fn build(self) -> S3BucketPolicy {
+        let resource_id = Resource::generate_id("S3BucketPolicy");
+        
+        S3BucketPolicy {
+            id: self.id,
+            resource_id,
+            r#type: "AWS::S3::BucketPolicy".to_string(),
+            properties: S3BucketPolicyProperties {
+                bucket_name: self.bucket_name,
+                policy_document: self.policy_document,
+            },
+        }
+    }
+}
 
 pub enum VersioningConfiguration {
     Enabled,
@@ -18,7 +58,7 @@ impl From<VersioningConfiguration> for String {
     fn from(value: VersioningConfiguration) -> Self {
         match value {
             VersioningConfiguration::Enabled => "Enabled".to_string(),
-            VersioningConfiguration::Suspended => "Suspended".to_string()
+            VersioningConfiguration::Suspended => "Suspended".to_string(),
         }
     }
 }
@@ -82,7 +122,8 @@ impl S3BucketBuilder<StartState> {
 
     #[must_use]
     pub fn build(self) -> S3Bucket {
-        self.build_internal(false)
+        let (bucket, _) = self.build_internal(false);
+        bucket
     }
 }
 
@@ -138,21 +179,17 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
-    fn build_internal(self, website: bool) -> S3Bucket {
-        let id = Resource::generate_id("S3Bucket");
+    fn build_internal(self, website: bool) -> (S3Bucket, Option<S3BucketPolicy>) {
+        let resource_id = Resource::generate_id("S3Bucket");
 
-        let versioning_configuration = self.versioning_configuration.map(|c| {
-            dto::VersioningConfiguration {
-                status: c.into(),
-            }
-        });
+        let versioning_configuration = self
+            .versioning_configuration
+            .map(|c| dto::VersioningConfiguration { status: c.into() });
 
         let website_configuration = if website {
-            let redirect_all_requests_to = self.redirect_all_requests_to.map(|r| {
-                RedirectAllRequestsTo {
-                    host_name: r.0,
-                    protocol: r.1.map(Into::into),
-                }
+            let redirect_all_requests_to = self.redirect_all_requests_to.map(|r| RedirectAllRequestsTo {
+                host_name: r.0,
+                protocol: r.1.map(Into::into),
             });
 
             Some(WebsiteConfiguration {
@@ -164,11 +201,23 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             None
         };
 
+        let access = if self.access.is_none() && website {
+            // turning this off is required for an S3 website
+            Some(PublicAccessBlockConfiguration {
+                block_public_acls: Some(false),
+                block_public_policy: Some(false),
+                ignore_public_acls: Some(false),
+                restrict_public_buckets: Some(false),
+            })
+        } else {
+            self.access
+        };
+
         let encryption = self.bucket_encryption.map(|v| {
             let rule = ServerSideEncryptionRule {
                 server_side_encryption_by_default: ServerSideEncryptionByDefault {
                     sse_algorithm: v.into(),
-                    kms_master_key_id: None
+                    kms_master_key_id: None,
                 },
                 bucket_key_enabled: None,
             };
@@ -182,19 +231,36 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             bucket_name: self.name,
             cors_configuration: self.cors_config,
             lifecycle_configuration: self.lifecycle_configuration,
-            public_access_block_configuration: self.access,
+            public_access_block_configuration: access,
             versioning_configuration,
             website_configuration,
             bucket_encryption: encryption,
             notification_configuration: None,
         };
 
-        S3Bucket {
-            id: self.id,
-            resource_id: id,
+        let bucket = S3Bucket {
+            id: self.id.clone(),
+            resource_id,
             r#type: "AWS::S3::Bucket".to_string(),
             properties,
-        }
+        };
+        
+        let policy = if website {
+            // website needs a policy to allow GETs
+            let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
+            let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
+                .resources(bucket_resource)
+                .principal(PrincipalWrapper::StringPrincipal("*".to_string()))
+                .build();
+            let doc = PolicyDocumentBuilder::new(vec![statement]);
+            let bucket_policy_id = format!("{}-website-s3-policy", self.id);
+            let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), bucket.get_ref(), doc).build();
+            Some(s3_policy)
+        } else {
+            None
+        };
+
+        (bucket, policy)
     }
 }
 
@@ -227,20 +293,19 @@ impl S3BucketBuilder<WebsiteState> {
     }
 
     #[must_use]
-    pub fn build(self) -> S3Bucket {
-        self.build_internal(true)
+    pub fn build(self) -> (S3Bucket, S3BucketPolicy) {
+        let (bucket, policy) = self.build_internal(true);
+        (bucket, policy.expect("for website, bucket policy should always be present"))
     }
 }
 
 pub struct CorsConfigurationBuilder {
-    rules: Vec<CorsRule>
+    rules: Vec<CorsRule>,
 }
 
 impl CorsConfigurationBuilder {
     pub fn new(cors_rules: Vec<CorsRule>) -> CorsConfiguration {
-        CorsConfiguration {
-            cors_rules,
-        }
+        CorsConfiguration { cors_rules }
     }
 }
 
@@ -298,14 +363,14 @@ impl CorsRuleBuilder {
 
 pub enum TransitionDefaultMinimumObjectSize {
     VariesByStorageClass,
-    AllStorageClasses128k
+    AllStorageClasses128k,
 }
 
 impl From<TransitionDefaultMinimumObjectSize> for String {
     fn from(value: TransitionDefaultMinimumObjectSize) -> Self {
         match value {
             TransitionDefaultMinimumObjectSize::VariesByStorageClass => "varies_by_storage_class".to_string(),
-            TransitionDefaultMinimumObjectSize::AllStorageClasses128k => "all_storage_classes_128K".to_string()
+            TransitionDefaultMinimumObjectSize::AllStorageClasses128k => "all_storage_classes_128K".to_string(),
         }
     }
 }
@@ -334,7 +399,7 @@ impl From<LifecycleStorageClass> for String {
 
 pub struct LifecycleRuleTransitionBuilder {
     storage_class: LifecycleStorageClass,
-    transition_in_days: Option<u32> // TODO should validate that it's >30 for standard and onezone => macro that combines both...
+    transition_in_days: Option<u32>, // TODO should validate that it's >30 for standard and onezone => macro that combines both...
 }
 
 impl LifecycleRuleTransitionBuilder {
@@ -375,7 +440,7 @@ impl NonCurrentVersionTransitionBuilder {
             newer_non_current_versions: None,
         }
     }
-    
+
     pub fn newer_non_current_versions(self, versions: u32) -> Self {
         Self {
             newer_non_current_versions: Some(versions),
@@ -436,29 +501,25 @@ impl LifecycleRuleBuilder {
             non_current_version_transitions: None,
         }
     }
-    
+
     pub fn id(self, id: String) -> Self {
-        Self {
-            id: Some(id), 
-            ..self
-        }
+        Self { id: Some(id), ..self }
     }
-    
-    
+
     pub fn expiration_in_days(self, days: u16) -> Self {
         Self {
             expiration_in_days: Some(days),
             ..self
         }
     }
-    
+
     pub fn prefix(self, prefix: String) -> Self {
         Self {
             prefix: Some(prefix),
             ..self
         }
     }
-    
+
     pub fn object_size(self, sizes: S3LifecycleObjectSizes) -> Self {
         Self {
             object_size_less_than: sizes.0,
@@ -466,21 +527,21 @@ impl LifecycleRuleBuilder {
             ..self
         }
     }
-    
+
     pub fn abort_incomplete_multipart_upload(self, days: u16) -> Self {
         Self {
             abort_incomplete_multipart_upload: Some(days),
             ..self
         }
     }
-    
+
     pub fn non_current_version_expiration(self, days: u16) -> Self {
         Self {
             non_current_version_expiration: Some(days),
             ..self
         }
     }
-    
+
     pub fn add_transition(mut self, transition: LifecycleRuleTransition) -> Self {
         if let Some(mut transitions) = self.transitions {
             transitions.push(transition);
@@ -488,12 +549,10 @@ impl LifecycleRuleBuilder {
         } else {
             self.transitions = Some(vec![transition]);
         }
-        
-        Self {
-            ..self
-        }
+
+        Self { ..self }
     }
-    
+
     pub fn add_non_current_version_transitions(mut self, transition: NonCurrentVersionTransition) -> Self {
         if let Some(mut transitions) = self.non_current_version_transitions {
             transitions.push(transition);
@@ -502,11 +561,9 @@ impl LifecycleRuleBuilder {
             self.non_current_version_transitions = Some(vec![transition]);
         }
 
-        Self {
-            ..self
-        }
+        Self { ..self }
     }
-    
+
     pub fn build(self) -> LifecycleRule {
         LifecycleRule {
             id: self.id,
@@ -525,7 +582,7 @@ impl LifecycleRuleBuilder {
 
 pub struct LifecycleConfigurationBuilder {
     rules: Vec<LifecycleRule>,
-    transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>
+    transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>,
 }
 
 impl LifecycleConfigurationBuilder {
@@ -618,4 +675,3 @@ impl PublicAccessBlockConfigurationBuilder {
         }
     }
 }
-

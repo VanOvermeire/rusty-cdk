@@ -12,7 +12,7 @@ use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
-use cloud_infra_core::s3::builder::{LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, S3BucketBuilder, S3Encryption};
+use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, S3BucketBuilder, S3Encryption};
 
 // TODO s3 website test
 
@@ -63,6 +63,28 @@ fn test_bucket() {
 
     insta::with_settings!({filters => vec![
             (r"S3Bucket[0-9]+", "[S3Bucket]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn test_website_bucket() {
+    let bucket = S3BucketBuilder::new("buck")
+        .name(bucket_name!("sams-great-website"))
+        .website()
+        .index_document("index.html".to_string())
+        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*".to_string()], vec![HttpMethod::Get]).build()]))
+        .build();
+    let stack_builder = StackBuilder::new().add_resource_tuple(bucket);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
+            (r"S3BucketPolicy[0-9]+", "[S3BucketPolicy]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

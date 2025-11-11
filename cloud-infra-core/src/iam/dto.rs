@@ -72,14 +72,21 @@ pub struct Statement {
     #[serde(rename = "Effect")]
     pub(crate) effect: String,
     #[serde(rename = "Principal", skip_serializing_if = "Option::is_none")]
-    pub(crate) principal: Option<Principal>,
+    pub(crate) principal: Option<PrincipalWrapper>,
     #[serde(rename = "Resource", skip_serializing_if = "Option::is_none")]
     pub(crate) resource: Option<Vec<Value>>,
 }
 
-// TODO service is only one option
+// TODO builder?
 #[derive(Debug, Serialize)]
-pub struct Principal {
+#[serde(untagged)]
+pub enum PrincipalWrapper {
+    ServicePrincipal(ServicePrincipal),
+    StringPrincipal(String)
+}
+
+#[derive(Debug, Serialize)]
+pub struct ServicePrincipal {
     #[serde(rename = "Service")]
     pub(crate) service: String,
 }

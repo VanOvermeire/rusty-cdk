@@ -1,5 +1,5 @@
 use crate::dynamodb::DynamoDBTable;
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, Principal, Statement};
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, PrincipalWrapper, Statement};
 use crate::intrinsic_functions::{get_arn, join};
 use crate::s3::dto::S3Bucket;
 use crate::shared::Id;
@@ -129,7 +129,7 @@ impl StatementState for StatementStartState {}
 pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,
-    principal: Option<Principal>,
+    principal: Option<PrincipalWrapper>,
     resource: Option<Vec<Value>>,
 }
 
@@ -152,7 +152,7 @@ impl StatementBuilder {
         }
     }
 
-    pub fn principal(self, principal: Principal) -> Self {
+    pub fn principal(self, principal: PrincipalWrapper) -> Self {
         Self {
             principal: Some(principal),
             ..self

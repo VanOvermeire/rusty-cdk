@@ -3,7 +3,7 @@ use crate::cloudwatch::LogGroup;
 use crate::dynamodb::DynamoDBTable;
 use crate::iam::IamRole;
 use crate::lambda::{EventSourceMapping, LambdaFunction, LambdaPermission};
-use crate::s3::dto::S3Bucket;
+use crate::s3::dto::{S3Bucket, S3BucketPolicy};
 use crate::secretsmanager::dto::SecretsManagerSecret;
 use crate::shared::Id;
 use crate::sns::dto::{SnsSubscription, SnsTopic};
@@ -49,6 +49,7 @@ impl Stack {
                 Resource::ApiGatewayV2Route(_) => vec![],
                 Resource::ApiGatewayV2Integration(_) => vec![],
                 Resource::S3Bucket(_) => vec![],
+                Resource::S3BucketPolicy(_) => vec![],
                 Resource::SecretsManagerSecret(_) => vec![],
             })
             .collect()
@@ -101,6 +102,7 @@ impl TryFrom<Vec<Resource>> for Stack {
 #[serde(untagged)]
 pub enum Resource {
     S3Bucket(S3Bucket),
+    S3BucketPolicy(S3BucketPolicy),
     DynamoDBTable(DynamoDBTable),
     LambdaFunction(LambdaFunction),
     LogGroup(LogGroup),
@@ -121,6 +123,7 @@ impl Resource {
     pub fn get_id(&self) -> Id {
         match self {
             Resource::S3Bucket(r) => r.get_id().clone(),
+            Resource::S3BucketPolicy(r) => r.get_id().clone(),
             Resource::DynamoDBTable(r) => r.get_id().clone(),
             Resource::LambdaFunction(r) => r.get_id().clone(),
             Resource::LogGroup(r) => r.get_id().clone(),
@@ -140,6 +143,8 @@ impl Resource {
 
     pub fn get_resource_id(&self) -> &str {
         match self {
+            Resource::S3Bucket(r) => r.get_resource_id(),
+            Resource::S3BucketPolicy(r) => r.get_resource_id(),
             Resource::DynamoDBTable(t) => t.get_resource_id(),
             Resource::LambdaFunction(f) => f.get_resource_id(),
             Resource::IamRole(r) => r.get_resource_id(),
@@ -153,7 +158,6 @@ impl Resource {
             Resource::ApiGatewayV2Stage(s) => s.get_resource_id(),
             Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Integration(i) => i.get_resource_id(),
-            Resource::S3Bucket(s) => s.get_resource_id(),
             Resource::SecretsManagerSecret(s) => s.get_resource_id(),
         }
     }
@@ -175,6 +179,7 @@ impl Resource {
             Resource::ApiGatewayV2Api(_) => vec![],
             Resource::ApiGatewayV2Stage(_) => vec![],
             Resource::S3Bucket(_) => vec![],
+            Resource::S3BucketPolicy(_) => vec![],
             Resource::SecretsManagerSecret(_) => vec![],
         }
     }
@@ -197,6 +202,7 @@ macro_rules! from_resource {
 }
 
 from_resource!(S3Bucket);
+from_resource!(S3BucketPolicy);
 from_resource!(DynamoDBTable);
 from_resource!(LambdaFunction);
 from_resource!(IamRole);
