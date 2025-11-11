@@ -1,4 +1,4 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, ServicePrincipal, PrincipalWrapper, StatementBuilder};
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalWrapper, StatementBuilder};
 use crate::s3::dto;
 use crate::s3::dto::{
     BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
@@ -36,7 +36,7 @@ impl S3BucketPolicyBuilder {
     #[must_use]
     pub fn build(self) -> S3BucketPolicy {
         let resource_id = Resource::generate_id("S3BucketPolicy");
-        
+
         S3BucketPolicy {
             id: self.id,
             resource_id,
@@ -163,7 +163,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
-    pub fn website(self) -> S3BucketBuilder<WebsiteState> {
+    pub fn website(self, index_document: String) -> S3BucketBuilder<WebsiteState> {
         S3BucketBuilder {
             phantom_data: Default::default(),
             id: self.id,
@@ -171,7 +171,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             access: self.access,
             versioning_configuration: self.versioning_configuration,
             lifecycle_configuration: self.lifecycle_configuration,
-            index_document: self.index_document,
+            index_document: Some(index_document),
             error_document: self.error_document,
             redirect_all_requests_to: self.redirect_all_requests_to,
             cors_config: self.cors_config,
@@ -244,7 +244,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             r#type: "AWS::S3::Bucket".to_string(),
             properties,
         };
-        
+
         let policy = if website {
             // website needs a policy to allow GETs
             let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
@@ -265,12 +265,6 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
 }
 
 impl S3BucketBuilder<WebsiteState> {
-    pub fn index_document(self, doc: String) -> Self {
-        Self {
-            index_document: Some(doc),
-            ..self
-        }
-    }
     pub fn error_document(self, error: String) -> Self {
         Self {
             error_document: Some(error),

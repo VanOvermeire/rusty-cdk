@@ -72,8 +72,7 @@ fn test_bucket() {
 fn test_website_bucket() {
     let bucket = S3BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
-        .website()
-        .index_document("index.html".to_string())
+        .website("index.html".to_string())
         .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*".to_string()], vec![HttpMethod::Get]).build()]))
         .build();
     let stack_builder = StackBuilder::new().add_resource_tuple(bucket);
