@@ -311,7 +311,8 @@ impl LifecycleRuleTransitionBuilder {
             ..self
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> LifecycleRuleTransition {
         LifecycleRuleTransition {
             storage_class: self.storage_class.into(),
@@ -341,7 +342,8 @@ impl NonCurrentVersionTransitionBuilder {
             ..self
         }
     }
-    
+
+    #[must_use]
     pub fn build(self) -> NonCurrentVersionTransition {
         NonCurrentVersionTransition {
             storage_class: self.storage_class.into(),
@@ -507,6 +509,7 @@ impl LifecycleConfigurationBuilder {
         self
     }
 
+    #[must_use]
     pub fn build(self) -> LifecycleConfiguration {
         LifecycleConfiguration {
             rules: self.rules,
