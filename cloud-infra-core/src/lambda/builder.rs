@@ -1,6 +1,6 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, Principal, StatementBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LoggingInfo, ScalingConfig};
+use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LambdaPermission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
 use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, ZipFile};
@@ -377,5 +377,59 @@ impl LambdaFunctionBuilder<EventSourceMappingState> {
     pub fn build(self) -> (LambdaFunction, IamRole, LogGroup, EventSourceMapping) {
         let (lambda, iam_role, log_group, mapping) = self.build_internal();
         (lambda, iam_role, log_group, mapping.expect("should be `Some` because we are in the event source mapping state"))
+    }
+}
+
+pub struct LambdaPermissionBuilder {
+    id: Id,
+    action: String, // TODO should start with 'lambda:' => macro
+    function_name: Value,
+    principal: String,
+    source_arn: Option<Value>,
+    referenced_ids: Vec<String>,
+}
+
+impl LambdaPermissionBuilder {
+    pub fn new(id: Id, action: String, function_name: Value, principal: String) -> Self {
+        Self {
+            id,
+            action,
+            function_name,
+            principal,
+            source_arn: None,
+            referenced_ids: vec![],
+        }
+    }
+
+    pub fn source_arn(self, arn: Value) -> Self {
+        Self {
+            source_arn: Some(arn),
+            ..self
+        }
+    }
+    
+    pub(crate) fn referenced_ids(self, referenced_ids: Vec<String>) -> Self {
+        Self {
+            referenced_ids,
+            ..self
+        }
+    }
+
+    pub fn build(self) -> LambdaPermission {
+        let permission_resource_id = Resource::generate_id("LambdaPermission");
+        let properties = LambdaPermissionProperties {
+            action: self.action,
+            function_name: self.function_name,
+            principal: self.principal,
+            source_arn: self.source_arn,
+        };
+
+        LambdaPermission {
+            id: self.id,
+            resource_id: permission_resource_id,
+            referenced_ids: self.referenced_ids,
+            r#type: "AWS::Lambda::Permission".to_string(),
+            properties,
+        }
     }
 }

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use crate::intrinsic_functions::{get_arn, get_ref};
-use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionProperties};
+use crate::lambda::{LambdaFunction, LambdaPermission, LambdaPermissionBuilder};
 use crate::shared::Id;
 use crate::sns::dto::{SnsSubscription, SnsSubscriptionProperties, SnsTopic, SnsTopicProperties};
 use crate::stack::Resource;
@@ -136,21 +136,11 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
         let subscriptions: Vec<_> = self.lambda_subscription_ids.iter().map(|(to_subscribe_id, to_subscribe_resource_id)| {
             let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
             let subscription_resource_id = Resource::generate_id("SnsSubscription");
-            let permission_resource_id = Resource::generate_id("LambdaPermission");
-
-            let properties = LambdaPermissionProperties {
-                action: "lambda:InvokeFunction".to_string(),
-                function_name: get_arn(to_subscribe_resource_id),
-                principal: "sns.amazonaws.com".to_string(),
-                source_arn: Some(get_ref(&topic_resource_id)),
-            };
-            let permission = LambdaPermission {
-                id: Id::generate_id(&subscription_id, "Permission"),
-                resource_id: permission_resource_id,
-                referenced_ids: vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()],
-                r#type: "AWS::Lambda::Permission".to_string(),
-                properties,
-            };
+            
+            let permission = LambdaPermissionBuilder::new(Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com".to_string())
+                .referenced_ids(vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()])
+                .source_arn(get_ref(&topic_resource_id))
+                .build();
 
             let properties = SnsSubscriptionProperties {
                 protocol: "lambda".to_string(),

@@ -157,7 +157,6 @@ impl LambdaPermission {
     }
 }
 
-// TODO add and use builder
 #[derive(Debug, Serialize)]
 pub struct LambdaPermissionProperties {
     #[serde(rename = "Action")]
