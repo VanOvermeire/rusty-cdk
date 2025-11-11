@@ -367,16 +367,15 @@ impl From<LifecycleRuleStatus> for String {
     }
 }
 
-// TODO u16 prob makes more sense for the days (even though aws allows more)
 pub struct LifecycleRuleBuilder {
     id: Option<String>,
     status: LifecycleRuleStatus,
-    expiration_in_days: Option<u32>, // TODO expiration must be > than expiration in transition (ow boy...)
+    expiration_in_days: Option<u16>, // TODO expiration must be > than expiration in transition (ow boy...)
     prefix: Option<String>,
-    object_size_greater_than: Option<u32>, // TODO make sure one is < than the other => macro!
+    object_size_greater_than: Option<u32>,
     object_size_less_than: Option<u32>,
-    abort_incomplete_multipart_upload: Option<u32>,
-    non_current_version_expiration: Option<u32>,
+    abort_incomplete_multipart_upload: Option<u16>,
+    non_current_version_expiration: Option<u16>,
     transitions: Option<Vec<LifecycleRuleTransition>>,
     non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>,
 }
@@ -406,7 +405,7 @@ impl LifecycleRuleBuilder {
     }
     
     
-    pub fn expiration_in_days(self, days: u32) -> Self {
+    pub fn expiration_in_days(self, days: u16) -> Self {
         Self {
             expiration_in_days: Some(days),
             ..self
@@ -428,14 +427,14 @@ impl LifecycleRuleBuilder {
         }
     }
     
-    pub fn abort_incomplete_multipart_upload(self, days: u32) -> Self {
+    pub fn abort_incomplete_multipart_upload(self, days: u16) -> Self {
         Self {
             abort_incomplete_multipart_upload: Some(days),
             ..self
         }
     }
     
-    pub fn non_current_version_expiration(self, days: u32) -> Self {
+    pub fn non_current_version_expiration(self, days: u16) -> Self {
         Self {
             non_current_version_expiration: Some(days),
             ..self
