@@ -79,6 +79,7 @@ impl ApiGatewayV2Stage {
     }
 }
 
+// TODO add reference ids
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2StageProperties {
     #[serde(rename = "ApiId")]
@@ -125,6 +126,7 @@ impl ApiGatewayV2Integration {
     }
 }
 
+// TODO add reference ids
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2IntegrationProperties {
     #[serde(rename = "ApiId")]
@@ -181,6 +183,7 @@ impl ApiGatewayV2Route {
     }
 }
 
+// TODO add reference ids
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "ApiId")]

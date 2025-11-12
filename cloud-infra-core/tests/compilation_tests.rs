@@ -61,6 +61,20 @@ fn sqs_fifo_queue_builder_should_compile() {
 
 // TODO more of these tests
 #[test]
+fn stack_with_bucket_website_should_compile() {
+    let (bucket, policy) = S3BucketBuilder::new("website")
+        .website("index.com".to_string())
+        .build();
+
+    let stack = StackBuilder::new()
+        .add_resource(bucket)
+        .add_resource(policy)
+        .build();
+
+    assert!(stack.is_ok());
+}
+
+#[test]
 fn stack_with_missing_bucket_should_err() {
     let (_, policy) = S3BucketBuilder::new("website")
         .website("index.com".to_string())
