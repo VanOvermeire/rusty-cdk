@@ -101,7 +101,7 @@ impl HttpApiGatewayBuilder {
             let integration_resource_id = Resource::generate_id("HttpApiIntegration");
             let route_resource_id = Resource::generate_id("HttpApiRoute");
             
-            let permission = LambdaPermissionBuilder::new(route_permission_id, "lambda:InvokeFunction".to_string(), get_arn(&info.resource_id), "apigateway.amazonaws.com".to_string())
+            let permission = LambdaPermissionBuilder::new(&route_permission_id, "lambda:InvokeFunction".to_string(), get_arn(&info.resource_id), "apigateway.amazonaws.com".to_string())
                 .source_arn(join("", vec![
                     Value::String("arn:".to_string()),
                     get_ref("AWS::Partition"),

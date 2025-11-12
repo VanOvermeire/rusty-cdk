@@ -390,10 +390,9 @@ pub struct LambdaPermissionBuilder {
 }
 
 impl LambdaPermissionBuilder {
-    // TODO accept &str
-    pub fn new(id: Id, action: String, function_name: Value, principal: String) -> Self {
+    pub fn new(id: &str, action: String, function_name: Value, principal: String) -> Self {
         Self {
-            id,
+            id: Id(id.to_string()),
             action,
             function_name,
             principal,
