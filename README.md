@@ -1,6 +1,7 @@
 # Cloud Infra
 
-This is an experiment in making Infrastructure as Code (_IAC_) safer, easier to use by checking things at compile time.
+***This is not an official AWS project.***
+Rather, it is an experiment in making Infrastructure as Code (_IAC_) safer and easier to use by checking as much as possible at compile time.
 
 ## Usage
 
@@ -141,17 +142,21 @@ In theory, CloudFormation should propagate the tags to its resources, in practic
 - think about naming
   - do you need S3/SQS/... prefixes when the import is from that packages
   - can we find better/clearer names for the wrappers?
+- docs
+  - add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples with more info
+  - add docs with example code to all builders
+  - note two phases in docs
+    - first, compile time checking
+    - next, stack result - err if other issues were detected
 - probably want to do some more validation when building the stack, for stuff we cannot do at compile time
-- try to replace syn and serde with more something more lightweight (at compile time) - facet?
-  - note that `Value` is exposed in some cases...
-- switch to uploading template to s3? helps avoid the 51 kb limit
-- add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples with more info
-- add docs with example code to all builders
-- borrow all the things? see borrowing-example branch for an example
-  - the gain in performance was not that impressive
 - help with avoiding missing IAM permissions? perhaps by having user optionally pass in cargo toml(s)
   - when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found, error?
   - similar for secret
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
 - UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
+- try to replace syn and serde with more something more lightweight (at compile time) - facet?
+  - note that `Value` is exposed in some cases...
+- switch to uploading template to s3? helps avoid the 51 kb limit
+- borrow all the things? see borrowing-example branch for an example
+  - the gain in performance was not that impressive
