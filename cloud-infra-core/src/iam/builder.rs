@@ -117,9 +117,9 @@ impl IamRolePropertiesBuilder {
         }
     }
 
-    pub fn role_name(self, role_name: String) -> IamRolePropertiesBuilder {
+    pub fn role_name<T: Into<String>>(self, role_name: T) -> IamRolePropertiesBuilder {
         Self {
-            role_name: Some(role_name),
+            role_name: Some(role_name.into()),
             ..self
         }
     }
@@ -141,9 +141,9 @@ pub struct PolicyBuilder {
 }
 
 impl PolicyBuilder {
-    pub fn new(policy_name: String, policy_document: PolicyDocument) -> Self {
+    pub fn new<T: Into<String>>(policy_name: T, policy_document: PolicyDocument) -> Self {
         PolicyBuilder {
-            policy_name,
+            policy_name: policy_name.into(),
             policy_document,
         }
     }

@@ -134,8 +134,8 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         }
     }
 
-    pub fn env_var_string(mut self, key: EnvVarKey, value: String) -> LambdaFunctionBuilder<T> {
-        self.env_vars.push((key.0, Value::String(value)));
+    pub fn env_var_string<V: Into<String>>(mut self, key: EnvVarKey, value: V) -> LambdaFunctionBuilder<T> {
+        self.env_vars.push((key.0, Value::String(value.into())));
         Self {
             ..self
         }
@@ -296,10 +296,10 @@ impl LambdaFunctionBuilder<StartState> {
 }
 
 impl LambdaFunctionBuilder<ZipState> {
-    pub fn handler(self, handler: String) -> LambdaFunctionBuilder<ZipStateWithHandler> {
+    pub fn handler<T: Into<String>>(self, handler: T) -> LambdaFunctionBuilder<ZipStateWithHandler> {
         LambdaFunctionBuilder {
             id: self.id,
-            handler: Some(handler),
+            handler: Some(handler.into()),
             state: Default::default(),
             architecture: self.architecture,
             memory: self.memory,
@@ -390,12 +390,12 @@ pub struct LambdaPermissionBuilder {
 }
 
 impl LambdaPermissionBuilder {
-    pub fn new(id: &str, action: String, function_name: Value, principal: String) -> Self {
+    pub fn new<T: Into<String>, R: Into<String>>(id: &str, action: T, function_name: Value, principal: R) -> Self {
         Self {
             id: Id(id.to_string()),
-            action,
+            action: action.into(),
             function_name,
-            principal,
+            principal: principal.into(),
             source_arn: None,
             referenced_ids: vec![],
         }

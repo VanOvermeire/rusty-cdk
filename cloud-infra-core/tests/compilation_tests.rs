@@ -39,7 +39,7 @@ fn sqs_standard_queue_builder_should_compile() {
         .message_retention_period(retention)
         .visibility_timeout(timeout)
         .receive_message_wait_time_seconds(wait_time)
-        .dead_letter_queue("arn:aws:sqs:us-east-1:123456789012:dlq".to_string(), max_receive)
+        .dead_letter_queue("arn:aws:sqs:us-east-1:123456789012:dlq", max_receive)
         .sqs_managed_sse_enabled(true)
         .build();
 }
@@ -63,7 +63,7 @@ fn sqs_fifo_queue_builder_should_compile() {
 #[test]
 fn stack_with_bucket_website_should_compile() {
     let (bucket, policy) = S3BucketBuilder::new("website")
-        .website("index.com".to_string())
+        .website("index.com")
         .build();
 
     let stack = StackBuilder::new()
@@ -77,7 +77,7 @@ fn stack_with_bucket_website_should_compile() {
 #[test]
 fn stack_with_missing_bucket_should_err() {
     let (_, policy) = S3BucketBuilder::new("website")
-        .website("index.com".to_string())
+        .website("index.com")
         .build();
 
     let stack = StackBuilder::new()

@@ -44,7 +44,7 @@ fn test_bucket() {
         .encryption(S3Encryption::S3Managed)
         .lifecycle_configuration(LifecycleConfigurationBuilder::new()
             .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
-                .prefix("/prefix".to_string())
+                .prefix("/prefix")
                 .add_transition(LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
                     .transition_in_days(30)
                     .build()
@@ -70,8 +70,8 @@ fn test_bucket() {
 fn test_website_bucket() {
     let bucket = S3BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
-        .website("index.html".to_string())
-        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*".to_string()], vec![HttpMethod::Get]).build()]))
+        .website("index.html")
+        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]))
         .build();
     let stack_builder = StackBuilder::new().add_resource_tuple(bucket);
     let stack = stack_builder.build().unwrap();
@@ -94,9 +94,9 @@ fn test_lambda() {
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let bucket = get_bucket();
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
-        .env_var_string(env_var_key!("STAGE"), "prod".to_string())
+        .env_var_string(env_var_key!("STAGE"), "prod")
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build();
     let stack = StackBuilder::new()
@@ -168,7 +168,7 @@ fn test_lambda_with_sns_subscription() {
 
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build();
     let (sns, subscriptions) = SnsTopicBuilder::new("topic").add_subscription(Subscription::Lambda(&fun)).build();
@@ -212,14 +212,14 @@ fn test_lambda_with_secret_and_custom_permissions() {
     let secret = SecretsManagerSecretBuilder::new("my-secret")
         .generate_secret_string(SecretsManagerGenerateSecretStringBuilder::new()
             .exclude_punctuation(true)
-            .generate_string_key("password".to_string())
+            .generate_string_key("password")
             .secret_string_template(Value::Object(template_for_string))
             .build()
         )
         .build();
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("SECRET"), secret.get_ref())
         .permissions(Permission::Custom(CustomPermission::new("my-perm", statement)))
@@ -251,12 +251,12 @@ fn test_lambda_with_api_gateway() {
 
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build();
     let (api, stage, routes) = HttpApiGatewayBuilder::new("AGW")
         .disable_execute_api_endpoint(true)
-        .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
+        .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build();
     let stack_builder = StackBuilder::new()
         .add_resource(fun)
@@ -306,7 +306,7 @@ fn test_lambda_with_dynamodb() {
     let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .build();
@@ -355,7 +355,7 @@ fn test_lambda_with_dynamodb_and_sqs() {
     let (fun, role, log, map) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .sqs_event_source_mapping(&queue, None)

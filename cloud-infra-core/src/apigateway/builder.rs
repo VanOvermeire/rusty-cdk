@@ -36,9 +36,9 @@ impl HttpApiGatewayBuilder {
         }
     }
 
-    pub fn name(self, name: String) -> Self {
+    pub fn name<T: Into<String>>(self, name: T) -> Self {
         Self {
-            name: Some(name),
+            name: Some(name.into()),
             ..self
         }
     }
@@ -69,7 +69,8 @@ impl HttpApiGatewayBuilder {
         }
     }
 
-    pub fn add_route_lambda(mut self, path: String, method: HttpMethod, lambda: &LambdaFunction) -> Self {
+    pub fn add_route_lambda<T: Into<String>>(mut self, path: T, method: HttpMethod, lambda: &LambdaFunction) -> Self {
+        let path = path.into();
         let path = if path.starts_with("/") {
             path
         } else {

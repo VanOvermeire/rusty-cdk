@@ -168,10 +168,10 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
         }
     }
 
-    pub fn dead_letter_queue(self, dead_letter_target_arn: String, max_receive_count: NonZeroNumber) -> Self {
+    pub fn dead_letter_queue<D: Into<String>>(self, dead_letter_target_arn: D, max_receive_count: NonZeroNumber) -> Self {
         Self {
             redrive_policy: Some(RedrivePolicy {
-                dead_letter_target_arn,
+                dead_letter_target_arn: dead_letter_target_arn.into(),
                 max_receive_count: max_receive_count.0,
             }),
             ..self

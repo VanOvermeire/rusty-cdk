@@ -1,4 +1,4 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, IamPrincipal, StatementBuilder};
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, StatementBuilder, IamPrincipalBuilder};
 use crate::s3::dto;
 use crate::s3::dto::{
     BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
@@ -166,7 +166,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
-    pub fn website(self, index_document: String) -> S3BucketBuilder<WebsiteState> {
+    pub fn website<I: Into<String>>(self, index_document: I) -> S3BucketBuilder<WebsiteState> {
         S3BucketBuilder {
             phantom_data: Default::default(),
             id: self.id,
@@ -174,7 +174,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             access: self.access,
             versioning_configuration: self.versioning_configuration,
             lifecycle_configuration: self.lifecycle_configuration,
-            index_document: Some(index_document),
+            index_document: Some(index_document.into()),
             error_document: self.error_document,
             redirect_all_requests_to: self.redirect_all_requests_to,
             cors_config: self.cors_config,
@@ -253,7 +253,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
             let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
                 .resources(bucket_resource)
-                .principal(IamPrincipal::StringPrincipal("*".to_string()))
+                .principal(IamPrincipalBuilder::new().normal("*").build())
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]);
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
@@ -268,16 +268,16 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
 }
 
 impl S3BucketBuilder<WebsiteState> {
-    pub fn error_document(self, error: String) -> Self {
+    pub fn error_document<I: Into<String>>(self, error: I) -> Self {
         Self {
-            error_document: Some(error),
+            error_document: Some(error.into()),
             ..self
         }
     }
 
-    pub fn redirect_all(self, hostname: String, protocol: Option<Protocol>) -> Self {
+    pub fn redirect_all<I: Into<String>>(self, hostname: I, protocol: Option<Protocol>) -> Self {
         Self {
-            redirect_all_requests_to: Some((hostname, protocol)),
+            redirect_all_requests_to: Some((hostname.into(), protocol)),
             ..self
         }
     }
@@ -296,9 +296,7 @@ impl S3BucketBuilder<WebsiteState> {
     }
 }
 
-pub struct CorsConfigurationBuilder {
-    rules: Vec<CorsRule>,
-}
+pub struct CorsConfigurationBuilder {}
 
 impl CorsConfigurationBuilder {
     pub fn new(cors_rules: Vec<CorsRule>) -> CorsConfiguration {
@@ -315,9 +313,9 @@ pub struct CorsRuleBuilder {
 }
 
 impl CorsRuleBuilder {
-    pub fn new(allow_origins: Vec<String>, allow_methods: Vec<HttpMethod>) -> Self {
+    pub fn new<T: Into<String>>(allow_origins: Vec<T>, allow_methods: Vec<HttpMethod>) -> Self {
         Self {
-            allow_origins,
+            allow_origins: allow_origins.into_iter().map(Into::into).collect(),
             allow_methods,
             allow_headers: None,
             expose_headers: None,
@@ -498,8 +496,8 @@ impl LifecycleRuleBuilder {
         }
     }
 
-    pub fn id(self, id: String) -> Self {
-        Self { id: Some(id), ..self }
+    pub fn id<T: Into<String>>(self, id: T) -> Self {
+        Self { id: Some(id.into()), ..self }
     }
 
     pub fn expiration_in_days(self, days: u16) -> Self {
@@ -509,9 +507,9 @@ impl LifecycleRuleBuilder {
         }
     }
 
-    pub fn prefix(self, prefix: String) -> Self {
+    pub fn prefix<T: Into<String>>(self, prefix: T) -> Self {
         Self {
-            prefix: Some(prefix),
+            prefix: Some(prefix.into()),
             ..self
         }
     }
@@ -664,7 +662,7 @@ impl PublicAccessBlockConfigurationBuilder {
     #[must_use]
     pub fn build(self) -> PublicAccessBlockConfiguration {
         PublicAccessBlockConfiguration {
-            block_public_acls: self.ignore_public_acls,
+            block_public_acls: self.block_public_acls,
             block_public_policy: self.block_public_policy,
             ignore_public_acls: self.ignore_public_acls,
             restrict_public_buckets: self.restrict_public_buckets,

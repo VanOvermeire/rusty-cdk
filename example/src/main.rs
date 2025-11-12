@@ -32,7 +32,7 @@ async fn main() {
     let (fun, role, log_group, map) = LambdaFunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zipper))
-        .handler("bootstrap".to_string())
+        .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .sqs_event_source_mapping(&queue, None)
@@ -40,7 +40,7 @@ async fn main() {
 
     let (api, stage, routes) = HttpApiGatewayBuilder::new("myAGW")
         .disable_execute_api_endpoint(true)
-        .add_route_lambda("/books".to_string(), HttpMethod::Get, &fun)
+        .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build();
 
     let stack = stack_builder

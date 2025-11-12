@@ -41,20 +41,20 @@ impl SecretsManagerSecretBuilder<StartState> {
         }
     }
 
-    pub fn description(self, description: String) -> Self {
+    pub fn description<T: Into<String>>(self, description: T) -> Self {
         Self {
-            description: Some(description),
+            description: Some(description.into()),
             ..self
         }
     }
 
-    pub fn secret_string(self, value: String) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
+    pub fn secret_string<T: Into<String>>(self, value: T) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
         SecretsManagerSecretBuilder {
             phantom_data: Default::default(),
             id: self.id,
             name: self.name,
             description: self.description,
-            secret_string: Some(value),
+            secret_string: Some(value.into()),
             generate_secret_string: None,
         }
     }
@@ -206,10 +206,10 @@ impl SecretsManagerGenerateSecretStringBuilder<GenerateStringStartState> {
         }
     }
 
-    pub fn generate_string_key(self, generate_string_key: String) -> SecretsManagerGenerateSecretStringBuilder<GenerateStringKeyState> {
+    pub fn generate_string_key<T: Into<String>>(self, generate_string_key: T) -> SecretsManagerGenerateSecretStringBuilder<GenerateStringKeyState> {
         SecretsManagerGenerateSecretStringBuilder {
             phantom_data: Default::default(),
-            generate_string_key: Some(generate_string_key),
+            generate_string_key: Some(generate_string_key.into()),
             exclude_characters: self.exclude_characters,
             exclude_lowercase: self.exclude_lowercase,
             exclude_numbers: self.exclude_numbers,

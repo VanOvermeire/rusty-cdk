@@ -137,7 +137,7 @@ impl<T: SnsTopicBuilderState> SnsTopicBuilder<T> {
             let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
             let subscription_resource_id = Resource::generate_id("SnsSubscription");
             
-            let permission = LambdaPermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com".to_string())
+            let permission = LambdaPermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
                 .referenced_ids(vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()])
                 .source_arn(get_ref(&topic_resource_id))
                 .build();
