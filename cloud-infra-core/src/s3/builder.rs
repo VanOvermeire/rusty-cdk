@@ -84,7 +84,6 @@ impl From<S3Encryption> for String {
     }
 }
 
-// TODO more crate private?
 pub trait S3BucketBuilderState {}
 
 pub struct StartState {}

@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, ServicePrincipal, IamPrincipal, StatementBuilder, IamPrincipalBuilder};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, StatementBuilder, IamPrincipalBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LambdaPermission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
