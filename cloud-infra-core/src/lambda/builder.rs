@@ -1,4 +1,4 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, ServicePrincipal, PrincipalWrapper, StatementBuilder};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, ServicePrincipal, IamPrincipal, StatementBuilder, IamPrincipalBuilder};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LambdaPermission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
@@ -189,10 +189,10 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         } else {
             None
         };
-
-        let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow).principal(PrincipalWrapper::ServicePrincipal(ServicePrincipal {
-            service: "lambda.amazonaws.com".to_string(),
-        })).build();
+        
+        let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
+            .principal(IamPrincipalBuilder::new().service("lambda.amazonaws.com").build())
+            .build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let props = IamRolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();

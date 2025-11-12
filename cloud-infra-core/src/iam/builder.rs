@@ -1,5 +1,6 @@
+use std::marker::PhantomData;
 use crate::dynamodb::DynamoDBTable;
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, PrincipalWrapper, Statement};
+use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, IamPrincipal, Statement, AWSPrincipal, ServicePrincipal};
 use crate::intrinsic_functions::{get_arn, join};
 use crate::s3::dto::S3Bucket;
 use crate::shared::Id;
@@ -7,6 +8,77 @@ use crate::sqs::SqsQueue;
 use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::vec;
+
+pub trait IamPrincipalState {}
+
+pub struct StartState {}
+impl IamPrincipalState for StartState {}
+
+pub struct ChosenState {}
+impl IamPrincipalState for ChosenState {}
+
+pub struct IamPrincipalBuilder<T: IamPrincipalState> {
+    phantom_data: PhantomData<T>,
+    service: Option<String>,
+    aws: Option<String>,
+    normal: Option<String>
+}
+
+impl IamPrincipalBuilder<StartState> {
+    pub fn new() -> IamPrincipalBuilder<StartState> {
+        IamPrincipalBuilder {
+            phantom_data: Default::default(),
+            service: None,
+            aws: None,
+            normal: None,
+        }
+    }
+    
+    pub fn service<T: Into<String>>(self, service: T) -> IamPrincipalBuilder<ChosenState> {
+        IamPrincipalBuilder {
+            phantom_data: Default::default(),
+            service: Some(service.into()),
+            aws: self.aws,
+            normal: self.normal
+        }
+    }
+
+    pub fn aws<T: Into<String>>(self, aws: T) -> IamPrincipalBuilder<ChosenState> {
+        IamPrincipalBuilder {
+            phantom_data: Default::default(),
+            aws: Some(aws.into()),
+            service: self.service,
+            normal: self.normal
+        }
+    }
+
+    pub fn normal<T: Into<String>>(self, normal: T) -> IamPrincipalBuilder<ChosenState> {
+        IamPrincipalBuilder {
+            phantom_data: Default::default(),
+            normal: Some(normal.into()),
+            service: self.service,
+            aws: self.aws,
+        }
+    }
+}
+
+impl IamPrincipalBuilder<ChosenState> {
+    pub fn build(self) -> IamPrincipal {
+        if let Some(aws) = self.aws {
+            IamPrincipal::AWS(AWSPrincipal {
+                aws,
+            })
+        } else if let Some(service) = self.service {
+            IamPrincipal::ServicePrincipal(ServicePrincipal {
+                service,
+            })
+        } else if let Some(normal) = self.normal {
+            IamPrincipal::StringPrincipal(normal)
+        } else {
+            unreachable!("can only reach build state when one of the above is present")
+        }
+    }
+}
 
 pub struct IamRoleBuilder {}
 
@@ -129,7 +201,7 @@ impl StatementState for StatementStartState {}
 pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,
-    principal: Option<PrincipalWrapper>,
+    principal: Option<IamPrincipal>,
     resource: Option<Vec<Value>>,
 }
 
@@ -152,7 +224,7 @@ impl StatementBuilder {
         }
     }
 
-    pub fn principal(self, principal: PrincipalWrapper) -> Self {
+    pub fn principal(self, principal: IamPrincipal) -> Self {
         Self {
             principal: Some(principal),
             ..self

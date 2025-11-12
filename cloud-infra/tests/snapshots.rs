@@ -14,8 +14,6 @@ use cloud_infra_macros::*;
 use serde_json::{Map, Value};
 use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, S3BucketBuilder, S3Encryption};
 
-// TODO s3 website test
-
 #[test]
 fn test_dynamodb() {
     let pk = string_with_only_alpha_numerics_and_underscores!("pk");

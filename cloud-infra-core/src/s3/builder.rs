@@ -1,4 +1,4 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalWrapper, StatementBuilder};
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, IamPrincipal, StatementBuilder};
 use crate::s3::dto;
 use crate::s3::dto::{
     BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
@@ -84,6 +84,7 @@ impl From<S3Encryption> for String {
     }
 }
 
+// TODO more crate private?
 pub trait S3BucketBuilderState {}
 
 pub struct StartState {}
@@ -253,7 +254,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
             let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
                 .resources(bucket_resource)
-                .principal(PrincipalWrapper::StringPrincipal("*".to_string()))
+                .principal(IamPrincipal::StringPrincipal("*".to_string()))
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]);
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
@@ -482,7 +483,6 @@ pub struct LifecycleRuleBuilder {
     non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>,
 }
 
-// TODO
 impl LifecycleRuleBuilder {
     pub fn new(status: LifecycleRuleStatus) -> Self {
         Self {
