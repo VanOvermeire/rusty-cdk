@@ -1,7 +1,9 @@
 use cloud_infra_core::dynamodb::DynamoDBKey;
 use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
+use cloud_infra_core::s3::builder::S3BucketBuilder;
 use cloud_infra_core::sqs::{SqsQueueBuilder};
+use cloud_infra_core::stack::StackBuilder;
 use cloud_infra_core::wrappers::{
     StringWithOnlyAlphaNumericsAndUnderscores, DelaySeconds, MaximumMessageSize,
     MessageRetentionPeriod, VisibilityTimeout, ReceiveMessageWaitTime, NonZeroNumber
@@ -55,4 +57,19 @@ fn sqs_fifo_queue_builder_should_compile() {
         .visibility_timeout(timeout)
         .content_based_deduplication(true)
         .build();
+}
+
+// TODO more of these tests
+#[test]
+fn stack_with_missing_bucket_should_err() {
+    let (_, policy) = S3BucketBuilder::new("website")
+        .website("index.com".to_string())
+        .build();
+
+    let stack = StackBuilder::new()
+        // did not add bucket
+        .add_resource(policy)
+        .build();
+
+    assert!(stack.is_err());
 }

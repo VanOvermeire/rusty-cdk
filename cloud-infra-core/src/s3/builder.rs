@@ -22,13 +22,15 @@ pub struct S3BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
     policy_document: PolicyDocument,
+    referenced_ids: Vec<String>,
 }
 
 impl S3BucketPolicyBuilder {
-    pub fn new(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
+    pub fn new(id: &str, bucket: &S3Bucket, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
-            bucket_name,
+            bucket_name: bucket.get_ref(),
+            referenced_ids: vec![bucket.get_resource_id().to_string()],
             policy_document,
         }
     }
@@ -40,6 +42,7 @@ impl S3BucketPolicyBuilder {
         S3BucketPolicy {
             id: self.id,
             resource_id,
+            referenced_ids: self.referenced_ids,
             r#type: "AWS::S3::BucketPolicy".to_string(),
             properties: S3BucketPolicyProperties {
                 bucket_name: self.bucket_name,
@@ -254,7 +257,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]);
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-            let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), bucket.get_ref(), doc).build();
+            let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
             Some(s3_policy)
         } else {
             None

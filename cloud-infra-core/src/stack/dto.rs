@@ -176,6 +176,7 @@ impl Resource {
             Resource::LambdaPermission(l) => l.get_referenced_ids(),
             Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
             Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
+            Resource::S3BucketPolicy(r) => r.get_referenced_ids(),
             Resource::DynamoDBTable(_) => vec![],
             Resource::SqsQueue(_) => vec![],
             Resource::EventSourceMapping(_) => vec![],
@@ -185,7 +186,6 @@ impl Resource {
             Resource::ApiGatewayV2Api(_) => vec![],
             Resource::ApiGatewayV2Stage(_) => vec![],
             Resource::S3Bucket(_) => vec![],
-            Resource::S3BucketPolicy(_) => vec![],
             Resource::SecretsManagerSecret(_) => vec![],
         }
     }

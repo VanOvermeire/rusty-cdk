@@ -105,7 +105,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     env_vars: Vec<(String, Value)>,
     function_name: Option<String>,
     sqs_event_source_mapping: Option<EventSourceMappingInfo>,
-    referenced_ids: Vec<String>,
+    referenced_ids: Vec<String>, // TODO rename everywhere to referenced_resource_ids?
     reserved_concurrent_executions: Option<u32>,
 }
 

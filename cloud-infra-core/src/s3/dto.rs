@@ -4,13 +4,14 @@ use crate::iam::PolicyDocument;
 use crate::intrinsic_functions::{get_arn, get_ref};
 use crate::shared::Id;
 
-// TODO add referenced ids (bucket...)
 #[derive(Debug, Serialize)]
 pub struct S3BucketPolicy {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
+    #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -28,6 +29,10 @@ impl S3BucketPolicy {
 
     pub fn get_ref(&self) -> Value {
         get_ref(self.get_resource_id())
+    }
+
+    pub fn get_referenced_ids(&self) -> Vec<&str> {
+        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 

@@ -138,6 +138,9 @@ In theory, CloudFormation should propagate the tags to its resources, in practic
 
 ## TODO
 
+- think about naming
+  - do you need S3/SQS/... prefixes when the import is from that packages
+  - can we find better/clearer names for the wrappers?
 - probably want to do some more validation when building the stack, for stuff we cannot do at compile time 
 - accept &str or similar where we now require String => Into<String>?
 - try to replace syn and serde with more something more lightweight (at compile time) - facet?
