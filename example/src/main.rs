@@ -24,8 +24,8 @@ async fn main() {
         .build();
 
     let queue = SqsQueueBuilder::new("myQueue").standard_queue().build();
+    
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-
     let zipper = zip_file!("./example/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
@@ -53,6 +53,7 @@ async fn main() {
         .add_resource(api)
         .add_resource(stage)
         .add_resource_triples(routes)
+        .add_tag("OWNER", "me")
         .build();
 
     if let Err(s) = stack {

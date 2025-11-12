@@ -24,6 +24,8 @@ pub struct Asset {
 pub struct Stack {
     #[serde(skip)]
     pub(crate) to_replace: Vec<(String, String)>,
+    #[serde(skip)]
+    pub(crate) tags: Vec<(String, String)>,
     #[serde(rename = "Resources")]
     pub(crate) resources: HashMap<String, Resource>,
     #[serde(rename = "Metadata")]
@@ -31,6 +33,10 @@ pub struct Stack {
 }
 
 impl Stack {
+    pub fn get_tags(&self) -> Vec<(String, String)> {
+        self.tags.clone()
+    }
+    
     pub fn get_assets(&self) -> Vec<Asset> {
         self.resources
             .values()

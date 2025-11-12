@@ -1,17 +1,17 @@
+use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
+use aws_sdk_cloudformation::types::{Capability, StackStatus, Tag};
+use cloud_infra_core::stack::Stack;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::process::exit;
-use aws_sdk_cloudformation::types::{Capability, StackStatus};
 use std::sync::Arc;
 use std::time::Duration;
-use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
-use serde::{Deserialize};
 use tokio::time::sleep;
-use cloud_infra_core::stack::Stack;
 
 #[derive(Deserialize)]
 struct StackOnlyMetadata {
     #[serde(rename = "Metadata")]
-    pub (crate) metadata: HashMap<String, String>
+    pub(crate) metadata: HashMap<String, String>,
 }
 
 async fn get_existing_template(client: &aws_sdk_cloudformation::Client, stack_name: &str) -> Option<String> {
@@ -62,8 +62,15 @@ pub async fn deploy(name: &str, mut stack: Stack) {
     }
 
     let cloudformation_client = aws_sdk_cloudformation::Client::new(&config);
-
     let existing_template = get_existing_template(&cloudformation_client, name).await;
+    let tags = stack.get_tags();
+    let tags = if tags.is_empty() {
+        None
+    } else {
+        Some(tags.into_iter()
+            .map(|v| Tag::builder().key(v.0).value(v.1).build())
+            .collect())
+    };
 
     match existing_template {
         Some(existing) => {
@@ -76,6 +83,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
                 .stack_name(name)
                 .template_body(body)
                 .capabilities(Capability::CapabilityNamedIam)
+                .set_tags(tags)
                 .send()
                 .await
             {
@@ -91,6 +99,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
                 .stack_name(name)
                 .template_body(body)
                 .capabilities(Capability::CapabilityNamedIam)
+                .set_tags(tags)
                 .send()
                 .await
             {
@@ -98,7 +107,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
                 Err(e) => {
                     eprintln!("an error occurred while creating the stack: {e:#?}");
                     exit(1);
-                },
+                }
             }
         }
     }

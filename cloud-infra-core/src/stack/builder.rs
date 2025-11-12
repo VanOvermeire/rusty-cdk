@@ -23,6 +23,7 @@ impl Error for StackBuilderError {}
 
 pub struct StackBuilder {
     resources: Vec<Resource>,
+    tags: Vec<(String, String)>,
 }
 
 impl Default for StackBuilder {
@@ -33,7 +34,7 @@ impl Default for StackBuilder {
 
 impl StackBuilder {
     pub fn new() -> Self {
-        Self { resources: vec![] }
+        Self { resources: vec![], tags: vec![] }
     }
 
     pub fn add_resource<T: Into<Resource>>(mut self, resource: T) -> Self {
@@ -87,6 +88,11 @@ impl StackBuilder {
         self
     }
 
+    pub fn add_tag<T: Into<String>>(mut self, key: T, value: T) -> Self {
+        self.tags.push((key.into(), value.into()));
+        self
+    }
+
     pub fn build(self) -> Result<Stack, StackBuilderError> {
         let ref_ids: Vec<_> = self.resources.iter().flat_map(|r| r.get_refenced_ids()).collect();
         let ids: Vec<_> = self.resources.iter().map(|r| r.get_resource_id()).collect();
@@ -105,6 +111,7 @@ impl StackBuilder {
         let resources = self.resources.into_iter().map(|r| (r.get_resource_id().to_string(), r)).collect();
         Ok(Stack {
             to_replace: vec![],
+            tags: self.tags,
             resources,
             metadata,
         })

@@ -111,6 +111,31 @@ Next up:
 - AppConfig?
 - CloudFront?
 
+## Tags
+
+Currently, you can only add tags to the stack, not to individual resources.
+These tags are applied when using the `deploy` method. 
+They are not present in the CloudFormation template, because a root property for tags does not exist there.
+
+```rust
+use cloud_infra::stack::StackBuilder;
+use cloud_infra::sqs::SqsQueueBuilder;
+
+async fn tagging() {
+  let queue = SqsQueueBuilder::new("myQueue").standard_queue().build();
+  
+  let stack = StackBuilder::new()
+      .add_resource(queue)
+      .add_tag("OWNER", "me")
+      .build();
+
+  // now deploy
+  // cloud_infra::deploy("Example", stack.unwrap()).await;
+}
+```
+
+In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
+
 ## TODO
 
 - probably want to do some more validation when building the stack, for stuff we cannot do at compile time 
@@ -128,4 +153,3 @@ Next up:
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
 - UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
-  - Tagging
