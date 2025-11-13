@@ -9,6 +9,8 @@ pub mod sns;
 pub mod s3;
 pub mod secretsmanager;
 pub mod apigateway;
+pub mod cloudfront;
 pub mod shared;
 
 mod intrinsic_functions;
+
