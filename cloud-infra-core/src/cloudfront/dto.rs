@@ -1,7 +1,29 @@
 use crate::shared::Id;
 use serde::Serialize;
 
-// TODO AWS::CloudFront::CloudFrontOriginAccessIdentity
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginAccessIdentity {
+    #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
+    pub(crate) resource_id: String,
+    #[serde(rename = "Type")]
+    pub(crate) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(crate) properties: CloudFrontOriginAccessIdentityProperties,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginAccessIdentityProperties {
+    #[serde(rename = "CloudFrontOriginAccessIdentityConfig")]
+    pub(crate) cloud_front_origin_access_identity_config: CloudFrontOriginAccessIdentityConfig
+}
+
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginAccessIdentityConfig {
+    #[serde(rename = "Comment")]
+    pub(crate) comment: String
+}
 
 #[derive(Debug, Serialize)]
 pub struct CachePolicy {
@@ -278,7 +300,7 @@ pub struct DefaultCacheBehavior {
     pub(crate) trusted_key_groups: Option<Vec<String>>,
 
     // "RealtimeLogConfigArn" : String,
-    // "GrpcConfig" : GrpcConfig,
+    // "GrpcConfig" : GrpcConfig, => Update your distribution's cache behavior to allow HTTP methods, including the POST method; Specify HTTP/2 as one of the supported HTTP versions.
     // "OriginRequestPolicyId" : String,
     // "LambdaFunctionAssociations" : [ LambdaFunctionAssociation, ... ],
     // "FunctionAssociations" : [ FunctionAssociation, ... ],
