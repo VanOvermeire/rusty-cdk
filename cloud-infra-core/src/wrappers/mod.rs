@@ -160,13 +160,13 @@ pub struct EnvVarKey(pub String);
 /// - File should exist and be accessible at deployment time
 ///
 /// # Recommended Usage
-/// Use the `zipfile!` macro from `cloud-infra-macros` for compile-time validation:
+/// Use the `zip_file!` macro from `cloud-infra-macros` for compile-time validation:
 ///
 /// ```rust,compile_fail
 /// use cloud_infra_core::wrappers::ZipFile;
 /// use cloud_infra_macros::zip_file;
 /// 
-/// let lambda_code = zipfile!("./target/lambda/function.zip");   // Compile-time validated
+/// let lambda_code = zip_file!("./target/lambda/function.zip");   // Compile-time validated
 /// ```
 #[derive(Debug, Clone)]
 pub struct ZipFile(pub String);

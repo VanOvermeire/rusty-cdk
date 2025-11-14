@@ -127,6 +127,11 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         }
     }
     
+    // can only map with wildcard though // TODO param
+    pub fn check_permissions_against_dependencies(mut self, cargo_toml_file_path: String) {
+        todo!()
+    }
+    
     pub fn env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
         self.env_vars.push((key.0, value));
         Self {
