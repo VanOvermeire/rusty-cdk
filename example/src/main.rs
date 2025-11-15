@@ -36,6 +36,8 @@ async fn main() {
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .sqs_event_source_mapping(&queue, None)
+        // TODO remove/replace with valid TOML
+        // .check_permissions_against_dependencies(TomlFile("...Cargo.toml".to_string()))
         .build();
 
     let (api, stage, routes) = HttpApiGatewayBuilder::new("myAGW")

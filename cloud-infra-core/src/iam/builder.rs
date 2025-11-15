@@ -87,6 +87,17 @@ impl IamRoleBuilder {
         IamRole {
             id: Id(id.to_string()),
             resource_id: resource_id.to_string(),
+            potentially_missing_services: vec![],
+            r#type: "AWS::IAM::Role".to_string(),
+            properties,
+        }
+    }
+
+    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> IamRole {
+        IamRole {
+            id: Id(id.to_string()),
+            resource_id: resource_id.to_string(),
+            potentially_missing_services: potentially_missing,
             r#type: "AWS::IAM::Role".to_string(),
             properties,
         }

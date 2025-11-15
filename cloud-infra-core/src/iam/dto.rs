@@ -9,6 +9,8 @@ pub struct IamRole {
     pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
+    #[serde(skip)]
+    pub(crate) potentially_missing_services: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]

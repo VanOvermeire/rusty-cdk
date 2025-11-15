@@ -1,10 +1,28 @@
 use std::fs::read_to_string;
 use std::path::Path;
+use crate::iam::{Effect, Policy};
 
 const AWS_SERVICES_LIST: &str = include_str!("services_names");
 
+pub(crate) fn find_missing_services(services: &[String], policies: &[Policy]) -> Vec<String> {
+    let allow: String = Effect::Allow.into();
+    
+    let services_in_policy_actions: Vec<_> = policies.iter()
+        .map(|p| &p.policy_document)
+        .flat_map(|p| &p.statements)
+        .filter(|s| s.effect == allow)
+        .flat_map(|p| &p.action)
+        .map(|a| a.split(":").collect::<Vec<_>>()[0])
+        .collect();
+    
+    services.iter()
+        .filter(|s| !services_in_policy_actions.contains(&s.as_str()))
+        .map(|s| s.clone())
+        .collect()
+}
+
 // async?
-pub(crate) fn map_toml_dependencies_to_permissions(file_path: &Path) -> Vec<String> {
+pub(crate) fn map_toml_dependencies_to_services(file_path: &Path) -> Vec<String> {
     let toml_as_string = read_to_string(file_path).expect("file path to be validated at compile time");
     map_string_of_tom_dependencies_to_aws_services(&toml_as_string)
 }

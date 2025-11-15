@@ -1,9 +1,9 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, StatementBuilder, IamPrincipalBuilder};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, StatementBuilder, IamPrincipalBuilder, map_toml_dependencies_to_services, find_missing_services};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LambdaPermission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
 use crate::sqs::SqsQueue;
 use crate::stack::{Asset, Resource};
-use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, ZipFile};
+use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -102,6 +102,7 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     handler: Option<String>,
     runtime: Option<Runtime>,
     additional_policies: Vec<Policy>,
+    aws_services_in_dependencies: Vec<String>,
     env_vars: Vec<(String, Value)>,
     function_name: Option<String>,
     sqs_event_source_mapping: Option<EventSourceMappingInfo>,
@@ -126,10 +127,15 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             ..self
         }
     }
-    
-    // can only map with wildcard though // TODO param
-    pub fn check_permissions_against_dependencies(mut self, cargo_toml_file_path: String) {
-        todo!()
+
+    // TODO macro
+    pub fn check_permissions_against_dependencies(self, cargo_toml: TomlFile) -> Self {
+        let services = map_toml_dependencies_to_services(cargo_toml.0.as_ref());
+        
+        Self {
+            aws_services_in_dependencies: services,
+            ..self
+        }
     }
     
     pub fn env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
@@ -200,12 +206,13 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             .build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
+        let potentially_missing = find_missing_services(&self.aws_services_in_dependencies, &self.additional_policies);
         let props = IamRolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
-
+        
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
-        let role = IamRoleBuilder::new(&role_id, &role_resource_id, props);
+        let role = IamRoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing);
         self.referenced_ids.push(role_resource_id);
 
         let environment = if self.env_vars.is_empty() {
@@ -272,6 +279,7 @@ impl LambdaFunctionBuilder<StartState> {
             handler: None,
             runtime: None,
             additional_policies: vec![],
+            aws_services_in_dependencies: vec![],
             env_vars: vec![],
             function_name: None,
             sqs_event_source_mapping: None,
@@ -291,6 +299,7 @@ impl LambdaFunctionBuilder<StartState> {
             handler: self.handler,
             runtime: self.runtime,
             additional_policies: self.additional_policies,
+            aws_services_in_dependencies: self.aws_services_in_dependencies,
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
@@ -312,6 +321,7 @@ impl LambdaFunctionBuilder<ZipState> {
             code: self.code,
             runtime: self.runtime,
             additional_policies: self.additional_policies,
+            aws_services_in_dependencies: self.aws_services_in_dependencies,
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
@@ -333,6 +343,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
             code: self.code,
             handler: self.handler,
             additional_policies: self.additional_policies,
+            aws_services_in_dependencies: self.aws_services_in_dependencies,
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
@@ -363,6 +374,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
             code: self.code,
             handler: self.handler,
             additional_policies: self.additional_policies,
+            aws_services_in_dependencies: self.aws_services_in_dependencies,
             env_vars: self.env_vars,
             function_name: self.function_name,
             referenced_ids: self.referenced_ids,

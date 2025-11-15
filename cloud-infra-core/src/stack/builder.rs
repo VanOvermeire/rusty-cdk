@@ -5,6 +5,7 @@ use std::fmt::{Debug, Display, Formatter};
 #[derive(Debug)]
 pub enum StackBuilderError {
     ReferencedIdMissingFromResources(String),
+    MissingPermissionsForRole(Vec<String>),
 }
 
 impl Display for StackBuilderError {
@@ -14,6 +15,10 @@ impl Display for StackBuilderError {
                 // works for some ids, for event source mappings the proposed resource will still be confusing
                 let id_without_suffix: String = id.chars().take_while(|c| !c.is_ascii_digit()).collect();
                 f.write_fmt(format_args!("a resource id (`{}`) was referenced by a resource, but not added to the stack - are you missing an `add_resource` call for a `{}`?", id, id_without_suffix))
+            }
+            StackBuilderError::MissingPermissionsForRole(info) => {
+                let gathered_info = info.join(";");
+                f.write_fmt(format_args!("one or more roles seem to be missing permission to access services: `{}`?", gathered_info))
             }
         }
     }
@@ -101,6 +106,23 @@ impl StackBuilder {
             .iter()
             .map(|r| (r.get_id().to_string(), r.get_resource_id().to_string()))
             .collect();
+        
+        let roles_with_potentially_missing_services: Vec<_> = self.resources.iter().filter_map(|r| {
+            match r {
+                Resource::IamRole(r) => {
+                    if !r.potentially_missing_services.is_empty() {
+                        Some(format!("{}: {}", r.resource_id, r.potentially_missing_services.join(",")))
+                    } else {
+                        None
+                    }
+                },
+                _ => None
+            }
+        }).collect();
+        
+        if !roles_with_potentially_missing_services.is_empty() {
+            return Err(StackBuilderError::MissingPermissionsForRole(roles_with_potentially_missing_services))
+        }
 
         let missing_id = ref_ids.iter().find(|r| !ids.contains(r));
 
