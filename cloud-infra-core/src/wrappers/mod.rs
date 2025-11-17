@@ -315,4 +315,7 @@ pub struct CfConnectionTimeout(pub Option<u16>, pub Option<u16>);
 pub struct OriginPath(pub String);
 
 #[derive(Debug, Clone)]
+pub struct DefaultRootObject(pub String);
+
+#[derive(Debug, Clone)]
 pub struct S3OriginReadTimeout(pub u16);

@@ -143,6 +143,7 @@ In theory, CloudFormation should propagate the tags to its resources, in practic
 - think about naming
   - do you need S3/SQS/... prefixes when the import is from that packages
     - probably not
+    - but wrappers do need to be clearer...
   - maybe always do a build even when no more args are required
   - can we find better/clearer names for the wrappers?
 - docs

@@ -73,6 +73,8 @@ use quote::quote;
 use std::env;
 use std::path::{absolute, Path};
 use syn::{parse_macro_input, Error, LitInt, LitStr};
+use syn::spanned::Spanned;
+use crate::timeouts::Timeouts;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -675,7 +677,7 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
     let value = output.value();
     
     if !value.starts_with("/") || value.ends_with("/") {
-        return Error::new(Span::call_site(), format!("origin path should start with a / and should not end with / (but got {})", value))
+        return Error::new(value.span(), format!("origin path should start with a / and should not end with / (but got {})", value))
             .into_compile_error()
             .into();
     }
@@ -686,8 +688,24 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn default_root_object(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+    
+    if value.starts_with("/") || value.ends_with("/") {
+        return Error::new(value.span(), "default root object should not start with /".to_string())
+            .into_compile_error()
+            .into();
+    }
+    
+    quote! {
+        DefaultRootObject(#value)
+    }.into()
+}
+
+#[proc_macro]
 pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
-    let ObjectSizes {  first, second } = parse_macro_input!(input);
+    let Timeouts {  first, second } = parse_macro_input!(input);
 
     if let Some(first) = first {
         if first > 10 {

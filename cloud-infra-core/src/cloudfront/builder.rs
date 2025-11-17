@@ -8,7 +8,7 @@ use crate::s3::builder::S3BucketPolicyBuilder;
 use crate::s3::dto::{S3Bucket, S3BucketPolicy};
 use crate::shared::Id;
 use crate::stack::Resource;
-use crate::wrappers::{ConnectionAttempts, CfConnectionTimeout, OriginPath, S3OriginReadTimeout, IamAction};
+use crate::wrappers::{ConnectionAttempts, CfConnectionTimeout, OriginPath, S3OriginReadTimeout, IamAction, DefaultRootObject};
 
 pub struct CloudFrontOriginAccessIdentityBuilder {
     id: Id,
@@ -218,11 +218,11 @@ impl From<PriceClass> for String {
 
 pub trait OriginState {}
 
-pub struct StartState {}
-impl OriginState for StartState {}
+pub struct OriginStartState {}
+impl OriginState for OriginStartState {}
 
-pub struct S3OriginState {}
-impl OriginState for S3OriginState {}
+pub struct OriginS3OriginState {}
+impl OriginState for OriginS3OriginState {}
 
 // TODO other origins
 // TODO for s3 origin you need a bucket policy, a CloudFrontOriginAccessIdentity, and a link to the distro
@@ -242,7 +242,7 @@ pub struct OriginBuilder<'a, T: OriginState> {
     vpc_origin_config: Option<VpcOriginConfig>,
 }
 
-impl OriginBuilder<'_, StartState> {
+impl OriginBuilder<'_, OriginStartState> {
     // could maybe validate domain name better if part of enum
     pub fn new(id: &str, domain_name: &str) -> Self {
         Self {
@@ -262,7 +262,7 @@ impl OriginBuilder<'_, StartState> {
         }
     }
 
-    pub fn s3_origin(mut self, bucket: &S3Bucket, origin_read_timeout: Option<S3OriginReadTimeout>) -> OriginBuilder<S3OriginState> {
+    pub fn s3_origin(mut self, bucket: &S3Bucket, origin_read_timeout: Option<S3OriginReadTimeout>) -> OriginBuilder<'_, OriginS3OriginState> {
         self.referenced_ids.push(bucket.get_resource_id().to_string());
 
         let s3origin_config = S3OriginConfig {
@@ -319,7 +319,7 @@ impl<T: OriginState> OriginBuilder<'_, T> {
         }
     }
 
-    pub fn build_internal(self) -> Origin {
+    fn build_internal(self) -> Origin {
         Origin {
             id: self.id,
             referenced_ids: self.referenced_ids,
@@ -337,7 +337,7 @@ impl<T: OriginState> OriginBuilder<'_, T> {
     }
 }
 
-impl OriginBuilder<'_, S3OriginState> {
+impl OriginBuilder<'_, OriginS3OriginState> {
     pub fn build(mut self) -> Origin {
         let bucket = self.bucket.take().expect("bucket to be present in S3 origin state");
         
@@ -359,7 +359,14 @@ impl OriginBuilder<'_, S3OriginState> {
     }
 }
 
-pub struct CloudFrontDistributionBuilder {
+pub trait CloudFrontDistributionState {}
+pub struct CloudFrontDistributionStartState {}
+impl CloudFrontDistributionState for CloudFrontDistributionStartState {}
+pub struct CloudFrontDistributionOriginState {}
+impl CloudFrontDistributionState for CloudFrontDistributionOriginState {}
+
+pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
+    phantom_data: PhantomData<T>,
     id: Id,
     enabled: bool,
     default_cache_behavior: DefaultCacheBehavior,
@@ -370,15 +377,15 @@ pub struct CloudFrontDistributionBuilder {
     ipv6_enabled: Option<bool>,
     viewer_certificate: Option<ViewerCertificate>,
     cache_behaviors: Option<Vec<CacheBehavior>>,
-
     default_root_object: Option<String>,
-    // origin_groups: Option<OriginGroups>, // TODO add. either this or the next is required!
+    // origin_groups: Option<OriginGroups>, // TODO add. and either this or the next is required!
     origins: Option<Vec<Origin>>,
 }
 
-impl CloudFrontDistributionBuilder {
+impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
     pub fn new(id: &str, default_cache_behavior: DefaultCacheBehavior) -> Self {
         Self {
+            phantom_data: Default::default(),
             id: Id(id.to_string()),
             enabled: true,
             default_cache_behavior,
@@ -393,7 +400,55 @@ impl CloudFrontDistributionBuilder {
             viewer_certificate: None,
         }
     }
+    
+    pub fn origins(self, origins: Vec<Origin>) -> CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
+        CloudFrontDistributionBuilder {
+            phantom_data: Default::default(),
+            origins: Some(origins),
+            id: self.id,
+            enabled: self.enabled,
+            default_cache_behavior: self.default_cache_behavior,
+            price_class: self.price_class,
+            http_version: self.http_version,
+            aliases: self.aliases,
+            cnames: self.cnames,
+            ipv6_enabled: self.ipv6_enabled,
+            viewer_certificate: self.viewer_certificate,
+            cache_behaviors: self.cache_behaviors,
+            default_root_object: self.default_root_object,
+        }
+    }
+}
 
+impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
+    #[must_use]
+    pub fn build(mut self) ->  (CloudFrontDistribution, Vec<S3BucketPolicy>) {
+        let mut origins = self.origins.take().expect("origins to be present in distribution origin state");
+
+        let policies: Vec<_> = origins.iter_mut().filter(|o| o.s3_bucket_policy.is_some()).map(|s3| {
+            let mut policy = s3.s3_bucket_policy.take().expect("just checked that this was present, only need to use it this one time");
+            let distro_id = get_att(&self.id, "Id");
+            let source_arn_value = join("", vec![Value::String("arn:aws:cloudfront::".to_string()), get_ref("AWS::AccountId"), Value::String(":distribution/".to_string()), distro_id]);
+            let distro_condition = json!({
+                "StringEquals": {
+                    "AWS:SourceArn": source_arn_value
+                }
+            });
+            policy.properties.policy_document.statements.iter_mut().for_each(|v| {
+                v.condition = Some(distro_condition.clone())
+            });
+            policy
+        }).collect();
+
+        self.origins = Some(origins);
+
+        let distro = self.build_internal();
+
+        (distro, policies)
+    }
+}
+
+impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
     pub fn add_cache_behavior(mut self, behavior: CacheBehavior) -> Self {
         if let Some(mut behaviors) = self.cache_behaviors {
             behaviors.push(behavior);
@@ -452,32 +507,14 @@ impl CloudFrontDistributionBuilder {
         Self { enabled, ..self }
     }
 
-    // TODO can't begin with a forward slash...
-    pub fn default_root_object(self, default: String) -> Self {
+    pub fn default_root_object(self, default: DefaultRootObject) -> Self {
         Self {
-            default_root_object: Some(default),
+            default_root_object: Some(default.0),
             ..self
         }
     }
 
-    pub fn build(self) -> (CloudFrontDistribution, S3BucketPolicy) {
-        // TODO build and return the s3 bucket policy, but only for the right origin...
-        //  for now assume it's always 1 and it's s3
-        let mut origins = self.origins.unwrap();
-        let s3_origin = origins.get_mut(0).unwrap();
-        let mut policy = s3_origin.s3_bucket_policy.take().unwrap();
-        
-        let distro_id = get_att(&self.id, "Id");
-        let source_arn_value = join("", vec![Value::String("arn:aws:cloudfront::".to_string()), get_ref("AWS::AccountId"), Value::String(":distribution/".to_string()), distro_id]);
-        let distro_condition = json!({
-            "StringEquals": {
-                "AWS:SourceArn": source_arn_value
-            }
-        });
-        policy.properties.policy_document.statements.iter_mut().for_each(|v| {
-            v.condition = Some(distro_condition.clone())
-        });
-        
+    fn build_internal(self) -> CloudFrontDistribution {
         let config = DistributionConfig {
             enabled: self.enabled,
             default_cache_behavior: self.default_cache_behavior,
@@ -489,15 +526,14 @@ impl CloudFrontDistributionBuilder {
             ipv6_enabled: self.ipv6_enabled,
             price_class: self.price_class,
             viewer_certificate: self.viewer_certificate,
-            origins: Some(origins),
+            origins: self.origins,
             origin_groups: None,
         };
-        let distro = CloudFrontDistribution {
+        CloudFrontDistribution {
             id: self.id,
             resource_id: Resource::generate_id("CloudFrontDistribution"),
             r#type: "AWS::CloudFront::Distribution".to_string(),
             properties: CloudFrontDistributionProperties { config },
-        };
-        (distro, policy)
+        }
     }
 }
