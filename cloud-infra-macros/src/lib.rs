@@ -62,6 +62,7 @@ mod file_util;
 mod iam_validation;
 mod strings;
 mod object_sizes;
+mod timeouts;
 
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
 use crate::object_sizes::ObjectSizes;
@@ -334,6 +335,8 @@ number_check!(message_retention_period, 60, 1209600, MessageRetentionPeriod, u32
 number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
 number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
 number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);
+number_check!(connection_attempts, 1, 3, ConnectionAttempts, u16);
+number_check!(s3_origin_read_timeout, 1, 120, ConnectionAttempts, u16);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
@@ -661,6 +664,61 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
         quote! { None }
     };
 
+    quote! {
+        S3LifecycleObjectSizes(#first_output, #second_output)
+    }.into()
+}
+
+#[proc_macro]
+pub fn origin_path(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+    
+    if !value.starts_with("/") || value.ends_with("/") {
+        return Error::new(Span::call_site(), format!("origin path should start with a / and should not end with / (but got {})", value))
+            .into_compile_error()
+            .into();
+    }
+    
+    quote! {
+        OriginPath(#value)
+    }.into()
+}
+
+#[proc_macro]
+pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
+    let ObjectSizes {  first, second } = parse_macro_input!(input);
+
+    if let Some(first) = first {
+        if first > 10 {
+            return Error::new(Span::call_site(), format!("connection timeout was {} but should be between 1 and 10", first))
+                .into_compile_error()
+                .into();
+        } else if let Some(second) = second {
+            if second < first {
+                return Error::new(Span::call_site(), format!("response completion timeout was {} but should be larger than connection timeout ({})", second, first))
+                    .into_compile_error()
+                    .into();
+            }
+        }
+    }
+
+    let first_output = if let Some(first) = first {
+        quote! {
+            Some(#first)
+        }
+    } else {
+        quote! { None }
+    };
+
+    let second_output = if let Some(second) = second {
+        quote! {
+            Some(#second)
+        }
+    } else {
+        quote! { None }
+    };
+    
     quote! {
         S3LifecycleObjectSizes(#first_output, #second_output)
     }.into()

@@ -1,11 +1,13 @@
-use crate::cloudfront::{
-    CacheBehavior, CachePolicy, CachePolicyProperties, CloudFrontDistribution, CloudFrontDistributionProperties,
-    CloudFrontOriginAccessIdentity, CloudFrontOriginAccessIdentityConfig, CloudFrontOriginAccessIdentityProperties, CookiesConfig,
-    DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginGroups, ParametersInCacheKeyAndForwardedToOrigin,
-    QueryStringsConfig, ViewerCertificate,
-};
+use std::marker::PhantomData;
+use serde_json::Value;
+use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyProperties, CloudFrontDistribution, CloudFrontDistributionProperties, CloudFrontOriginAccessIdentity, CloudFrontOriginAccessIdentityConfig, CloudFrontOriginAccessIdentityProperties, CookiesConfig, DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginCustomHeader, OriginGroups, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
+use crate::iam::{Effect, IamPrincipalBuilder, PolicyDocumentBuilder, StatementBuilder};
+use crate::intrinsic_functions::join;
+use crate::s3::builder::S3BucketPolicyBuilder;
+use crate::s3::dto::{S3Bucket, S3BucketPolicy};
 use crate::shared::Id;
 use crate::stack::Resource;
+use crate::wrappers::{ConnectionAttempts, CfConnectionTimeout, OriginPath, S3OriginReadTimeout, IamAction};
 
 pub struct CloudFrontOriginAccessIdentityBuilder {
     id: Id,
@@ -213,6 +215,151 @@ impl From<PriceClass> for String {
     }
 }
 
+pub trait OriginState {}
+
+pub struct StartState {}
+impl OriginState for StartState {}
+
+pub struct S3OriginState {}
+impl OriginState for S3OriginState {}
+
+// TODO other origins
+// TODO for s3 origin you need a bucket policy, a CloudFrontOriginAccessIdentity, and a link to the distro
+pub struct OriginBuilder<'a, T: OriginState> {
+    phantom_data: PhantomData<T>,
+    id: String,
+    referenced_ids: Vec<String>,
+    bucket: Option<&'a S3Bucket>,
+    domain_name: String,
+    connection_attempts: Option<u16>,
+    connection_timeout: Option<u16>,
+    response_completion_timeout: Option<u16>,
+    origin_access_control_id: Option<String>,
+    origin_path: Option<String>,
+    s3origin_config: Option<S3OriginConfig>,
+    origin_custom_headers: Option<Vec<OriginCustomHeader>>,
+    vpc_origin_config: Option<VpcOriginConfig>,
+}
+
+// TODO when bucket should return bucket policy
+
+impl OriginBuilder<'_, StartState> {
+    // could maybe validate domain name better if part of enum
+    pub fn new(id: &str, domain_name: &str) -> Self {
+        Self {
+            phantom_data: Default::default(),
+            id: id.to_string(),
+            referenced_ids: vec![],
+            bucket: None,
+            domain_name: domain_name.to_string(),
+            connection_attempts: None,
+            connection_timeout: None,
+            origin_access_control_id: None,
+            origin_path: None,
+            response_completion_timeout: None,
+            s3origin_config: None,
+            origin_custom_headers: None,
+            vpc_origin_config: None,
+        }
+    }
+    
+    pub fn s3_origin(mut self, bucket: &S3Bucket, origin_access_identity: Option<String>, origin_read_timeout: Option<S3OriginReadTimeout>) -> OriginBuilder<S3OriginState> {
+        self.referenced_ids.push(bucket.get_resource_id().to_string());
+        
+        let s3origin_config = S3OriginConfig {
+            origin_access_identity,
+            origin_read_timeout: origin_read_timeout.map(|v| v.0),
+        };
+        
+        OriginBuilder {
+            phantom_data: Default::default(),
+            id: self.id.to_string(),
+            referenced_ids: self.referenced_ids,
+            bucket: Some(bucket),
+            domain_name: self.domain_name,
+            connection_attempts: self.connection_attempts,
+            connection_timeout: self.connection_timeout,
+            origin_access_control_id: self.origin_access_control_id,
+            origin_path: self.origin_path,
+            response_completion_timeout: self.response_completion_timeout,
+            origin_custom_headers: self.origin_custom_headers,
+            s3origin_config: Some(s3origin_config),
+            vpc_origin_config: None,
+        }
+    }
+}
+
+
+impl<T: OriginState> OriginBuilder<'_, T> {
+    pub fn connection_attempts(self, attempts: ConnectionAttempts) -> Self {
+        Self {
+            connection_attempts: Some(attempts.0),
+            ..self
+        }
+    }
+
+    pub fn timeouts(self, timeouts: CfConnectionTimeout) -> Self {
+        Self {
+            connection_timeout: timeouts.0,
+            response_completion_timeout: timeouts.1,
+            ..self
+        }
+    }
+
+    // TODO better
+    pub fn origin_access_control_id(self, id: String) -> Self {
+        Self {
+            origin_access_control_id: Some(id),
+            ..self
+        }
+    }
+
+    pub fn origin_path(self, path: OriginPath) -> Self {
+        Self {
+            origin_access_control_id: Some(path.0),
+            ..self
+        }
+    }
+
+    pub fn build_internal(self) -> Origin {
+        Origin {
+            id: self.id,
+            referenced_ids: self.referenced_ids,
+            domain_name: self.domain_name,
+            connection_attempts: self.connection_attempts,
+            connection_timeout: self.connection_timeout,
+            origin_access_control_id: self.origin_access_control_id,
+            origin_path: self.origin_path,
+            response_completion_timeout: self.response_completion_timeout,
+            s3origin_config: self.s3origin_config,
+            origin_custom_headers: self.origin_custom_headers,
+            vpc_origin_config: self.vpc_origin_config,
+        }
+    }
+}
+
+impl OriginBuilder<'_, S3OriginState> {
+    pub fn build(mut self) -> (Origin, S3BucketPolicy) {
+        let bucket = self.bucket.take().expect("bucket to be present in S3 origin state");
+
+        let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
+        let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
+            .resources(bucket_resource)
+            .principal(IamPrincipalBuilder::new().normal("*").build())
+            .build();
+        let doc = PolicyDocumentBuilder::new(vec![statement]);
+        let bucket_policy_id = format!("{}-website-s3-policy", self.id);
+        let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
+
+        let origin = self.build_internal();
+
+        (origin, s3_policy)
+    }
+}
+
+// TODO
+pub struct OriginGroupsBuilder {}
+
 pub struct CloudFrontDistributionBuilder {
     id: Id,
     enabled: bool,
@@ -224,10 +371,10 @@ pub struct CloudFrontDistributionBuilder {
     ipv6_enabled: Option<bool>,
     viewer_certificate: Option<ViewerCertificate>,
     cache_behaviors: Option<Vec<CacheBehavior>>,
-    
-    default_root_object: Option<String>, //  => requires some special work if empty?
+
+    default_root_object: Option<String>,
     origin_groups: Option<OriginGroups>, // TODO either this or the next is required!
-    origins: Option<Vec<Origin>>,
+    origins: Option<Vec<Origin>>, // TODO accept bucket policy for s3
 }
 
 impl CloudFrontDistributionBuilder {
@@ -307,6 +454,14 @@ impl CloudFrontDistributionBuilder {
         Self { enabled, ..self }
     }
 
+    // TODO can't begin with a forward slash...
+    pub fn default_root_object(self, default: String) -> Self {
+        Self {
+            default_root_object: Some(default),
+            ..self
+        }
+    }
+
     pub fn build(self) -> CloudFrontDistribution {
         let config = DistributionConfig {
             enabled: self.enabled,
@@ -314,7 +469,7 @@ impl CloudFrontDistributionBuilder {
             aliases: self.aliases,
             cache_behaviors: self.cache_behaviors,
             cnames: self.cnames,
-            default_root_object: self.default_root_object,
+            default_root_object: self.default_root_object.unwrap_or_default(),
             http_version: self.http_version,
             ipv6_enabled: self.ipv6_enabled,
             origin_groups: self.origin_groups,

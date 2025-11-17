@@ -1,5 +1,6 @@
 use crate::shared::Id;
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Debug, Serialize)]
 pub struct CloudFrontOriginAccessIdentity {
@@ -137,8 +138,8 @@ pub struct DistributionConfig {
     pub(crate) cnames: Option<Vec<String>>,
     #[serde(rename = "DefaultCacheBehavior")]
     pub(crate) default_cache_behavior: DefaultCacheBehavior,
-    #[serde(rename = "DefaultRootObject", skip_serializing_if = "Option::is_none")]
-    pub(crate) default_root_object: Option<String>, //  => requires some special work if empty?
+    #[serde(rename = "DefaultRootObject")]
+    pub(crate) default_root_object: String,
     #[serde(rename = "Enabled")]
     pub(crate) enabled: bool, // TODO set to true by default?
     #[serde(rename = "HttpVersion", skip_serializing_if = "Option::is_none")]
@@ -231,18 +232,20 @@ pub struct StatusCodes {
 pub struct Origin {
     #[serde(rename = "Id")]
     pub(crate) id: String,
+    #[serde(skip)]
+    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "DomainName")]
     pub(crate) domain_name: String,
     #[serde(rename = "ConnectionAttempts", skip_serializing_if = "Option::is_none")]
-    pub(crate) connection_attempts: Option<u32>, // 1-3
+    pub(crate) connection_attempts: Option<u16>,
     #[serde(rename = "ConnectionTimeout", skip_serializing_if = "Option::is_none")]
-    pub(crate) connection_timeout: Option<u32>, // 1-10
+    pub(crate) connection_timeout: Option<u16>,
     #[serde(rename = "OriginAccessControlId", skip_serializing_if = "Option::is_none")]
     pub(crate) origin_access_control_id: Option<String>,
     #[serde(rename = "OriginPath", skip_serializing_if = "Option::is_none")]
     pub(crate) origin_path: Option<String>,
     #[serde(rename = "ResponseCompletionTimeout", skip_serializing_if = "Option::is_none")]
-    pub(crate) response_completion_timeout: Option<u32>, // >= OriginReadTimeout
+    pub(crate) response_completion_timeout: Option<u16>,
     #[serde(rename = "S3OriginConfig", skip_serializing_if = "Option::is_none")]
     pub(crate) s3origin_config: Option<S3OriginConfig>,
     #[serde(rename = "OriginCustomHeaders", skip_serializing_if = "Option::is_none")]
@@ -279,7 +282,7 @@ pub struct S3OriginConfig {
     #[serde(rename = "OriginAccessIdentity", skip_serializing_if = "Option::is_none")]
     pub(crate) origin_access_identity: Option<String>, // origin-access-identity/cloudfront/ID-of-origin-access-identity
     #[serde(rename = "OriginReadTimeout", skip_serializing_if = "Option::is_none")]
-    pub(crate) origin_read_timeout: Option<u32>, // 1-120 seconds
+    pub(crate) origin_read_timeout: Option<u16>, // 1-120 seconds
 }
 
 #[derive(Debug, Serialize)]

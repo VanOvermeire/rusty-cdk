@@ -304,3 +304,15 @@ pub struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 
 #[derive(Debug, Clone)]
 pub struct TomlFile(pub String);
+
+#[derive(Debug, Clone)]
+pub struct ConnectionAttempts(pub u16);
+
+#[derive(Debug, Clone)]
+pub struct CfConnectionTimeout(pub Option<u16>, pub Option<u16>);
+
+#[derive(Debug, Clone)]
+pub struct OriginPath(pub String);
+
+#[derive(Debug, Clone)]
+pub struct S3OriginReadTimeout(pub u16);
