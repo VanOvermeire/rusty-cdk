@@ -30,6 +30,7 @@ pub(crate) fn map_toml_dependencies_to_services(file_path: &Path) -> Vec<String>
 fn map_string_of_tom_dependencies_to_aws_services(file_content: &str) -> Vec<String> {
     let services: Vec<_> = AWS_SERVICES_LIST.split("\n").collect();
     let dependencies = file_content.split("\n").skip_while(|v| !v.contains("[dependencies]"));
+    // TODO stop once we reach the next section (optionally could scan dev-deps)
 
     dependencies
         .filter(|v| v.contains("aws-sdk"))

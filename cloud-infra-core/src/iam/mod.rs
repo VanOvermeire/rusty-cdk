@@ -4,4 +4,4 @@ mod permission_mapper;
 
 pub use dto::*;
 pub use builder::*;
-pub use permission_mapper::*;
+pub(crate) use permission_mapper::*;

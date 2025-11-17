@@ -66,7 +66,7 @@ pub struct ParametersInCacheKeyAndForwardedToOrigin {
     #[serde(rename = "CookiesConfig")]
     pub(crate) cookies_config: CookiesConfig,
     #[serde(rename = "EnableAcceptEncodingBrotli")]
-    pub(crate) accept_encoding_brotli: bool,
+    pub(crate) accept_encoding_brotli: Option<bool>,
     #[serde(rename = "EnableAcceptEncodingGzip")]
     pub(crate) accept_encoding_gzip: bool,
     #[serde(rename = "HeadersConfig")]
@@ -78,7 +78,7 @@ pub struct ParametersInCacheKeyAndForwardedToOrigin {
 #[derive(Debug, Serialize)]
 pub struct HeadersConfig {
     #[serde(rename = "HeaderBehavior")]
-    pub(crate) headers_behavior: String, // none, whitelist => whitelist requires headers
+    pub(crate) headers_behavior: String,
     #[serde(rename = "Headers", skip_serializing_if = "Option::is_none")]
     pub(crate) headers: Option<Vec<String>>,
 }
@@ -86,7 +86,7 @@ pub struct HeadersConfig {
 #[derive(Debug, Serialize)]
 pub struct QueryStringsConfig {
     #[serde(rename = "QueryStringBehavior")]
-    pub(crate) query_strings_behavior: String, // none, whitelist, allExcept, all => allExcept and whitelist require query strings vec
+    pub(crate) query_strings_behavior: String,
     #[serde(rename = "QueryStrings", skip_serializing_if = "Option::is_none")]
     pub(crate) query_strings: Option<Vec<String>>,
 }
@@ -94,7 +94,7 @@ pub struct QueryStringsConfig {
 #[derive(Debug, Serialize)]
 pub struct CookiesConfig {
     #[serde(rename = "CookieBehavior")]
-    pub(crate) cookie_behavior: String, // none, whitelist, allExcept, all => allExcept and whitelist require cookies vec
+    pub(crate) cookie_behavior: String,
     #[serde(rename = "Cookies", skip_serializing_if = "Option::is_none")]
     pub(crate) cookies: Option<Vec<String>>,
 }
@@ -124,7 +124,7 @@ impl CloudFrontDistribution {
 #[derive(Debug, Serialize)]
 pub struct CloudFrontDistributionProperties {
     #[serde(rename = "DistributionConfig")]
-    pub(crate) config: String,
+    pub(crate) config: DistributionConfig,
 }
 
 #[derive(Debug, Serialize)]
