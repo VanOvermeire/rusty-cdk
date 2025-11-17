@@ -34,6 +34,12 @@ impl S3BucketPolicyBuilder {
             policy_document,
         }
     }
+    
+    pub(crate) fn add_condition_to_statements(mut self, condition: Value) {
+        self.policy_document.statements.iter_mut().for_each(|s| {
+            s.condition = Some(condition.clone());
+        })
+    }
 
     #[must_use]
     pub fn build(self) -> S3BucketPolicy {

@@ -77,14 +77,16 @@ pub struct Statement {
     pub(crate) principal: Option<IamPrincipal>,
     #[serde(rename = "Resource", skip_serializing_if = "Option::is_none")]
     pub(crate) resource: Option<Vec<Value>>,
+    #[serde(rename = "Condition", skip_serializing_if = "Option::is_none")]
+    pub(crate) condition: Option<Value>
 }
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum IamPrincipal {
-    ServicePrincipal(ServicePrincipal),
-    StringPrincipal(String),
+    Service(ServicePrincipal),
     AWS(AWSPrincipal),
+    Custom(String),
 }
 
 #[derive(Debug, Serialize)]

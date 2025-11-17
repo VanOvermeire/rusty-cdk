@@ -1,7 +1,95 @@
 use crate::shared::Id;
 use serde::Serialize;
-use serde_json::Value;
+use crate::s3::dto::S3BucketPolicy;
 
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginAccessControl {
+    #[serde(skip)]
+    pub(crate) id: Id,
+    #[serde(skip)]
+    pub(crate) resource_id: String,
+    #[serde(rename = "Type")]
+    pub(crate) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(crate) properties: CloudFrontOriginControlProperties,
+}
+
+impl CloudFrontOriginAccessControl {
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginControlProperties {
+    #[serde(rename = "OriginAccessControlConfig")]
+    pub(crate) config: CloudFrontOriginAccessControlConfig
+}
+
+#[derive(Debug, Serialize)]
+pub enum OriginAccessControlType {
+    S3,
+    MediaStore,
+    Lambda,
+    MediaPackageV2
+}
+
+impl From<OriginAccessControlType> for String {
+    fn from(value: OriginAccessControlType) -> Self {
+        match value {
+            OriginAccessControlType::S3 => "s3".to_string(),
+            OriginAccessControlType::MediaStore => "mediastore".to_string(),
+            OriginAccessControlType::Lambda => "lambda".to_string(),
+            OriginAccessControlType::MediaPackageV2 => "mediapackagev2".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub enum SigningBehavior {
+    Never,
+    NoOverride,
+    Always,
+}
+
+impl From<SigningBehavior> for String {
+    fn from(value: SigningBehavior) -> Self {
+        match value {
+            SigningBehavior::Never => "never".to_string(),
+            SigningBehavior::NoOverride => "no-override".to_string(),
+            SigningBehavior::Always => "always".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub enum SigningProtocol {
+    SigV4,
+}
+
+impl From<SigningProtocol> for String {
+    fn from(value: SigningProtocol) -> Self {
+        match value { SigningProtocol::SigV4 => "sigv4".to_string() }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct CloudFrontOriginAccessControlConfig {
+    #[serde(rename = "Name")]
+    pub(crate) name: String,
+    #[serde(rename = "OriginAccessControlOriginType")]
+    pub(crate) origin_access_control_type: OriginAccessControlType,
+    #[serde(rename = "SigningBehavior")]
+    pub(crate) signing_behavior: SigningBehavior,
+    #[serde(rename = "SigningProtocol")]
+    pub(crate) signing_protocol: SigningProtocol
+}
+
+// TODO remove, use newer control config instead - check builder and dto for mentions of this prop
 #[derive(Debug, Serialize)]
 pub struct CloudFrontOriginAccessIdentity {
     #[serde(skip)]
@@ -234,6 +322,8 @@ pub struct Origin {
     pub(crate) id: String,
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>,
+    #[serde(skip)]
+    pub(crate) s3_bucket_policy: Option<S3BucketPolicy>,
     #[serde(rename = "DomainName")]
     pub(crate) domain_name: String,
     #[serde(rename = "ConnectionAttempts", skip_serializing_if = "Option::is_none")]
@@ -279,10 +369,10 @@ pub struct VpcOriginConfig {
 
 #[derive(Debug, Serialize)]
 pub struct S3OriginConfig {
-    #[serde(rename = "OriginAccessIdentity", skip_serializing_if = "Option::is_none")]
-    pub(crate) origin_access_identity: Option<String>, // origin-access-identity/cloudfront/ID-of-origin-access-identity
     #[serde(rename = "OriginReadTimeout", skip_serializing_if = "Option::is_none")]
     pub(crate) origin_read_timeout: Option<u16>, // 1-120 seconds
+    // #[serde(rename = "OriginAccessIdentity", skip_serializing_if = "Option::is_none")]
+    // pub(crate) origin_access_identity: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

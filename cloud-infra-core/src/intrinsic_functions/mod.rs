@@ -15,6 +15,12 @@ pub fn get_ref(id: &str) -> Value {
     })
 }
 
+pub fn get_att(id: &str, attribute: &str) -> Value {
+    json!({
+        "GetAtt": [ id, attribute ]
+    })
+}
+
 pub fn join(delimiter: &str, elements: Vec<Value>) -> Value {
     json!({
         "Fn::Join": [

@@ -69,11 +69,11 @@ impl IamPrincipalBuilder<ChosenState> {
                 aws,
             })
         } else if let Some(service) = self.service {
-            IamPrincipal::ServicePrincipal(ServicePrincipal {
+            IamPrincipal::Service(ServicePrincipal {
                 service,
             })
         } else if let Some(normal) = self.normal {
-            IamPrincipal::StringPrincipal(normal)
+            IamPrincipal::Custom(normal)
         } else {
             unreachable!("can only reach build state when one of the above is present")
         }
@@ -214,6 +214,7 @@ pub struct StatementBuilder {
     effect: Effect,
     principal: Option<IamPrincipal>,
     resource: Option<Vec<Value>>,
+    condition: Option<Value>
 }
 
 impl StatementBuilder {
@@ -223,21 +224,24 @@ impl StatementBuilder {
             effect,
             principal: None,
             resource: None,
+            condition: None,
         }
     }
 
     pub fn new(actions: Vec<IamAction>, effect: Effect) -> Self {
-        Self {
-            action: actions.into_iter().map(|a| a.0).collect(),
-            effect,
-            principal: None,
-            resource: None,
-        }
+        Self::internal_new(actions.into_iter().map(|a| a.0).collect(), effect)
     }
 
     pub fn principal(self, principal: IamPrincipal) -> Self {
         Self {
             principal: Some(principal),
+            ..self
+        }
+    }
+    
+    pub fn condition(self, condition: Value) -> Self {
+        Self {
+            condition: Some(condition),
             ..self
         }
     }
@@ -263,6 +267,7 @@ impl StatementBuilder {
             effect: self.effect.into(),
             principal: self.principal,
             resource: self.resource,
+            condition: self.condition,
         }
     }
 }
@@ -315,8 +320,9 @@ impl Permission<'_> {
                         "dynamodb:Scan".to_string(),
                     ],
                     effect: "Allow".to_string(),
-                    principal: None,
                     resource: Some(vec![get_arn(id)]),
+                    principal: None,
+                    condition: None,
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
@@ -337,8 +343,9 @@ impl Permission<'_> {
                         "dynamodb:UpdateItem".to_string(),
                     ],
                     effect: "Allow".to_string(),
-                    principal: None,
                     resource: Some(vec![get_arn(id)]),
+                    principal: None,
+                    condition: None,
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]);
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
