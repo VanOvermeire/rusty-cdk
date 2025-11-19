@@ -3,6 +3,8 @@
 ***This is not an official AWS project.***
 Rather, it is an experiment in making Infrastructure as Code (_IAC_) safer and easier to use by checking as much as possible at compile time.
 
+It's a bit like a wrapper around `unsafe` CloudFormation.
+
 ## Usage
 
 Install using cargo:
@@ -97,7 +99,7 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are (largely or partly) supported:
+Currently only a limited number of AWS services are largely supported, though the safety varies:
 - DynamoDB
 - Lambda
 - SQS
@@ -105,12 +107,12 @@ Currently only a limited number of AWS services are (largely or partly) supporte
 - Cloudwatch
 - IAM
 - API Gateway
+- CloudFront
 
 In other words, you can definitely create serverless applications with this library.
 
 Next up:
-- AppConfig?
-- CloudFront?
+- AppConfig
 
 ## Tags
 
@@ -164,3 +166,6 @@ In theory, CloudFormation should propagate the tags to its resources, in practic
 - switch to uploading template to s3? helps avoid the 51 kb limit
 - borrow all the things? see borrowing-example branch for an example
   - the gain in performance was not that impressive
+- pass in the stack builder in `build` when required?
+  - but you still need the resource (reference) to pass on to other resources
+    - return a clone? could even be a 'reference' version with only an id

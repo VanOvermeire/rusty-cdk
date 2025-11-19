@@ -12,6 +12,7 @@ use crate::stack::StackBuilder;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
+use crate::cloudfront::{CachePolicy, CloudFrontDistribution, CloudFrontOriginAccessControl};
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -57,6 +58,9 @@ impl Stack {
                 Resource::S3Bucket(_) => vec![],
                 Resource::S3BucketPolicy(_) => vec![],
                 Resource::SecretsManagerSecret(_) => vec![],
+                Resource::CloudFrontDistribution(_) => vec![],
+                Resource::CachePolicy(_) => vec![],
+                Resource::CloudFrontOriginAccessControl(_) => vec![],
             })
             .collect()
     }
@@ -123,28 +127,35 @@ pub enum Resource {
     ApiGatewayV2Route(ApiGatewayV2Route),
     ApiGatewayV2Integration(ApiGatewayV2Integration),
     SecretsManagerSecret(SecretsManagerSecret),
+    CloudFrontDistribution(CloudFrontDistribution),
+    CachePolicy(CachePolicy),
+    CloudFrontOriginAccessControl(CloudFrontOriginAccessControl),
 }
 
 impl Resource {
     pub fn get_id(&self) -> Id {
-        match self {
-            Resource::S3Bucket(r) => r.get_id().clone(),
-            Resource::S3BucketPolicy(r) => r.get_id().clone(),
-            Resource::DynamoDBTable(r) => r.get_id().clone(),
-            Resource::LambdaFunction(r) => r.get_id().clone(),
-            Resource::LogGroup(r) => r.get_id().clone(),
-            Resource::SqsQueue(r) => r.get_id().clone(),
-            Resource::SnsTopic(r) => r.get_id().clone(),
-            Resource::SnsSubscription(r) => r.get_id().clone(),
-            Resource::LambdaPermission(r) => r.get_id().clone(),
-            Resource::EventSourceMapping(r) => r.get_id().clone(),
-            Resource::IamRole(r) => r.get_id().clone(),
-            Resource::ApiGatewayV2Api(r) => r.get_id().clone(),
-            Resource::ApiGatewayV2Stage(r) => r.get_id().clone(),
-            Resource::ApiGatewayV2Route(r) => r.get_id().clone(),
-            Resource::ApiGatewayV2Integration(r) => r.get_id().clone(),
-            Resource::SecretsManagerSecret(r) => r.get_id().clone(),
-        }
+        let id = match self {
+            Resource::S3Bucket(r) => r.get_id(),
+            Resource::S3BucketPolicy(r) => r.get_id(),
+            Resource::DynamoDBTable(r) => r.get_id(),
+            Resource::LambdaFunction(r) => r.get_id(),
+            Resource::LogGroup(r) => r.get_id(),
+            Resource::SqsQueue(r) => r.get_id(),
+            Resource::SnsTopic(r) => r.get_id(),
+            Resource::SnsSubscription(r) => r.get_id(),
+            Resource::LambdaPermission(r) => r.get_id(),
+            Resource::EventSourceMapping(r) => r.get_id(),
+            Resource::IamRole(r) => r.get_id(),
+            Resource::ApiGatewayV2Api(r) => r.get_id(),
+            Resource::ApiGatewayV2Stage(r) => r.get_id(),
+            Resource::ApiGatewayV2Route(r) => r.get_id(),
+            Resource::ApiGatewayV2Integration(r) => r.get_id(),
+            Resource::SecretsManagerSecret(r) => r.get_id(),
+            Resource::CloudFrontDistribution(r) => r.get_id(),
+            Resource::CachePolicy(r) => r.get_id(),
+            Resource::CloudFrontOriginAccessControl(r) => r.get_id(),
+        };
+        id.clone()
     }
 
     pub fn get_resource_id(&self) -> &str {
@@ -152,19 +163,22 @@ impl Resource {
             Resource::S3Bucket(r) => r.get_resource_id(),
             Resource::S3BucketPolicy(r) => r.get_resource_id(),
             Resource::DynamoDBTable(t) => t.get_resource_id(),
-            Resource::LambdaFunction(f) => f.get_resource_id(),
+            Resource::LambdaFunction(r) => r.get_resource_id(),
             Resource::IamRole(r) => r.get_resource_id(),
-            Resource::SqsQueue(q) => q.get_resource_id(),
-            Resource::EventSourceMapping(m) => m.get_resource_id(),
-            Resource::LogGroup(l) => l.get_resource_id(),
-            Resource::SnsTopic(s) => s.get_resource_id(),
-            Resource::SnsSubscription(s) => s.get_resource_id(),
-            Resource::LambdaPermission(l) => l.get_resource_id(),
-            Resource::ApiGatewayV2Api(a) => a.get_resource_id(),
-            Resource::ApiGatewayV2Stage(s) => s.get_resource_id(),
+            Resource::SqsQueue(r) => r.get_resource_id(),
+            Resource::EventSourceMapping(r) => r.get_resource_id(),
+            Resource::LogGroup(r) => r.get_resource_id(),
+            Resource::SnsTopic(r) => r.get_resource_id(),
+            Resource::SnsSubscription(r) => r.get_resource_id(),
+            Resource::LambdaPermission(r) => r.get_resource_id(),
+            Resource::ApiGatewayV2Api(r) => r.get_resource_id(),
+            Resource::ApiGatewayV2Stage(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
-            Resource::ApiGatewayV2Integration(i) => i.get_resource_id(),
-            Resource::SecretsManagerSecret(s) => s.get_resource_id(),
+            Resource::ApiGatewayV2Integration(r) => r.get_resource_id(),
+            Resource::SecretsManagerSecret(r) => r.get_resource_id(),
+            Resource::CloudFrontDistribution(r) => r.get_resource_id(),
+            Resource::CachePolicy(r) => r.get_resource_id(),
+            Resource::CloudFrontOriginAccessControl(r) => r.get_resource_id(),
         }
     }
 
@@ -187,6 +201,9 @@ impl Resource {
             Resource::ApiGatewayV2Stage(_) => vec![],
             Resource::S3Bucket(_) => vec![],
             Resource::SecretsManagerSecret(_) => vec![],
+            Resource::CloudFrontDistribution(_) => vec![],
+            Resource::CachePolicy(_) => vec![],
+            Resource::CloudFrontOriginAccessControl(_) => vec![],
         }
     }
 
@@ -223,6 +240,9 @@ from_resource!(ApiGatewayV2Stage);
 from_resource!(ApiGatewayV2Route);
 from_resource!(ApiGatewayV2Integration);
 from_resource!(SecretsManagerSecret);
+from_resource!(CloudFrontDistribution);
+from_resource!(CachePolicy);
+from_resource!(CloudFrontOriginAccessControl);
 
 #[cfg(test)]
 mod tests {

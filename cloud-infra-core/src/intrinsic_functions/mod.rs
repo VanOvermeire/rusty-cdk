@@ -17,7 +17,7 @@ pub fn get_ref(id: &str) -> Value {
 
 pub fn get_att(id: &str, attribute: &str) -> Value {
     json!({
-        "GetAtt": [ id, attribute ]
+        "Fn::GetAtt": [ id, attribute ]
     })
 }
 

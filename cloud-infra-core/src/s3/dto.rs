@@ -1,7 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::iam::PolicyDocument;
-use crate::intrinsic_functions::{get_arn, get_ref};
+use crate::intrinsic_functions::{get_arn, get_att, get_ref};
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
@@ -71,6 +71,10 @@ impl S3Bucket {
 
     pub fn get_arn(&self) -> Value {
         get_arn(self.get_resource_id())
+    }
+    
+    pub fn get_att(&self, att: &str) -> Value {
+        get_att(self.get_resource_id(), att)
     }
 }
 

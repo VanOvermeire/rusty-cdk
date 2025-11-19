@@ -1,37 +1,172 @@
-use std::marker::PhantomData;
-use serde_json::{json, Value};
-use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyProperties, CloudFrontDistribution, CloudFrontDistributionProperties, CloudFrontOriginAccessIdentity, CloudFrontOriginAccessIdentityConfig, CloudFrontOriginAccessIdentityProperties, CookiesConfig, DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
+use crate::cloudfront::{
+    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CloudFrontDistribution, CloudFrontDistributionProperties,
+    CloudFrontOriginAccessControl, CloudFrontOriginAccessControlConfig, CloudFrontOriginControlProperties, CookiesConfig,
+    DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin,
+    QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig,
+};
+use crate::iam::IamPrincipal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
-use crate::iam::IamPrincipal::{Service};
 use crate::intrinsic_functions::{get_att, get_ref, join};
-use crate::s3::builder::S3BucketPolicyBuilder;
+use crate::s3::builder::{S3BucketPolicyBuilder, StartState};
 use crate::s3::dto::{S3Bucket, S3BucketPolicy};
+use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::Resource;
-use crate::wrappers::{ConnectionAttempts, CfConnectionTimeout, OriginPath, S3OriginReadTimeout, IamAction, DefaultRootObject};
+use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};
+use serde_json::{json, Value};
+use std::marker::PhantomData;
 
-pub struct CloudFrontOriginAccessIdentityBuilder {
-    id: Id,
-    comment: String,
+pub enum SslSupportedMethod {
+    SniOnly,
+    Vip,
+    StaticIp,
 }
 
-impl CloudFrontOriginAccessIdentityBuilder {
-    pub fn new(id: &str, describing_comment: String) -> Self {
+impl From<SslSupportedMethod> for String {
+    fn from(value: SslSupportedMethod) -> Self {
+        match value {
+            SslSupportedMethod::SniOnly => "sni-only".to_string(),
+            SslSupportedMethod::Vip => "vip".to_string(),
+            SslSupportedMethod::StaticIp => "static-ip".to_string(),
+        }
+    }
+}
+
+pub enum MinProtocolVersion {
+    SSLV3,
+    TLSv1,
+    TLSv1_1,
+    TLSv1_2_2018,
+    TLSv1_2_2019,
+    TLSv1_2_2021,
+    TLSv1_2_2025,
+    TLSv1_3,
+}
+
+impl From<MinProtocolVersion> for String {
+    fn from(value: MinProtocolVersion) -> Self {
+        match value {
+            MinProtocolVersion::SSLV3 => "SSLv3".to_string(),
+            MinProtocolVersion::TLSv1 => "TLSv1".to_string(),
+            MinProtocolVersion::TLSv1_1 => "TLSv1.1_2016".to_string(),
+            MinProtocolVersion::TLSv1_2_2018 => "TLSv1.2_2018".to_string(),
+            MinProtocolVersion::TLSv1_2_2019 => "TLSv1.2_2019".to_string(),
+            MinProtocolVersion::TLSv1_2_2021 => "TLSv1.2_2021".to_string(),
+            MinProtocolVersion::TLSv1_2_2025 => "TLSv1.2_2025".to_string(),
+            MinProtocolVersion::TLSv1_3 => "TLSv1.3_2025".to_string(),
+        }
+    }
+}
+
+pub trait ViewerCertificateState {}
+
+pub struct ViewerCertificateStateStartState {}
+impl ViewerCertificateState for ViewerCertificateStateStartState {}
+
+pub struct ViewerCertificateStateEndState {}
+impl ViewerCertificateState for ViewerCertificateStateEndState {}
+
+pub struct ViewerCertificateStateAcmOrIamState {}
+impl ViewerCertificateState for ViewerCertificateStateAcmOrIamState {}
+
+pub struct ViewerCertificateBuilder<T: ViewerCertificateState> {
+    phantom_data: PhantomData<T>,
+    cloudfront_default_cert: Option<bool>,
+    acm_cert_arn: Option<String>,
+    iam_cert_id: Option<String>,
+    min_protocol_version: Option<String>,
+    ssl_support_method: Option<String>,
+}
+
+impl ViewerCertificateBuilder<ViewerCertificateStateStartState> {
+    pub fn new() -> ViewerCertificateBuilder<ViewerCertificateStateStartState> {
+        ViewerCertificateBuilder {
+            phantom_data: Default::default(),
+            acm_cert_arn: None,
+            cloudfront_default_cert: None,
+            iam_cert_id: None,
+            min_protocol_version: None,
+            ssl_support_method: None,
+        }
+    }
+    
+    pub fn cloudfront_default_cert(self) -> ViewerCertificateBuilder<ViewerCertificateStateEndState> {
+        ViewerCertificateBuilder {
+            phantom_data: Default::default(),
+            cloudfront_default_cert: Some(true),
+            acm_cert_arn: self.acm_cert_arn,
+            iam_cert_id: self.iam_cert_id,
+            min_protocol_version: self.min_protocol_version,
+            ssl_support_method: self.ssl_support_method,
+        }
+    }
+    
+    pub fn iam_cert_id(self, id: String) -> ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
+        ViewerCertificateBuilder {
+            phantom_data: Default::default(),
+            cloudfront_default_cert: Some(true),
+            acm_cert_arn: self.acm_cert_arn,
+            iam_cert_id: Some(id),
+            min_protocol_version: self.min_protocol_version,
+            ssl_support_method: self.ssl_support_method,
+        }
+    }
+    
+    pub fn acm_cert_arn(self, id: String) -> ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
+        ViewerCertificateBuilder {
+            phantom_data: Default::default(),
+            cloudfront_default_cert: Some(true),
+            acm_cert_arn: Some(id),
+            iam_cert_id: self.iam_cert_id,
+            min_protocol_version: self.min_protocol_version,
+            ssl_support_method: self.ssl_support_method,
+        }
+    }
+}
+
+impl<T: ViewerCertificateState> ViewerCertificateBuilder<T> {
+    fn build_internal(self) -> ViewerCertificate {
+        ViewerCertificate {
+            cloudfront_default_cert: self.cloudfront_default_cert,
+            acm_cert_arn: self.acm_cert_arn,
+            iam_cert_id: self.iam_cert_id,
+            min_protocol_version: self.min_protocol_version,
+            ssl_support_method: self.ssl_support_method,
+        }
+    }    
+}
+
+impl ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
+    pub fn min_protocol_version(self, protocol_version: MinProtocolVersion) -> Self {
         Self {
-            id: Id(id.to_string()),
-            comment: describing_comment,
+            phantom_data: Default::default(),
+            min_protocol_version: Some(protocol_version.into()),
+            cloudfront_default_cert: self.cloudfront_default_cert,
+            acm_cert_arn: self.acm_cert_arn,
+            iam_cert_id: self.iam_cert_id,
+            ssl_support_method: self.ssl_support_method,
         }
     }
 
-    pub fn build(self) -> CloudFrontOriginAccessIdentity {
-        CloudFrontOriginAccessIdentity {
-            id: self.id,
-            resource_id: Resource::generate_id("CloudFrontOriginAccessIdentity"),
-            r#type: "AWS::CloudFront::CloudFrontOriginAccessIdentity".to_string(),
-            properties: CloudFrontOriginAccessIdentityProperties {
-                cloud_front_origin_access_identity_config: CloudFrontOriginAccessIdentityConfig { comment: self.comment },
-            },
+    pub fn ssl_support_method(self, ssl_support: SslSupportedMethod) -> Self {
+        Self {
+            phantom_data: Default::default(),
+            ssl_support_method: Some(ssl_support.into()),
+            min_protocol_version: self.min_protocol_version,
+            cloudfront_default_cert: self.cloudfront_default_cert,
+            acm_cert_arn: self.acm_cert_arn,
+            iam_cert_id: self.iam_cert_id,
         }
+    }
+    
+    pub fn build(self) -> ViewerCertificate {
+        self.build_internal()
+    }
+}
+
+impl ViewerCertificateBuilder<ViewerCertificateStateEndState> {
+    pub fn build(self) -> ViewerCertificate {
+        self.build_internal()
     }
 }
 
@@ -164,17 +299,20 @@ impl CachePolicyBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> CachePolicy {
         CachePolicy {
             id: self.id,
             resource_id: Resource::generate_id("CachePolicy"),
             r#type: "AWS::CloudFront::CachePolicy".to_string(),
             properties: CachePolicyProperties {
-                default_ttl: self.default_ttl,
-                min_ttl: self.min_ttl,
-                max_ttl: self.max_ttl,
-                name: self.name,
-                params_in_cache_key_and_forwarded: self.cache_params,
+                config: CachePolicyConfig {
+                    default_ttl: self.default_ttl,
+                    min_ttl: self.min_ttl,
+                    max_ttl: self.max_ttl,
+                    name: self.name,
+                    params_in_cache_key_and_forwarded: self.cache_params,
+                },
             },
         }
     }
@@ -231,11 +369,11 @@ pub struct OriginBuilder<'a, T: OriginState> {
     id: String,
     referenced_ids: Vec<String>,
     bucket: Option<&'a S3Bucket>,
-    domain_name: String,
+    domain_name: Option<Value>,
     connection_attempts: Option<u16>,
     connection_timeout: Option<u16>,
     response_completion_timeout: Option<u16>,
-    origin_access_control_id: Option<String>,
+    origin_access_control_id: Option<Value>,
     origin_path: Option<String>,
     s3origin_config: Option<S3OriginConfig>,
     origin_custom_headers: Option<Vec<OriginCustomHeader>>,
@@ -243,14 +381,14 @@ pub struct OriginBuilder<'a, T: OriginState> {
 }
 
 impl OriginBuilder<'_, OriginStartState> {
-    // could maybe validate domain name better if part of enum
-    pub fn new(id: &str, domain_name: &str) -> Self {
+    // TODO make passing in the domain name easier. probably couple it to passing in the origin => GetAtt DomainName
+    pub fn new(origin_id: &str) -> Self {
         Self {
             phantom_data: Default::default(),
-            id: id.to_string(),
+            id: origin_id.to_string(),
             referenced_ids: vec![],
             bucket: None,
-            domain_name: domain_name.to_string(),
+            domain_name: None,
             connection_attempts: None,
             connection_timeout: None,
             origin_access_control_id: None,
@@ -262,22 +400,29 @@ impl OriginBuilder<'_, OriginStartState> {
         }
     }
 
-    pub fn s3_origin(mut self, bucket: &S3Bucket, origin_read_timeout: Option<S3OriginReadTimeout>) -> OriginBuilder<'_, OriginS3OriginState> {
+    pub fn s3_origin<'a>(
+        mut self,
+        bucket: &'a S3Bucket,
+        oac: &CloudFrontOriginAccessControl,
+        origin_read_timeout: Option<S3OriginReadTimeout>,
+    ) -> OriginBuilder<'a, OriginS3OriginState> {
         self.referenced_ids.push(bucket.get_resource_id().to_string());
 
         let s3origin_config = S3OriginConfig {
             origin_read_timeout: origin_read_timeout.map(|v| v.0),
         };
 
+        let domain = bucket.get_att("RegionalDomainName");
+
         OriginBuilder {
             phantom_data: Default::default(),
             id: self.id.to_string(),
             referenced_ids: self.referenced_ids,
             bucket: Some(bucket),
-            domain_name: self.domain_name,
+            domain_name: Some(domain),
             connection_attempts: self.connection_attempts,
             connection_timeout: self.connection_timeout,
-            origin_access_control_id: self.origin_access_control_id,
+            origin_access_control_id: Some(oac.get_att("Id")),
             origin_path: self.origin_path,
             response_completion_timeout: self.response_completion_timeout,
             origin_custom_headers: self.origin_custom_headers,
@@ -286,7 +431,6 @@ impl OriginBuilder<'_, OriginStartState> {
         }
     }
 }
-
 
 impl<T: OriginState> OriginBuilder<'_, T> {
     pub fn connection_attempts(self, attempts: ConnectionAttempts) -> Self {
@@ -304,17 +448,9 @@ impl<T: OriginState> OriginBuilder<'_, T> {
         }
     }
 
-    // TODO better check
-    pub fn origin_access_control_id(self, id: String) -> Self {
-        Self {
-            origin_access_control_id: Some(id),
-            ..self
-        }
-    }
-
     pub fn origin_path(self, path: OriginPath) -> Self {
         Self {
-            origin_access_control_id: Some(path.0),
+            origin_path: Some(path.0),
             ..self
         }
     }
@@ -324,7 +460,7 @@ impl<T: OriginState> OriginBuilder<'_, T> {
             id: self.id,
             referenced_ids: self.referenced_ids,
             s3_bucket_policy: None,
-            domain_name: self.domain_name,
+            domain_name: self.domain_name.expect("domain name should be present for cloudfront distribution"),
             connection_attempts: self.connection_attempts,
             connection_timeout: self.connection_timeout,
             origin_access_control_id: self.origin_access_control_id,
@@ -340,7 +476,7 @@ impl<T: OriginState> OriginBuilder<'_, T> {
 impl OriginBuilder<'_, OriginS3OriginState> {
     pub fn build(mut self) -> Origin {
         let bucket = self.bucket.take().expect("bucket to be present in S3 origin state");
-        
+
         let bucket_items = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
         let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
             .resources(bucket_items)
@@ -359,12 +495,225 @@ impl OriginBuilder<'_, OriginS3OriginState> {
     }
 }
 
+pub enum DefaultCacheAllowedMethods {
+    GetHead,
+    GetHeadOptions,
+    All,
+}
+
+impl From<DefaultCacheAllowedMethods> for Vec<String> {
+    fn from(value: DefaultCacheAllowedMethods) -> Self {
+        match value {
+            DefaultCacheAllowedMethods::GetHead => vec![Get.into(), Head.into()],
+            DefaultCacheAllowedMethods::GetHeadOptions => vec![Get.into(), Head.into(), Options.into()],
+            DefaultCacheAllowedMethods::All => vec![
+                Get.into(),
+                Head.into(),
+                Options.into(),
+                Put.into(),
+                Patch.into(),
+                Post.into(),
+                Delete.into(),
+            ],
+        }
+    }
+}
+
+pub enum DefaultCacheCachedMethods {
+    GetHead,
+    GetHeadOptions,
+}
+
+impl From<DefaultCacheCachedMethods> for Vec<String> {
+    fn from(value: DefaultCacheCachedMethods) -> Self {
+        match value {
+            DefaultCacheCachedMethods::GetHead => vec![Get.into(), Head.into()],
+            DefaultCacheCachedMethods::GetHeadOptions => vec![Get.into(), Head.into(), Options.into()],
+        }
+    }
+}
+
+pub enum ViewerProtocolPolicy {
+    AllowAll,
+    RedirectToHttps,
+    HttpsOnly,
+}
+
+impl From<ViewerProtocolPolicy> for String {
+    fn from(value: ViewerProtocolPolicy) -> Self {
+        match value {
+            ViewerProtocolPolicy::AllowAll => "allow-all".to_string(),
+            ViewerProtocolPolicy::RedirectToHttps => "redirect-to-https".to_string(),
+            ViewerProtocolPolicy::HttpsOnly => "https-only".to_string(),
+        }
+    }
+}
+
+pub struct DefaultCacheBehaviorBuilder {
+    target_origin_id: String,
+    cache_policy_id: Value,
+    viewer_protocol_policy: String,
+    allowed_methods: Option<Vec<String>>,
+    cached_methods: Option<Vec<String>>,
+    compress: Option<bool>,
+}
+
+impl DefaultCacheBehaviorBuilder {
+    // TODO note reference to resources
+    pub fn new(origin: &Origin, policy: &CachePolicy, viewer_protocol_policy: ViewerProtocolPolicy) -> Self {
+        Self {
+            target_origin_id: origin.get_origin_id().to_string(),
+            cache_policy_id: policy.get_att_id(),
+            viewer_protocol_policy: viewer_protocol_policy.into(),
+            allowed_methods: None,
+            cached_methods: None,
+            compress: None,
+        }
+    }
+
+    pub fn allowed_methods(self, methods: DefaultCacheAllowedMethods) -> Self {
+        Self {
+            allowed_methods: Some(methods.into()),
+            target_origin_id: self.target_origin_id,
+            cache_policy_id: self.cache_policy_id,
+            viewer_protocol_policy: self.viewer_protocol_policy,
+            cached_methods: self.cached_methods,
+            compress: self.compress,
+        }
+    }
+
+    pub fn cached_methods(self, methods: DefaultCacheCachedMethods) -> Self {
+        Self {
+            cached_methods: Some(methods.into()),
+            target_origin_id: self.target_origin_id,
+            cache_policy_id: self.cache_policy_id,
+            viewer_protocol_policy: self.viewer_protocol_policy,
+            allowed_methods: self.allowed_methods,
+            compress: self.compress,
+        }
+    }
+
+    pub fn compress(self, compress: bool) -> Self {
+        Self {
+            compress: Some(compress),
+            target_origin_id: self.target_origin_id,
+            cache_policy_id: self.cache_policy_id,
+            viewer_protocol_policy: self.viewer_protocol_policy,
+            allowed_methods: self.allowed_methods,
+            cached_methods: self.cached_methods,
+        }
+    }
+
+    pub fn build(self) -> DefaultCacheBehavior {
+        DefaultCacheBehavior {
+            target_origin_id: self.target_origin_id,
+            cache_policy_id: self.cache_policy_id,
+            viewer_protocol_policy: self.viewer_protocol_policy,
+            allowed_methods: self.allowed_methods,
+            cached_methods: self.cached_methods,
+            compress: self.compress,
+        }
+    }
+}
+
 pub trait CloudFrontDistributionState {}
 pub struct CloudFrontDistributionStartState {}
 impl CloudFrontDistributionState for CloudFrontDistributionStartState {}
 pub struct CloudFrontDistributionOriginState {}
 impl CloudFrontDistributionState for CloudFrontDistributionOriginState {}
 
+pub enum SigningBehavior {
+    Never,
+    NoOverride,
+    Always,
+}
+
+impl From<SigningBehavior> for String {
+    fn from(value: SigningBehavior) -> Self {
+        match value {
+            SigningBehavior::Never => "never".to_string(),
+            SigningBehavior::NoOverride => "no-override".to_string(),
+            SigningBehavior::Always => "always".to_string(),
+        }
+    }
+}
+
+pub enum SigningProtocol {
+    SigV4,
+}
+
+impl From<SigningProtocol> for String {
+    fn from(value: SigningProtocol) -> Self {
+        match value {
+            SigningProtocol::SigV4 => "sigv4".to_string(),
+        }
+    }
+}
+
+pub enum OriginAccessControlType {
+    S3,
+    MediaStore,
+    Lambda,
+    MediaPackageV2,
+}
+
+impl From<OriginAccessControlType> for String {
+    fn from(value: OriginAccessControlType) -> Self {
+        match value {
+            OriginAccessControlType::S3 => "s3".to_string(),
+            OriginAccessControlType::MediaStore => "mediastore".to_string(),
+            OriginAccessControlType::Lambda => "lambda".to_string(),
+            OriginAccessControlType::MediaPackageV2 => "mediapackagev2".to_string(),
+        }
+    }
+}
+
+pub struct CloudFrontOriginAccessControlBuilder {
+    id: Id,
+    name: String,
+    origin_access_control_type: OriginAccessControlType,
+    signing_behavior: SigningBehavior,
+    signing_protocol: SigningProtocol,
+}
+
+impl CloudFrontOriginAccessControlBuilder {
+    pub fn new(
+        id: &str,
+        name: &str,
+        origin_access_control_type: OriginAccessControlType,
+        signing_behavior: SigningBehavior,
+        signing_protocol: SigningProtocol,
+    ) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            name: name.to_string(),
+            origin_access_control_type,
+            signing_behavior,
+            signing_protocol,
+        }
+    }
+
+    #[must_use]
+    pub fn build(self) -> CloudFrontOriginAccessControl {
+        let resource_id = Resource::generate_id("OAC");
+        CloudFrontOriginAccessControl {
+            id: self.id,
+            resource_id,
+            r#type: "AWS::CloudFront::OriginAccessControl".to_string(),
+            properties: CloudFrontOriginControlProperties {
+                config: CloudFrontOriginAccessControlConfig {
+                    name: self.name,
+                    origin_access_control_type: self.origin_access_control_type.into(),
+                    signing_behavior: self.signing_behavior.into(),
+                    signing_protocol: self.signing_protocol.into(),
+                },
+            },
+        }
+    }
+}
+
+// TODO s3 has to have block turned off?
+// TODO probably needs index.html root object?
 pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
     phantom_data: PhantomData<T>,
     id: Id,
@@ -378,7 +727,8 @@ pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
     viewer_certificate: Option<ViewerCertificate>,
     cache_behaviors: Option<Vec<CacheBehavior>>,
     default_root_object: Option<String>,
-    // origin_groups: Option<OriginGroups>, // TODO add. and either this or the next is required!
+    // TODO add. and either this or the next is required!
+    // origin_groups: Option<OriginGroups>,
     origins: Option<Vec<Origin>>,
 }
 
@@ -400,7 +750,7 @@ impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
             viewer_certificate: None,
         }
     }
-    
+
     pub fn origins(self, origins: Vec<Origin>) -> CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
         CloudFrontDistributionBuilder {
             phantom_data: Default::default(),
@@ -420,29 +770,48 @@ impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
     }
 }
 
-impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
+impl CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
     #[must_use]
-    pub fn build(mut self) ->  (CloudFrontDistribution, Vec<S3BucketPolicy>) {
+    pub fn build(mut self) -> (CloudFrontDistribution, Vec<S3BucketPolicy>) {
         let mut origins = self.origins.take().expect("origins to be present in distribution origin state");
+        let resource_id = Resource::generate_id("CloudFrontDistribution");
 
-        let policies: Vec<_> = origins.iter_mut().filter(|o| o.s3_bucket_policy.is_some()).map(|s3| {
-            let mut policy = s3.s3_bucket_policy.take().expect("just checked that this was present, only need to use it this one time");
-            let distro_id = get_att(&self.id, "Id");
-            let source_arn_value = join("", vec![Value::String("arn:aws:cloudfront::".to_string()), get_ref("AWS::AccountId"), Value::String(":distribution/".to_string()), distro_id]);
-            let distro_condition = json!({
-                "StringEquals": {
-                    "AWS:SourceArn": source_arn_value
-                }
-            });
-            policy.properties.policy_document.statements.iter_mut().for_each(|v| {
-                v.condition = Some(distro_condition.clone())
-            });
-            policy
-        }).collect();
+        let policies: Vec<_> = origins
+            .iter_mut()
+            .filter(|o| o.s3_bucket_policy.is_some())
+            .map(|s3| {
+                let mut policy = s3
+                    .s3_bucket_policy
+                    .take()
+                    .expect("just checked that this was present, only need to use it this one time");
+                let distro_id = get_att(&resource_id, "Id");
+                let source_arn_value = join(
+                    "",
+                    vec![
+                        Value::String("arn:aws:cloudfront::".to_string()),
+                        get_ref("AWS::AccountId"),
+                        Value::String(":distribution/".to_string()),
+                        distro_id,
+                    ],
+                );
+                let distro_condition = json!({
+                    "StringEquals": {
+                        "AWS:SourceArn": source_arn_value
+                    }
+                });
+                policy
+                    .properties
+                    .policy_document
+                    .statements
+                    .iter_mut()
+                    .for_each(|v| v.condition = Some(distro_condition.clone()));
+                policy
+            })
+            .collect();
 
         self.origins = Some(origins);
 
-        let distro = self.build_internal();
+        let distro = self.build_internal(resource_id);
 
         (distro, policies)
     }
@@ -514,7 +883,7 @@ impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
         }
     }
 
-    fn build_internal(self) -> CloudFrontDistribution {
+    fn build_internal(self, resource_id: String) -> CloudFrontDistribution {
         let config = DistributionConfig {
             enabled: self.enabled,
             default_cache_behavior: self.default_cache_behavior,
@@ -531,7 +900,7 @@ impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
         };
         CloudFrontDistribution {
             id: self.id,
-            resource_id: Resource::generate_id("CloudFrontDistribution"),
+            resource_id,
             r#type: "AWS::CloudFront::Distribution".to_string(),
             properties: CloudFrontDistributionProperties { config },
         }

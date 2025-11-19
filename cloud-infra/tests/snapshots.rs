@@ -12,7 +12,8 @@ use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
-use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, S3BucketBuilder, S3Encryption};
+use cloud_infra_core::cloudfront::{CachePolicyBuilder, CloudFrontDistributionBuilder, CloudFrontOriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
+use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, S3BucketBuilder, S3Encryption};
 
 #[test]
 fn test_dynamodb() {
@@ -381,6 +382,52 @@ fn test_lambda_with_dynamodb_and_sqs() {
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
             (r"SqsQueue[0-9]+", "[SqsQueue]"),
             (r"Asset[0-9]+\.zip", "[Asset]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn cloudfront_with_s3_origin() {
+    let oac = CloudFrontOriginAccessControlBuilder::new("oac", "myoac", OriginAccessControlType::S3, SigningBehavior::Always, SigningProtocol::SigV4)
+        .build();
+    let bucket = S3BucketBuilder::new("bucket")
+        .name(bucket_name!("sam-cloudfront-test"))
+        .public_access_block_configuration(PublicAccessBlockConfigurationBuilder::new().block_public_acls(false).block_public_acls(false).ignore_public_acls(false).restrict_public_buckets(false).build())
+        .build();
+    let params = ParametersInCacheKeyAndForwardedToOriginBuilder::new(false, Cookies::All, QueryString::All, Headers::Whitelist(vec!["authorization".to_string()]))
+        .build();
+    let pol = CachePolicyBuilder::new("policy", "unique-pol-name", 5, 0, 30, params)
+        .build();
+    let origin = OriginBuilder::new("originId")
+        .s3_origin(&bucket, &oac, None)
+        .build();
+    let default_cache = DefaultCacheBehaviorBuilder::new(&origin, &pol, ViewerProtocolPolicy::RedirectToHttps)
+        .build();
+    let (cf, policies) = CloudFrontDistributionBuilder::new("distro", default_cache)
+        .origins(vec![origin])
+        .build();
+
+    let stack_builder = StackBuilder::new();
+    
+    let stack = stack_builder
+        .add_resource(bucket)
+        .add_resource(cf)
+        .add_resource(pol)
+        .add_resources(policies)
+        .add_resource(oac)
+        .build()
+        .unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
+            (r"S3BucketPolicy[0-9]+", "[S3BucketPolicy]"),
+            (r"OAC[0-9]+", "[OAC]"),
+            (r"CloudFrontDistribution[0-9]+", "[CloudFrontDistribution]"),
+            (r"CachePolicy[0-9]+", "[CachePolicy]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
