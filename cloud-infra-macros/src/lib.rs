@@ -16,7 +16,7 @@
 //! - **IDE support**: Better code completion and error messages
 //!
 //! The macros always return a newtype 'wrapper'.
-//! You should import those from the cloud_infra::wrappers directory, as seen in the below example.
+//! You should import those from the cloud_infra::wrappers directory, as seen in the below examples.
 //!
 //! ## Usage Examples
 //!

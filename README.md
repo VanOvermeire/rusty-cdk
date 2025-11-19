@@ -23,7 +23,7 @@ export class CdkStack extends cdk.Stack {
       super(scope, id, props);
   
       new Table(this, 'someId', {
-          tableName: "example!!!",
+          tableName: "examples!!!",
           partitionKey: {
               name: '',
               type: AttributeType.BINARY
@@ -139,13 +139,18 @@ async fn tagging() {
 
 In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
 
+## FAQ
+
+- _"I can't find field X of resource Y"_
+  - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative. 
+  - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful.
+- _"Where can I find examples of how to use this project?"_
+  - Examples can be found in the `examples` dir
+  - The snapshot tests in the `cloud-infra` dir also provide some usage examples
+
 ## TODO
 
-- note that I'm not adding all legacy fields
-  - think about naming
-    - can we find better/clearer names for the wrappers?
 - docs
-  - add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples with more info
   - add docs with example code to all builders
   - note two phases in docs
     - first, compile time checking

@@ -26,7 +26,7 @@ async fn main() {
     let queue = QueueBuilder::new("myQueue").standard_queue().build();
     
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-    let zipper = zip_file!("./example/output/todo-backend.zip");
+    let zipper = zip_file!("./examples/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, role, log_group, map) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
