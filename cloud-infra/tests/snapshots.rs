@@ -16,7 +16,7 @@ use cloud_infra_core::cloudfront::{CachePolicyBuilder, CloudFrontDistributionBui
 use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, S3BucketBuilder, S3Encryption};
 
 #[test]
-fn test_dynamodb() {
+fn dynamodb() {
     let pk = string_with_only_alpha_numerics_and_underscores!("pk");
     let sk = string_with_only_alpha_numerics_and_underscores!("sk");
     let table = DynamoDBTableBuilder::new("table", DynamoDBKey::new(pk, AttributeType::String))
@@ -40,7 +40,7 @@ fn test_dynamodb() {
 }
 
 #[test]
-fn test_bucket() {
+fn bucket() {
     let bucket = S3BucketBuilder::new("bucket")
         .encryption(S3Encryption::S3Managed)
         .lifecycle_configuration(LifecycleConfigurationBuilder::new()
@@ -68,7 +68,7 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_website_bucket() {
+fn website_bucket() {
     let bucket = S3BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
@@ -89,7 +89,7 @@ fn test_website_bucket() {
 }
 
 #[test]
-fn test_lambda() {
+fn lambda() {
     let mem = memory!(256);
     let timeout = timeout!(30);
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
@@ -121,7 +121,7 @@ fn test_lambda() {
 }
 
 #[test]
-fn test_sns() {
+fn sns() {
     let sns = SnsTopicBuilder::new("topic")
         .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
         .fifo()
@@ -141,7 +141,7 @@ fn test_sns() {
 }
 
 #[test]
-fn test_sqs() {
+fn sqs() {
     let sqs = SqsQueueBuilder::new("queue")
         .fifo_queue()
         .content_based_deduplication(true)
@@ -161,7 +161,7 @@ fn test_sqs() {
 }
 
 #[test]
-fn test_lambda_with_sns_subscription() {
+fn lambda_with_sns_subscription() {
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
@@ -198,7 +198,7 @@ fn test_lambda_with_sns_subscription() {
 }
 
 #[test]
-fn test_lambda_with_secret_and_custom_permissions() {
+fn lambda_with_secret_and_custom_permissions() {
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
@@ -244,7 +244,7 @@ fn test_lambda_with_secret_and_custom_permissions() {
 }
 
 #[test]
-fn test_lambda_with_api_gateway() {
+fn lambda_with_api_gateway() {
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
@@ -287,7 +287,7 @@ fn test_lambda_with_api_gateway() {
 }
 
 #[test]
-fn test_lambda_with_dynamodb() {
+fn lambda_with_dynamodb() {
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
@@ -334,7 +334,7 @@ fn test_lambda_with_dynamodb() {
 }
 
 #[test]
-fn test_lambda_with_dynamodb_and_sqs() {
+fn lambda_with_dynamodb_and_sqs() {
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");

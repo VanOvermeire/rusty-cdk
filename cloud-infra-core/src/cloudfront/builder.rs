@@ -7,7 +7,7 @@ use crate::cloudfront::{
 use crate::iam::IamPrincipal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
-use crate::s3::builder::{S3BucketPolicyBuilder, StartState};
+use crate::s3::builder::{S3BucketPolicyBuilder};
 use crate::s3::dto::{S3Bucket, S3BucketPolicy};
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
@@ -363,7 +363,6 @@ pub struct OriginS3OriginState {}
 impl OriginState for OriginS3OriginState {}
 
 // TODO other origins
-// TODO for s3 origin you need a bucket policy, a CloudFrontOriginAccessIdentity, and a link to the distro
 pub struct OriginBuilder<'a, T: OriginState> {
     phantom_data: PhantomData<T>,
     id: String,
@@ -712,8 +711,6 @@ impl CloudFrontOriginAccessControlBuilder {
     }
 }
 
-// TODO s3 has to have block turned off?
-// TODO probably needs index.html root object?
 pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
     phantom_data: PhantomData<T>,
     id: Id,
