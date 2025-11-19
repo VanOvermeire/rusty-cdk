@@ -4,7 +4,7 @@ use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct SqsQueue {
+pub struct Queue {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -12,10 +12,10 @@ pub struct SqsQueue {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: SqsQueueProperties,
+    pub(crate) properties: QueueProperties,
 }
 
-impl SqsQueue {
+impl Queue {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -30,7 +30,7 @@ impl SqsQueue {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SqsQueueProperties {
+pub struct QueueProperties {
     #[serde(rename = "QueueName", skip_serializing_if = "Option::is_none")]
     pub(crate) queue_name: Option<String>,
     #[serde(rename = "DelaySeconds", skip_serializing_if = "Option::is_none")]

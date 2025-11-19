@@ -1,18 +1,18 @@
 use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
 use crate::cloudwatch::LogGroup;
-use crate::dynamodb::DynamoDBTable;
-use crate::iam::IamRole;
-use crate::lambda::{EventSourceMapping, LambdaFunction, LambdaPermission};
-use crate::s3::dto::{S3Bucket, S3BucketPolicy};
-use crate::secretsmanager::dto::SecretsManagerSecret;
+use crate::dynamodb::Table;
+use crate::iam::Role;
+use crate::lambda::{EventSourceMapping, Function, Permission};
+use crate::s3::dto::{Bucket, BucketPolicy};
+use crate::secretsmanager::dto::Secret;
 use crate::shared::Id;
-use crate::sns::dto::{SnsSubscription, SnsTopic};
-use crate::sqs::SqsQueue;
+use crate::sns::dto::{Subscription, Topic};
+use crate::sqs::Queue;
 use crate::stack::StackBuilder;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
-use crate::cloudfront::{CachePolicy, CloudFrontDistribution, CloudFrontOriginAccessControl};
+use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -42,25 +42,25 @@ impl Stack {
         self.resources
             .values()
             .flat_map(|r| match r {
-                Resource::LambdaFunction(l) => vec![l.asset.clone()], // see if we can avoid the clone
-                Resource::DynamoDBTable(_) => vec![],
-                Resource::IamRole(_) => vec![],
-                Resource::SqsQueue(_) => vec![],
+                Resource::Function(l) => vec![l.asset.clone()], // see if we can avoid the clone
+                Resource::Table(_) => vec![],
+                Resource::Role(_) => vec![],
+                Resource::Queue(_) => vec![],
                 Resource::EventSourceMapping(_) => vec![],
                 Resource::LogGroup(_) => vec![],
-                Resource::SnsTopic(_) => vec![],
-                Resource::SnsSubscription(_) => vec![],
-                Resource::LambdaPermission(_) => vec![],
+                Resource::Topic(_) => vec![],
+                Resource::Subscription(_) => vec![],
+                Resource::Permission(_) => vec![],
                 Resource::ApiGatewayV2Api(_) => vec![],
                 Resource::ApiGatewayV2Stage(_) => vec![],
                 Resource::ApiGatewayV2Route(_) => vec![],
                 Resource::ApiGatewayV2Integration(_) => vec![],
-                Resource::S3Bucket(_) => vec![],
-                Resource::S3BucketPolicy(_) => vec![],
-                Resource::SecretsManagerSecret(_) => vec![],
-                Resource::CloudFrontDistribution(_) => vec![],
+                Resource::Bucket(_) => vec![],
+                Resource::BucketPolicy(_) => vec![],
+                Resource::Secret(_) => vec![],
+                Resource::Distribution(_) => vec![],
                 Resource::CachePolicy(_) => vec![],
-                Resource::CloudFrontOriginAccessControl(_) => vec![],
+                Resource::OriginAccessControl(_) => vec![],
             })
             .collect()
     }
@@ -111,99 +111,99 @@ impl TryFrom<Vec<Resource>> for Stack {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
-    S3Bucket(S3Bucket),
-    S3BucketPolicy(S3BucketPolicy),
-    DynamoDBTable(DynamoDBTable),
-    LambdaFunction(LambdaFunction),
+    Bucket(Bucket),
+    BucketPolicy(BucketPolicy),
+    Table(Table),
+    Function(Function),
     LogGroup(LogGroup),
-    SqsQueue(SqsQueue),
-    SnsTopic(SnsTopic),
-    SnsSubscription(SnsSubscription),
-    LambdaPermission(LambdaPermission),
+    Queue(Queue),
+    Topic(Topic),
+    Subscription(Subscription),
+    Permission(Permission),
     EventSourceMapping(EventSourceMapping),
-    IamRole(IamRole),
+    Role(Role),
     ApiGatewayV2Api(ApiGatewayV2Api),
     ApiGatewayV2Stage(ApiGatewayV2Stage),
     ApiGatewayV2Route(ApiGatewayV2Route),
     ApiGatewayV2Integration(ApiGatewayV2Integration),
-    SecretsManagerSecret(SecretsManagerSecret),
-    CloudFrontDistribution(CloudFrontDistribution),
+    Secret(Secret),
+    Distribution(Distribution),
     CachePolicy(CachePolicy),
-    CloudFrontOriginAccessControl(CloudFrontOriginAccessControl),
+    OriginAccessControl(OriginAccessControl),
 }
 
 impl Resource {
     pub fn get_id(&self) -> Id {
         let id = match self {
-            Resource::S3Bucket(r) => r.get_id(),
-            Resource::S3BucketPolicy(r) => r.get_id(),
-            Resource::DynamoDBTable(r) => r.get_id(),
-            Resource::LambdaFunction(r) => r.get_id(),
+            Resource::Bucket(r) => r.get_id(),
+            Resource::BucketPolicy(r) => r.get_id(),
+            Resource::Table(r) => r.get_id(),
+            Resource::Function(r) => r.get_id(),
             Resource::LogGroup(r) => r.get_id(),
-            Resource::SqsQueue(r) => r.get_id(),
-            Resource::SnsTopic(r) => r.get_id(),
-            Resource::SnsSubscription(r) => r.get_id(),
-            Resource::LambdaPermission(r) => r.get_id(),
+            Resource::Queue(r) => r.get_id(),
+            Resource::Topic(r) => r.get_id(),
+            Resource::Subscription(r) => r.get_id(),
+            Resource::Permission(r) => r.get_id(),
             Resource::EventSourceMapping(r) => r.get_id(),
-            Resource::IamRole(r) => r.get_id(),
+            Resource::Role(r) => r.get_id(),
             Resource::ApiGatewayV2Api(r) => r.get_id(),
             Resource::ApiGatewayV2Stage(r) => r.get_id(),
             Resource::ApiGatewayV2Route(r) => r.get_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_id(),
-            Resource::SecretsManagerSecret(r) => r.get_id(),
-            Resource::CloudFrontDistribution(r) => r.get_id(),
+            Resource::Secret(r) => r.get_id(),
+            Resource::Distribution(r) => r.get_id(),
             Resource::CachePolicy(r) => r.get_id(),
-            Resource::CloudFrontOriginAccessControl(r) => r.get_id(),
+            Resource::OriginAccessControl(r) => r.get_id(),
         };
         id.clone()
     }
 
     pub fn get_resource_id(&self) -> &str {
         match self {
-            Resource::S3Bucket(r) => r.get_resource_id(),
-            Resource::S3BucketPolicy(r) => r.get_resource_id(),
-            Resource::DynamoDBTable(t) => t.get_resource_id(),
-            Resource::LambdaFunction(r) => r.get_resource_id(),
-            Resource::IamRole(r) => r.get_resource_id(),
-            Resource::SqsQueue(r) => r.get_resource_id(),
+            Resource::Bucket(r) => r.get_resource_id(),
+            Resource::BucketPolicy(r) => r.get_resource_id(),
+            Resource::Table(t) => t.get_resource_id(),
+            Resource::Function(r) => r.get_resource_id(),
+            Resource::Role(r) => r.get_resource_id(),
+            Resource::Queue(r) => r.get_resource_id(),
             Resource::EventSourceMapping(r) => r.get_resource_id(),
             Resource::LogGroup(r) => r.get_resource_id(),
-            Resource::SnsTopic(r) => r.get_resource_id(),
-            Resource::SnsSubscription(r) => r.get_resource_id(),
-            Resource::LambdaPermission(r) => r.get_resource_id(),
+            Resource::Topic(r) => r.get_resource_id(),
+            Resource::Subscription(r) => r.get_resource_id(),
+            Resource::Permission(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Api(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Stage(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_resource_id(),
-            Resource::SecretsManagerSecret(r) => r.get_resource_id(),
-            Resource::CloudFrontDistribution(r) => r.get_resource_id(),
+            Resource::Secret(r) => r.get_resource_id(),
+            Resource::Distribution(r) => r.get_resource_id(),
             Resource::CachePolicy(r) => r.get_resource_id(),
-            Resource::CloudFrontOriginAccessControl(r) => r.get_resource_id(),
+            Resource::OriginAccessControl(r) => r.get_resource_id(),
         }
     }
 
     pub fn get_refenced_ids(&self) -> Vec<&str> {
         match self {
             // TODO check resources (except when references are impossible)
-            Resource::LambdaFunction(f) => f.get_referenced_ids(),
-            Resource::SnsSubscription(s) => s.get_referenced_ids(),
-            Resource::LambdaPermission(l) => l.get_referenced_ids(),
+            Resource::Function(f) => f.get_referenced_ids(),
+            Resource::Subscription(s) => s.get_referenced_ids(),
+            Resource::Permission(l) => l.get_referenced_ids(),
             Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
             Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
-            Resource::S3BucketPolicy(r) => r.get_referenced_ids(),
-            Resource::DynamoDBTable(_) => vec![],
-            Resource::SqsQueue(_) => vec![],
+            Resource::BucketPolicy(r) => r.get_referenced_ids(),
+            Resource::Table(_) => vec![],
+            Resource::Queue(_) => vec![],
             Resource::EventSourceMapping(_) => vec![],
-            Resource::IamRole(_) => vec![],
+            Resource::Role(_) => vec![],
             Resource::LogGroup(_) => vec![],
-            Resource::SnsTopic(_) => vec![],
+            Resource::Topic(_) => vec![],
             Resource::ApiGatewayV2Api(_) => vec![],
             Resource::ApiGatewayV2Stage(_) => vec![],
-            Resource::S3Bucket(_) => vec![],
-            Resource::SecretsManagerSecret(_) => vec![],
-            Resource::CloudFrontDistribution(_) => vec![],
+            Resource::Bucket(_) => vec![],
+            Resource::Secret(_) => vec![],
+            Resource::Distribution(_) => vec![],
             Resource::CachePolicy(_) => vec![],
-            Resource::CloudFrontOriginAccessControl(_) => vec![],
+            Resource::OriginAccessControl(_) => vec![],
         }
     }
 
@@ -224,30 +224,30 @@ macro_rules! from_resource {
     };
 }
 
-from_resource!(S3Bucket);
-from_resource!(S3BucketPolicy);
-from_resource!(DynamoDBTable);
-from_resource!(LambdaFunction);
-from_resource!(IamRole);
+from_resource!(Bucket);
+from_resource!(BucketPolicy);
+from_resource!(Table);
+from_resource!(Function);
+from_resource!(Role);
 from_resource!(LogGroup);
-from_resource!(SqsQueue);
-from_resource!(SnsTopic);
+from_resource!(Queue);
+from_resource!(Topic);
 from_resource!(EventSourceMapping);
-from_resource!(LambdaPermission);
-from_resource!(SnsSubscription);
+from_resource!(Permission);
+from_resource!(Subscription);
 from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Stage);
 from_resource!(ApiGatewayV2Route);
 from_resource!(ApiGatewayV2Integration);
-from_resource!(SecretsManagerSecret);
-from_resource!(CloudFrontDistribution);
+from_resource!(Secret);
+from_resource!(Distribution);
 from_resource!(CachePolicy);
-from_resource!(CloudFrontOriginAccessControl);
+from_resource!(OriginAccessControl);
 
 #[cfg(test)]
 mod tests {
-    use crate::sns::builder::SnsTopicBuilder;
-    use crate::sqs::SqsQueueBuilder;
+    use crate::sns::builder::TopicBuilder;
+    use crate::sqs::QueueBuilder;
     use crate::stack::StackBuilder;
     use std::collections::HashMap;
 
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id() {
-        let topic = SnsTopicBuilder::new("topic").build();
+        let topic = TopicBuilder::new("topic").build();
         let mut stack = StackBuilder::new().add_resource(topic).build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
@@ -293,8 +293,8 @@ mod tests {
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id_keeping_new_queue_id() {
-        let topic = SnsTopicBuilder::new("topic").build();
-        let sqs = SqsQueueBuilder::new("queue").standard_queue().build();
+        let topic = TopicBuilder::new("topic").build();
+        let sqs = QueueBuilder::new("queue").standard_queue().build();
         let mut stack = StackBuilder::new().add_resource(topic).add_resource(sqs).build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());

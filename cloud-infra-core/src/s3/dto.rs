@@ -5,7 +5,7 @@ use crate::intrinsic_functions::{get_arn, get_att, get_ref};
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct S3BucketPolicy {
+pub struct BucketPolicy {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -18,7 +18,7 @@ pub struct S3BucketPolicy {
     pub(crate) properties: S3BucketPolicyProperties,
 }
 
-impl S3BucketPolicy {
+impl BucketPolicy {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -45,7 +45,7 @@ pub struct S3BucketPolicyProperties {
 }
 
 #[derive(Debug, Serialize)]
-pub struct S3Bucket {
+pub struct Bucket {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -53,10 +53,10 @@ pub struct S3Bucket {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: S3BucketProperties,
+    pub(crate) properties: BucketProperties,
 }
 
-impl S3Bucket {
+impl Bucket {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -79,7 +79,7 @@ impl S3Bucket {
 }
 
 #[derive(Debug, Serialize)]
-pub struct S3BucketProperties {
+pub struct BucketProperties {
     #[serde(rename = "BucketName", skip_serializing_if = "Option::is_none")]
     pub(crate) bucket_name: Option<String>,
     #[serde(rename = "BucketEncryption", skip_serializing_if = "Option::is_none")]

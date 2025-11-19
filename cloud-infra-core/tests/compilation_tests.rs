@@ -1,8 +1,8 @@
-use cloud_infra_core::dynamodb::DynamoDBKey;
-use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
+use cloud_infra_core::dynamodb::Key;
+use cloud_infra_core::dynamodb::TableBuilder;
 use cloud_infra_core::dynamodb::AttributeType;
-use cloud_infra_core::s3::builder::S3BucketBuilder;
-use cloud_infra_core::sqs::{SqsQueueBuilder};
+use cloud_infra_core::s3::builder::BucketBuilder;
+use cloud_infra_core::sqs::{QueueBuilder};
 use cloud_infra_core::stack::StackBuilder;
 use cloud_infra_core::wrappers::{
     StringWithOnlyAlphaNumericsAndUnderscores, DelaySeconds, MaximumMessageSize,
@@ -16,7 +16,7 @@ use cloud_infra_macros::{
 #[test]
 fn dynamodb_builder_should_compile() {
     let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let _ = DynamoDBTableBuilder::new("myTable", DynamoDBKey::new(key, AttributeType::String))
+    let _ = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .pay_per_request_billing()
         .build();
 }
@@ -31,7 +31,7 @@ fn sqs_standard_queue_builder_should_compile() {
     let wait_time = receive_message_wait_time!(10);
     let max_receive = non_zero_number!(3);
     
-    let _ = SqsQueueBuilder::new("myQueue")
+    let _ = QueueBuilder::new("myQueue")
         .standard_queue()
         .queue_name(queue_name)
         .delay_seconds(delay)
@@ -50,7 +50,7 @@ fn sqs_fifo_queue_builder_should_compile() {
     let delay = delay_seconds!(60);
     let timeout = visibility_timeout!(120);
     
-    let _ = SqsQueueBuilder::new("myQueue")
+    let _ = QueueBuilder::new("myQueue")
         .fifo_queue()
         .queue_name(queue_name)
         .delay_seconds(delay)
@@ -62,7 +62,7 @@ fn sqs_fifo_queue_builder_should_compile() {
 // TODO more of these tests
 #[test]
 fn stack_with_bucket_website_should_compile() {
-    let (bucket, policy) = S3BucketBuilder::new("website")
+    let (bucket, policy) = BucketBuilder::new("website")
         .website("index.com")
         .build();
 
@@ -76,7 +76,7 @@ fn stack_with_bucket_website_should_compile() {
 
 #[test]
 fn stack_with_missing_bucket_should_err() {
-    let (_, policy) = S3BucketBuilder::new("website")
+    let (_, policy) = BucketBuilder::new("website")
         .website("index.com")
         .build();
 

@@ -1,26 +1,26 @@
-use cloud_infra_core::apigateway::builder::HttpApiGatewayBuilder;
+use cloud_infra_core::apigateway::builder::ApiGatewayV2Builder;
 use cloud_infra_core::dynamodb::AttributeType;
-use cloud_infra_core::dynamodb::DynamoDBKey;
-use cloud_infra_core::dynamodb::DynamoDBTableBuilder;
+use cloud_infra_core::dynamodb::Key;
+use cloud_infra_core::dynamodb::TableBuilder;
 use cloud_infra_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
-use cloud_infra_core::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
-use cloud_infra_core::secretsmanager::builder::{SecretsManagerGenerateSecretStringBuilder, SecretsManagerSecretBuilder};
+use cloud_infra_core::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use cloud_infra_core::secretsmanager::builder::{GenerateSecretStringBuilder, SecretBuilder};
 use cloud_infra_core::shared::http::HttpMethod;
-use cloud_infra_core::sns::builder::{FifoThroughputScope, SnsTopicBuilder, Subscription};
-use cloud_infra_core::sqs::SqsQueueBuilder;
+use cloud_infra_core::sns::builder::{FifoThroughputScope, TopicBuilder, SubscriptionType};
+use cloud_infra_core::sqs::QueueBuilder;
 use cloud_infra_core::stack::{Stack, StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
-use cloud_infra_core::cloudfront::{CachePolicyBuilder, CloudFrontDistributionBuilder, CloudFrontOriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
-use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, S3BucketBuilder, S3Encryption};
+use cloud_infra_core::cloudfront::{CachePolicyBuilder, DistributionBuilder, OriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
+use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
 
 #[test]
 fn dynamodb() {
     let pk = string_with_only_alpha_numerics_and_underscores!("pk");
     let sk = string_with_only_alpha_numerics_and_underscores!("sk");
-    let table = DynamoDBTableBuilder::new("table", DynamoDBKey::new(pk, AttributeType::String))
-        .sort_key(DynamoDBKey::new(sk, AttributeType::Number))
+    let table = TableBuilder::new("table", Key::new(pk, AttributeType::String))
+        .sort_key(Key::new(sk, AttributeType::Number))
         .provisioned_billing()
         .read_capacity(non_zero_number!(4))
         .write_capacity(non_zero_number!(5))
@@ -41,8 +41,8 @@ fn dynamodb() {
 
 #[test]
 fn bucket() {
-    let bucket = S3BucketBuilder::new("bucket")
-        .encryption(S3Encryption::S3Managed)
+    let bucket = BucketBuilder::new("bucket")
+        .encryption(Encryption::S3Managed)
         .lifecycle_configuration(LifecycleConfigurationBuilder::new()
             .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
                 .prefix("/prefix")
@@ -69,7 +69,7 @@ fn bucket() {
 
 #[test]
 fn website_bucket() {
-    let bucket = S3BucketBuilder::new("buck")
+    let bucket = BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
         .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]))
@@ -94,7 +94,7 @@ fn lambda() {
     let timeout = timeout!(30);
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let bucket = get_bucket();
-    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
+    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod")
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
@@ -122,7 +122,7 @@ fn lambda() {
 
 #[test]
 fn sns() {
-    let sns = SnsTopicBuilder::new("topic")
+    let sns = TopicBuilder::new("topic")
         .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
         .fifo()
         .fifo_throughput_scope(FifoThroughputScope::Topic)
@@ -142,7 +142,7 @@ fn sns() {
 
 #[test]
 fn sqs() {
-    let sqs = SqsQueueBuilder::new("queue")
+    let sqs = QueueBuilder::new("queue")
         .fifo_queue()
         .content_based_deduplication(true)
         .delay_seconds(delay_seconds!(30))
@@ -167,12 +167,12 @@ fn lambda_with_sns_subscription() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build();
-    let (sns, subscriptions) = SnsTopicBuilder::new("topic").add_subscription(Subscription::Lambda(&fun)).build();
+    let (sns, subscriptions) = TopicBuilder::new("topic").add_subscription(SubscriptionType::Lambda(&fun)).build();
     let stack_builder = StackBuilder::new()
         .add_resource(fun)
         .add_resource(role)
@@ -210,15 +210,15 @@ fn lambda_with_secret_and_custom_permissions() {
         .build();
     let mut template_for_string = Map::new();
     template_for_string.insert("user".to_string(), Value::String("me".to_string()));
-    let secret = SecretsManagerSecretBuilder::new("my-secret")
-        .generate_secret_string(SecretsManagerGenerateSecretStringBuilder::new()
+    let secret = SecretBuilder::new("my-secret")
+        .generate_secret_string(GenerateSecretStringBuilder::new()
             .exclude_punctuation(true)
             .generate_string_key("password")
             .secret_string_template(Value::Object(template_for_string))
             .build()
         )
         .build();
-    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
@@ -250,12 +250,12 @@ fn lambda_with_api_gateway() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build();
-    let (api, stage, routes) = HttpApiGatewayBuilder::new("AGW")
+    let (api, stage, routes) = ApiGatewayV2Builder::new("AGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build();
@@ -292,7 +292,7 @@ fn lambda_with_dynamodb() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new("Dynamo", DynamoDBKey::new(key, AttributeType::String))
+    let table = TableBuilder::new("Dynamo", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
@@ -304,7 +304,7 @@ fn lambda_with_dynamodb() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
@@ -339,21 +339,21 @@ fn lambda_with_dynamodb_and_sqs() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new("table", DynamoDBKey::new(key, AttributeType::String))
+    let table = TableBuilder::new("table", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
 
-    let queue = SqsQueueBuilder::new("queue").standard_queue().build();
+    let queue = QueueBuilder::new("queue").standard_queue().build();
 
     let zip_file = zip_file!("./cloud-infra/tests/example.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log, map) = LambdaFunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log, map) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
@@ -389,9 +389,9 @@ fn lambda_with_dynamodb_and_sqs() {
 
 #[test]
 fn cloudfront_with_s3_origin() {
-    let oac = CloudFrontOriginAccessControlBuilder::new("oac", "myoac", OriginAccessControlType::S3, SigningBehavior::Always, SigningProtocol::SigV4)
+    let oac = OriginAccessControlBuilder::new("oac", "myoac", OriginAccessControlType::S3, SigningBehavior::Always, SigningProtocol::SigV4)
         .build();
-    let bucket = S3BucketBuilder::new("bucket")
+    let bucket = BucketBuilder::new("bucket")
         .name(bucket_name!("sam-cloudfront-test"))
         .public_access_block_configuration(PublicAccessBlockConfigurationBuilder::new().block_public_acls(false).block_public_acls(false).ignore_public_acls(false).restrict_public_buckets(false).build())
         .build();
@@ -404,7 +404,7 @@ fn cloudfront_with_s3_origin() {
         .build();
     let default_cache = DefaultCacheBehaviorBuilder::new(&origin, &pol, ViewerProtocolPolicy::RedirectToHttps)
         .build();
-    let (cf, policies) = CloudFrontDistributionBuilder::new("distro", default_cache)
+    let (cf, policies) = DistributionBuilder::new("distro", default_cache)
         .origins(vec![origin])
         .build();
 

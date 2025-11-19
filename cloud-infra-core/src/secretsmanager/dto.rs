@@ -4,7 +4,7 @@ use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct SecretsManagerSecret {
+pub struct Secret {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -12,10 +12,10 @@ pub struct SecretsManagerSecret {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: SecretsManagerSecretProperties,
+    pub(crate) properties: SecretProperties,
 }
 
-impl SecretsManagerSecret {
+impl Secret {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -30,7 +30,7 @@ impl SecretsManagerSecret {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SecretsManagerSecretProperties {
+pub struct SecretProperties {
     #[serde(rename = "Name", skip_serializing_if = "Option::is_none")]
     pub(crate) name: Option<String>,
     #[serde(rename = "Description", skip_serializing_if = "Option::is_none")]

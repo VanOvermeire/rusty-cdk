@@ -4,7 +4,7 @@ use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct DynamoDBTable {
+pub struct Table {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -12,10 +12,10 @@ pub struct DynamoDBTable {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: DynamoDBTableProperties,
+    pub(crate) properties: TableProperties,
 }
 
-impl DynamoDBTable {
+impl Table {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -30,7 +30,7 @@ impl DynamoDBTable {
 }
 
 #[derive(Debug, Serialize)]
-pub struct DynamoDBTableProperties {
+pub struct TableProperties {
     #[serde(rename = "KeySchema")]
     pub(crate) key_schema: Vec<KeySchema>,
     #[serde(rename = "AttributeDefinitions")]

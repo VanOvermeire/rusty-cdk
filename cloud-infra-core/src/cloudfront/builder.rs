@@ -1,14 +1,14 @@
 use crate::cloudfront::{
-    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CloudFrontDistribution, CloudFrontDistributionProperties,
-    CloudFrontOriginAccessControl, CloudFrontOriginAccessControlConfig, CloudFrontOriginControlProperties, CookiesConfig,
+    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, Distribution, DistributionProperties,
+    OriginAccessControl, OriginAccessControlConfig, OriginControlProperties, CookiesConfig,
     DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin,
     QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig,
 };
-use crate::iam::IamPrincipal::Service;
+use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
-use crate::s3::builder::{S3BucketPolicyBuilder};
-use crate::s3::dto::{S3Bucket, S3BucketPolicy};
+use crate::s3::builder::{BucketPolicyBuilder};
+use crate::s3::dto::{Bucket, BucketPolicy};
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::Resource;
@@ -89,7 +89,7 @@ impl ViewerCertificateBuilder<ViewerCertificateStateStartState> {
             ssl_support_method: None,
         }
     }
-    
+
     pub fn cloudfront_default_cert(self) -> ViewerCertificateBuilder<ViewerCertificateStateEndState> {
         ViewerCertificateBuilder {
             phantom_data: Default::default(),
@@ -100,7 +100,7 @@ impl ViewerCertificateBuilder<ViewerCertificateStateStartState> {
             ssl_support_method: self.ssl_support_method,
         }
     }
-    
+
     pub fn iam_cert_id(self, id: String) -> ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
         ViewerCertificateBuilder {
             phantom_data: Default::default(),
@@ -111,7 +111,7 @@ impl ViewerCertificateBuilder<ViewerCertificateStateStartState> {
             ssl_support_method: self.ssl_support_method,
         }
     }
-    
+
     pub fn acm_cert_arn(self, id: String) -> ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
         ViewerCertificateBuilder {
             phantom_data: Default::default(),
@@ -133,7 +133,7 @@ impl<T: ViewerCertificateState> ViewerCertificateBuilder<T> {
             min_protocol_version: self.min_protocol_version,
             ssl_support_method: self.ssl_support_method,
         }
-    }    
+    }
 }
 
 impl ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
@@ -158,7 +158,7 @@ impl ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
             iam_cert_id: self.iam_cert_id,
         }
     }
-    
+
     pub fn build(self) -> ViewerCertificate {
         self.build_internal()
     }
@@ -367,7 +367,7 @@ pub struct OriginBuilder<'a, T: OriginState> {
     phantom_data: PhantomData<T>,
     id: String,
     referenced_ids: Vec<String>,
-    bucket: Option<&'a S3Bucket>,
+    bucket: Option<&'a Bucket>,
     domain_name: Option<Value>,
     connection_attempts: Option<u16>,
     connection_timeout: Option<u16>,
@@ -401,8 +401,8 @@ impl OriginBuilder<'_, OriginStartState> {
 
     pub fn s3_origin<'a>(
         mut self,
-        bucket: &'a S3Bucket,
-        oac: &CloudFrontOriginAccessControl,
+        bucket: &'a Bucket,
+        oac: &OriginAccessControl,
         origin_read_timeout: Option<S3OriginReadTimeout>,
     ) -> OriginBuilder<'a, OriginS3OriginState> {
         self.referenced_ids.push(bucket.get_resource_id().to_string());
@@ -485,7 +485,7 @@ impl OriginBuilder<'_, OriginS3OriginState> {
             .build();
         let doc = PolicyDocumentBuilder::new(vec![statement]);
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-        let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
+        let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
 
         let mut origin = self.build_internal();
         origin.s3_bucket_policy = Some(s3_policy);
@@ -615,11 +615,11 @@ impl DefaultCacheBehaviorBuilder {
     }
 }
 
-pub trait CloudFrontDistributionState {}
-pub struct CloudFrontDistributionStartState {}
-impl CloudFrontDistributionState for CloudFrontDistributionStartState {}
-pub struct CloudFrontDistributionOriginState {}
-impl CloudFrontDistributionState for CloudFrontDistributionOriginState {}
+pub trait DistributionState {}
+pub struct DistributionStartState {}
+impl DistributionState for DistributionStartState {}
+pub struct DistributionOriginState {}
+impl DistributionState for DistributionOriginState {}
 
 pub enum SigningBehavior {
     Never,
@@ -667,7 +667,7 @@ impl From<OriginAccessControlType> for String {
     }
 }
 
-pub struct CloudFrontOriginAccessControlBuilder {
+pub struct OriginAccessControlBuilder {
     id: Id,
     name: String,
     origin_access_control_type: OriginAccessControlType,
@@ -675,7 +675,7 @@ pub struct CloudFrontOriginAccessControlBuilder {
     signing_protocol: SigningProtocol,
 }
 
-impl CloudFrontOriginAccessControlBuilder {
+impl OriginAccessControlBuilder {
     pub fn new(
         id: &str,
         name: &str,
@@ -693,14 +693,14 @@ impl CloudFrontOriginAccessControlBuilder {
     }
 
     #[must_use]
-    pub fn build(self) -> CloudFrontOriginAccessControl {
+    pub fn build(self) -> OriginAccessControl {
         let resource_id = Resource::generate_id("OAC");
-        CloudFrontOriginAccessControl {
+        OriginAccessControl {
             id: self.id,
             resource_id,
             r#type: "AWS::CloudFront::OriginAccessControl".to_string(),
-            properties: CloudFrontOriginControlProperties {
-                config: CloudFrontOriginAccessControlConfig {
+            properties: OriginControlProperties {
+                config: OriginAccessControlConfig {
                     name: self.name,
                     origin_access_control_type: self.origin_access_control_type.into(),
                     signing_behavior: self.signing_behavior.into(),
@@ -711,7 +711,7 @@ impl CloudFrontOriginAccessControlBuilder {
     }
 }
 
-pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
+pub struct DistributionBuilder<T: DistributionState> {
     phantom_data: PhantomData<T>,
     id: Id,
     enabled: bool,
@@ -729,7 +729,7 @@ pub struct CloudFrontDistributionBuilder<T: CloudFrontDistributionState> {
     origins: Option<Vec<Origin>>,
 }
 
-impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
+impl DistributionBuilder<DistributionStartState> {
     pub fn new(id: &str, default_cache_behavior: DefaultCacheBehavior) -> Self {
         Self {
             phantom_data: Default::default(),
@@ -748,8 +748,8 @@ impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
         }
     }
 
-    pub fn origins(self, origins: Vec<Origin>) -> CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
-        CloudFrontDistributionBuilder {
+    pub fn origins(self, origins: Vec<Origin>) -> DistributionBuilder<DistributionOriginState> {
+        DistributionBuilder {
             phantom_data: Default::default(),
             origins: Some(origins),
             id: self.id,
@@ -767,9 +767,9 @@ impl CloudFrontDistributionBuilder<CloudFrontDistributionStartState> {
     }
 }
 
-impl CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
+impl DistributionBuilder<DistributionOriginState> {
     #[must_use]
-    pub fn build(mut self) -> (CloudFrontDistribution, Vec<S3BucketPolicy>) {
+    pub fn build(mut self) -> (Distribution, Vec<BucketPolicy>) {
         let mut origins = self.origins.take().expect("origins to be present in distribution origin state");
         let resource_id = Resource::generate_id("CloudFrontDistribution");
 
@@ -814,7 +814,7 @@ impl CloudFrontDistributionBuilder<CloudFrontDistributionOriginState> {
     }
 }
 
-impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
+impl<T: DistributionState> DistributionBuilder<T> {
     pub fn add_cache_behavior(mut self, behavior: CacheBehavior) -> Self {
         if let Some(mut behaviors) = self.cache_behaviors {
             behaviors.push(behavior);
@@ -880,7 +880,7 @@ impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
         }
     }
 
-    fn build_internal(self, resource_id: String) -> CloudFrontDistribution {
+    fn build_internal(self, resource_id: String) -> Distribution {
         let config = DistributionConfig {
             enabled: self.enabled,
             default_cache_behavior: self.default_cache_behavior,
@@ -895,11 +895,11 @@ impl<T: CloudFrontDistributionState> CloudFrontDistributionBuilder<T> {
             origins: self.origins,
             origin_groups: None,
         };
-        CloudFrontDistribution {
+        Distribution {
             id: self.id,
             resource_id,
             r#type: "AWS::CloudFront::Distribution".to_string(),
-            properties: CloudFrontDistributionProperties { config },
+            properties: DistributionProperties { config },
         }
     }
 }

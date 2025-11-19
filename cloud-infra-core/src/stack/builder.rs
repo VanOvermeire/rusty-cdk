@@ -109,7 +109,7 @@ impl StackBuilder {
         
         let roles_with_potentially_missing_services: Vec<_> = self.resources.iter().filter_map(|r| {
             match r {
-                Resource::IamRole(r) => {
+                Resource::Role(r) => {
                     if !r.potentially_missing_services.is_empty() {
                         Some(format!("{}: {}", r.resource_id, r.potentially_missing_services.join(",")))
                     } else {

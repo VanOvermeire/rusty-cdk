@@ -4,7 +4,7 @@ use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct IamRole {
+pub struct Role {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -17,7 +17,7 @@ pub struct IamRole {
     pub(crate) properties: IamRoleProperties,
 }
 
-impl IamRole {
+impl Role {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -74,7 +74,7 @@ pub struct Statement {
     #[serde(rename = "Effect")]
     pub(crate) effect: String,
     #[serde(rename = "Principal", skip_serializing_if = "Option::is_none")]
-    pub(crate) principal: Option<IamPrincipal>,
+    pub(crate) principal: Option<Principal>,
     #[serde(rename = "Resource", skip_serializing_if = "Option::is_none")]
     pub(crate) resource: Option<Vec<Value>>,
     #[serde(rename = "Condition", skip_serializing_if = "Option::is_none")]
@@ -83,7 +83,7 @@ pub struct Statement {
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
-pub enum IamPrincipal {
+pub enum Principal {
     Service(ServicePrincipal),
     AWS(AWSPrincipal),
     Custom(String),

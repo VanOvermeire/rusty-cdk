@@ -6,7 +6,7 @@ use crate::shared::Id;
 use crate::stack::Asset;
 
 #[derive(Debug, Serialize)]
-pub struct LambdaFunction {
+pub struct Function {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -21,7 +21,7 @@ pub struct LambdaFunction {
     pub(crate) properties: LambdaFunctionProperties,
 }
 
-impl LambdaFunction {
+impl Function {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -130,7 +130,7 @@ pub struct ScalingConfig {
 }
 
 #[derive(Debug, Serialize)]
-pub struct LambdaPermission {
+pub struct Permission {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -143,7 +143,7 @@ pub struct LambdaPermission {
     pub(crate) properties: LambdaPermissionProperties,
 }
 
-impl LambdaPermission {
+impl Permission {
     pub fn get_id(&self) -> &Id {
         &self.id
     }

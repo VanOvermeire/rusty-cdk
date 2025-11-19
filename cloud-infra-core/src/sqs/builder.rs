@@ -1,4 +1,4 @@
-use crate::sqs::dto::{RedrivePolicy, SqsQueue, SqsQueueProperties};
+use crate::sqs::dto::{RedrivePolicy, Queue, QueueProperties};
 use crate::stack::Resource;
 use crate::wrappers::{
     DelaySeconds, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber,
@@ -38,18 +38,15 @@ impl From<FifoThroughputLimit> for String {
     }
 }
 
-pub trait SqsQueueBuilderState {}
-
+pub trait QueueBuilderState {}
 pub struct StartState {}
-impl SqsQueueBuilderState for StartState {}
-
+impl QueueBuilderState for StartState {}
 pub struct StandardState {}
-impl SqsQueueBuilderState for StandardState {}
-
+impl QueueBuilderState for StandardState {}
 pub struct FifoState {}
-impl SqsQueueBuilderState for FifoState {}
+impl QueueBuilderState for FifoState {}
 
-pub struct SqsQueueBuilder<T: SqsQueueBuilderState> {
+pub struct QueueBuilder<T: QueueBuilderState> {
     state: PhantomData<T>,
     id: Id,
     queue_name: Option<String>,
@@ -66,7 +63,7 @@ pub struct SqsQueueBuilder<T: SqsQueueBuilderState> {
     redrive_allow_policy: Option<Value>,
 }
 
-impl SqsQueueBuilder<StartState> {
+impl QueueBuilder<StartState> {
     pub fn new(id: &str) -> Self {
         Self {
             state: Default::default(),
@@ -86,8 +83,8 @@ impl SqsQueueBuilder<StartState> {
         }
     }
 
-    pub fn standard_queue(self) -> SqsQueueBuilder<StandardState> {
-        SqsQueueBuilder {
+    pub fn standard_queue(self) -> QueueBuilder<StandardState> {
+        QueueBuilder {
             state: Default::default(),
             id: self.id,
             queue_name: self.queue_name,
@@ -105,8 +102,8 @@ impl SqsQueueBuilder<StartState> {
         }
     }
 
-    pub fn fifo_queue(self) -> SqsQueueBuilder<FifoState> {
-        SqsQueueBuilder {
+    pub fn fifo_queue(self) -> QueueBuilder<FifoState> {
+        QueueBuilder {
             state: Default::default(),
             id: self.id,
             queue_name: self.queue_name,
@@ -125,7 +122,7 @@ impl SqsQueueBuilder<StartState> {
     }
 }
 
-impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
+impl<T: QueueBuilderState> QueueBuilder<T> {
     pub fn delay_seconds(self, delay: DelaySeconds) -> Self {
         Self {
             delay_seconds: Some(delay.0 as u32),
@@ -192,8 +189,8 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
         }
     }
 
-    fn build_internal(self, fifo: bool) -> SqsQueue {
-        let properties = SqsQueueProperties {
+    fn build_internal(self, fifo: bool) -> Queue {
+        let properties = QueueProperties {
             queue_name: self.queue_name,
             delay_seconds: self.delay_seconds,
             maximum_message_size: self.maximum_message_size,
@@ -209,7 +206,7 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
             redrive_allow_policy: self.redrive_allow_policy,
         };
 
-        SqsQueue {
+        Queue {
             id: self.id,
             resource_id: Resource::generate_id("SqsQueue"),
             r#type: "AWS::SQS::Queue".to_string(),
@@ -218,14 +215,14 @@ impl<T: SqsQueueBuilderState> SqsQueueBuilder<T> {
     }
 }
 
-impl SqsQueueBuilder<StandardState> {
+impl QueueBuilder<StandardState> {
     #[must_use]
-    pub fn build(self) -> SqsQueue {
+    pub fn build(self) -> Queue {
         self.build_internal(false)
     }
 }
 
-impl SqsQueueBuilder<FifoState> {
+impl QueueBuilder<FifoState> {
     pub fn content_based_deduplication(self, enabled: bool) -> Self {
         Self {
             content_based_deduplication: Some(enabled),
@@ -256,7 +253,7 @@ impl SqsQueueBuilder<FifoState> {
     }
 
     #[must_use]
-    pub fn build(mut self) -> SqsQueue {
+    pub fn build(mut self) -> Queue {
         if let Some(ref name) = self.queue_name {
             if !name.ends_with(FIFO_SUFFIX) {
                 self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));

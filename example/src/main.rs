@@ -1,9 +1,9 @@
-use cloud_infra::apigateway::builder::HttpApiGatewayBuilder;
-use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+use cloud_infra::apigateway::builder::ApiGatewayV2Builder;
+use cloud_infra::dynamodb::{AttributeType, Key, TableBuilder};
 use cloud_infra::iam::Permission;
-use cloud_infra::lambda::{Architecture, LambdaFunctionBuilder, Runtime, Zip};
+use cloud_infra::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
 use cloud_infra::shared::http::HttpMethod;
-use cloud_infra::sqs::SqsQueueBuilder;
+use cloud_infra::sqs::QueueBuilder;
 use cloud_infra::stack::StackBuilder;
 use cloud_infra::wrappers::*;
 use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zip_file};
@@ -16,20 +16,20 @@ async fn main() {
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
-    let table = DynamoDBTableBuilder::new("myTable", DynamoDBKey::new(key, AttributeType::String))
+    let table = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
         .read_capacity(read_capacity)
         .write_capacity(write_capacity)
         .build();
 
-    let queue = SqsQueueBuilder::new("myQueue").standard_queue().build();
+    let queue = QueueBuilder::new("myQueue").standard_queue().build();
     
     let bucket = bucket!("configuration-of-sam-van-overmeire");
     let zipper = zip_file!("./example/output/todo-backend.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
-    let (fun, role, log_group, map) = LambdaFunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+    let (fun, role, log_group, map) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zipper))
         .handler("bootstrap")
@@ -40,7 +40,7 @@ async fn main() {
         // .check_permissions_against_dependencies(TomlFile("...Cargo.toml".to_string()))
         .build();
 
-    let (api, stage, routes) = HttpApiGatewayBuilder::new("myAGW")
+    let (api, stage, routes) = ApiGatewayV2Builder::new("myAGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build();

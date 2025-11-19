@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use crate::dynamodb::dto::{AttributeDefinition, DynamoDBTable, DynamoDBTableProperties, KeySchema};
+use crate::dynamodb::dto::{AttributeDefinition, Table, TableProperties, KeySchema};
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput};
 use crate::shared::Id;
 use crate::stack::Resource;
@@ -36,12 +36,12 @@ impl From<AttributeType> for String {
     }
 }
 
-pub struct DynamoDBKey {
+pub struct Key {
     key: String,
     key_type: AttributeType,
 }
 
-impl DynamoDBKey {
+impl Key {
     pub fn new(key: StringWithOnlyAlphaNumericsAndUnderscores, key_type: AttributeType) -> Self {
         Self {
             key: key.0,
@@ -50,27 +50,27 @@ impl DynamoDBKey {
     }
 }
 
-pub trait DynamoDBTableBuilderState {}
+pub trait TableBuilderState {}
 
 pub struct StartState {}
-impl DynamoDBTableBuilderState for StartState {}
+impl TableBuilderState for StartState {}
 
 pub struct ProvisionedStateStart {}
-impl DynamoDBTableBuilderState for ProvisionedStateStart {}
+impl TableBuilderState for ProvisionedStateStart {}
 pub struct ProvisionedStateReadSet {}
-impl DynamoDBTableBuilderState for ProvisionedStateReadSet {}
+impl TableBuilderState for ProvisionedStateReadSet {}
 pub struct ProvisionedStateWriteSet {}
-impl DynamoDBTableBuilderState for ProvisionedStateWriteSet {}
+impl TableBuilderState for ProvisionedStateWriteSet {}
 
 pub struct PayPerRequestState {}
-impl DynamoDBTableBuilderState for PayPerRequestState {}
+impl TableBuilderState for PayPerRequestState {}
 
-pub struct DynamoDBTableBuilder<T: DynamoDBTableBuilderState> {
+pub struct TableBuilder<T: TableBuilderState> {
     state: PhantomData<T>,
     id: Id,
     table_name: Option<String>,
-    partition_key: Option<DynamoDBKey>,
-    sort_key: Option<DynamoDBKey>,
+    partition_key: Option<Key>,
+    sort_key: Option<Key>,
     billing_mode: Option<BillingMode>,
     read_capacity: Option<u32>,
     write_capacity: Option<u32>,
@@ -78,9 +78,9 @@ pub struct DynamoDBTableBuilder<T: DynamoDBTableBuilderState> {
     max_write_capacity: Option<u32>,
 }
 
-impl DynamoDBTableBuilder<StartState> {
-    pub fn new(id: &str, key: DynamoDBKey) -> Self {
-        DynamoDBTableBuilder {
+impl TableBuilder<StartState> {
+    pub fn new(id: &str, key: Key) -> Self {
+        TableBuilder {
             state: Default::default(),
             id: Id(id.to_string()),
             table_name: None,
@@ -95,8 +95,8 @@ impl DynamoDBTableBuilder<StartState> {
     }
 }
 
-impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
-    pub fn sort_key(self, key: DynamoDBKey) -> Self {
+impl<T: TableBuilderState> TableBuilder<T> {
+    pub fn sort_key(self, key: Key) -> Self {
         Self {
             sort_key: Some(key),
             ..self
@@ -110,8 +110,8 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         }
     }
 
-    pub fn pay_per_request_billing(self) -> DynamoDBTableBuilder<PayPerRequestState> {
-        DynamoDBTableBuilder {
+    pub fn pay_per_request_billing(self) -> TableBuilder<PayPerRequestState> {
+        TableBuilder {
             billing_mode: Some(BillingMode::PayPerRequest),
             state: Default::default(),
             id: self.id,
@@ -125,8 +125,8 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         }
     }
 
-    pub fn provisioned_billing(self) -> DynamoDBTableBuilder<ProvisionedStateStart> {
-        DynamoDBTableBuilder {
+    pub fn provisioned_billing(self) -> TableBuilder<ProvisionedStateStart> {
+        TableBuilder {
             billing_mode: Some(BillingMode::Provisioned),
             state: Default::default(),
             id: self.id,
@@ -140,15 +140,15 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
         }
     }
 
-    fn build_internal(self) -> DynamoDBTable {
-        let DynamoDBKey { key, key_type } = self.partition_key.unwrap();
+    fn build_internal(self) -> Table {
+        let Key { key, key_type } = self.partition_key.unwrap();
         let mut key_schema = vec![KeySchema { attribute_name: key.clone(), key_type: "HASH".to_string() }];
         let mut key_attributes = vec![AttributeDefinition {
             attribute_name: key,
             attribute_type: key_type.into(),
         }];
         
-        if let Some(DynamoDBKey { key, key_type }) = self.sort_key {
+        if let Some(Key { key, key_type }) = self.sort_key {
             let sort_key = KeySchema { attribute_name: key.clone(), key_type: "RANGE".to_string() };
             let sort_key_attributes = AttributeDefinition {
                 attribute_name: key,
@@ -178,7 +178,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             None
         };
 
-        let properties = DynamoDBTableProperties {
+        let properties = TableProperties {
             key_schema,
             attribute_definitions: key_attributes,
             billing_mode: billing_mode.into(),
@@ -186,7 +186,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
             on_demand_throughput,
         };
         
-        DynamoDBTable {
+        Table {
             id: self.id,
             resource_id: Resource::generate_id("DynamoDBTable"),
             r#type: "AWS::DynamoDB::Table".to_string(),
@@ -195,7 +195,7 @@ impl<T: DynamoDBTableBuilderState> DynamoDBTableBuilder<T> {
     }
 }
 
-impl DynamoDBTableBuilder<PayPerRequestState> {
+impl TableBuilder<PayPerRequestState> {
     pub fn max_read_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
             max_read_capacity: Some(capacity.0),
@@ -211,14 +211,14 @@ impl DynamoDBTableBuilder<PayPerRequestState> {
     }
 
     #[must_use]
-    pub fn build(self) -> DynamoDBTable {
+    pub fn build(self) -> Table {
         self.build_internal()
     }
 }
 
-impl DynamoDBTableBuilder<ProvisionedStateStart> {
-    pub fn read_capacity(self, capacity: NonZeroNumber) -> DynamoDBTableBuilder<ProvisionedStateReadSet> {
-        DynamoDBTableBuilder {
+impl TableBuilder<ProvisionedStateStart> {
+    pub fn read_capacity(self, capacity: NonZeroNumber) -> TableBuilder<ProvisionedStateReadSet> {
+        TableBuilder {
             read_capacity: Some(capacity.0),
             state: Default::default(),
             id: self.id,
@@ -233,9 +233,9 @@ impl DynamoDBTableBuilder<ProvisionedStateStart> {
     }
 }
 
-impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
-    pub fn write_capacity(self, capacity: NonZeroNumber) -> DynamoDBTableBuilder<ProvisionedStateWriteSet> {
-        DynamoDBTableBuilder {
+impl TableBuilder<ProvisionedStateReadSet> {
+    pub fn write_capacity(self, capacity: NonZeroNumber) -> TableBuilder<ProvisionedStateWriteSet> {
+        TableBuilder {
             write_capacity: Some(capacity.0),
             state: Default::default(),
             id: self.id,
@@ -250,9 +250,9 @@ impl DynamoDBTableBuilder<ProvisionedStateReadSet> {
     }
 }
 
-impl DynamoDBTableBuilder<ProvisionedStateWriteSet> {
+impl TableBuilder<ProvisionedStateWriteSet> {
     #[must_use]
-    pub fn build(self) -> DynamoDBTable {
+    pub fn build(self) -> Table {
         self.build_internal()
     }
 }

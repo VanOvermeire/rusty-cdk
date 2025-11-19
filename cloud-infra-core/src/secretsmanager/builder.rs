@@ -1,19 +1,17 @@
 use std::marker::PhantomData;
 use serde_json::Value;
-use crate::secretsmanager::dto::{GenerateSecretString, SecretsManagerSecret, SecretsManagerSecretProperties};
+use crate::secretsmanager::dto::{GenerateSecretString, Secret, SecretProperties};
 use crate::shared::Id;
 use crate::stack::Resource;
 use crate::wrappers::StringForSecret;
 
-pub trait SecretsManagerSecretBuilderState {}
-
+pub trait SecretBuilderState {}
 pub struct StartState {}
-impl SecretsManagerSecretBuilderState for StartState {}
-
+impl SecretBuilderState for StartState {}
 pub struct SelectedSecretTypeState {}
-impl SecretsManagerSecretBuilderState for SelectedSecretTypeState {}
+impl SecretBuilderState for SelectedSecretTypeState {}
 
-pub struct SecretsManagerSecretBuilder<T: SecretsManagerSecretBuilderState> {
+pub struct SecretBuilder<T: SecretBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
     name: Option<String>,
@@ -22,9 +20,9 @@ pub struct SecretsManagerSecretBuilder<T: SecretsManagerSecretBuilderState> {
     secret_string: Option<String>,
 }
 
-impl SecretsManagerSecretBuilder<StartState> {
+impl SecretBuilder<StartState> {
     pub fn new(id: &str) -> Self {
-        SecretsManagerSecretBuilder {
+        SecretBuilder {
             phantom_data: Default::default(),
             id: Id(id.to_string()),
             name: None,
@@ -48,8 +46,8 @@ impl SecretsManagerSecretBuilder<StartState> {
         }
     }
 
-    pub fn secret_string<T: Into<String>>(self, value: T) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
-        SecretsManagerSecretBuilder {
+    pub fn secret_string<T: Into<String>>(self, value: T) -> SecretBuilder<SelectedSecretTypeState> {
+        SecretBuilder {
             phantom_data: Default::default(),
             id: self.id,
             name: self.name,
@@ -59,8 +57,8 @@ impl SecretsManagerSecretBuilder<StartState> {
         }
     }
 
-    pub fn generate_secret_string(self, value: GenerateSecretString) -> SecretsManagerSecretBuilder<SelectedSecretTypeState> {
-        SecretsManagerSecretBuilder {
+    pub fn generate_secret_string(self, value: GenerateSecretString) -> SecretBuilder<SelectedSecretTypeState> {
+        SecretBuilder {
             phantom_data: Default::default(),
             id: self.id,
             name: self.name,
@@ -71,16 +69,16 @@ impl SecretsManagerSecretBuilder<StartState> {
     }
 }
 
-impl SecretsManagerSecretBuilder<SelectedSecretTypeState> {
+impl SecretBuilder<SelectedSecretTypeState> {
     #[must_use]
-    pub fn build(self) -> SecretsManagerSecret {
+    pub fn build(self) -> Secret {
         let resource_id = Resource::generate_id("SecretsManagerSecret");
         
-        SecretsManagerSecret {
+        Secret {
             id: self.id,
             resource_id,
             r#type: "AWS::SecretsManager::Secret".to_string(),
-            properties: SecretsManagerSecretProperties {
+            properties: SecretProperties {
                 name: self.name,
                 description: self.description,
                 generate_secret_string: self.generate_secret_string,
@@ -90,20 +88,16 @@ impl SecretsManagerSecretBuilder<SelectedSecretTypeState> {
     }
 }
 
-
-
-pub trait SecretsManagerGenerateSecretStringBuilderState {}
-
+// TODO could write a macro for the state stuff
+pub trait GenerateSecretStringBuilderState {}
 pub struct GenerateStringStartState {}
-impl SecretsManagerGenerateSecretStringBuilderState for GenerateStringStartState {}
-
+impl GenerateSecretStringBuilderState for GenerateStringStartState {}
 pub struct GenerateStringKeyState {}
-impl SecretsManagerGenerateSecretStringBuilderState for GenerateStringKeyState {}
-
+impl GenerateSecretStringBuilderState for GenerateStringKeyState {}
 pub struct SecretStringTemplateState {}
-impl SecretsManagerGenerateSecretStringBuilderState for SecretStringTemplateState {}
+impl GenerateSecretStringBuilderState for SecretStringTemplateState {}
 
-pub struct SecretsManagerGenerateSecretStringBuilder<T: SecretsManagerGenerateSecretStringBuilderState> {
+pub struct GenerateSecretStringBuilder<T: GenerateSecretStringBuilderState> {
     phantom_data: PhantomData<T>,
     generate_string_key: Option<String>,
     secret_string_template: Option<String>,
@@ -117,7 +111,7 @@ pub struct SecretsManagerGenerateSecretStringBuilder<T: SecretsManagerGenerateSe
     require_each_included_type: Option<bool>,
 }
 
-impl<T: SecretsManagerGenerateSecretStringBuilderState> SecretsManagerGenerateSecretStringBuilder<T> {
+impl<T: GenerateSecretStringBuilderState> GenerateSecretStringBuilder<T> {
     fn build_internal(self) -> GenerateSecretString {
         GenerateSecretString {
             exclude_characters: self.exclude_characters.map(|v| v.into_iter().collect()),
@@ -134,7 +128,7 @@ impl<T: SecretsManagerGenerateSecretStringBuilderState> SecretsManagerGenerateSe
     }
 }
 
-impl SecretsManagerGenerateSecretStringBuilder<GenerateStringStartState> {
+impl GenerateSecretStringBuilder<GenerateStringStartState> {
     pub fn new() -> Self {
         Self {
             phantom_data: Default::default(),
@@ -206,8 +200,8 @@ impl SecretsManagerGenerateSecretStringBuilder<GenerateStringStartState> {
         }
     }
 
-    pub fn generate_string_key<T: Into<String>>(self, generate_string_key: T) -> SecretsManagerGenerateSecretStringBuilder<GenerateStringKeyState> {
-        SecretsManagerGenerateSecretStringBuilder {
+    pub fn generate_string_key<T: Into<String>>(self, generate_string_key: T) -> GenerateSecretStringBuilder<GenerateStringKeyState> {
+        GenerateSecretStringBuilder {
             phantom_data: Default::default(),
             generate_string_key: Some(generate_string_key.into()),
             exclude_characters: self.exclude_characters,
@@ -228,9 +222,9 @@ impl SecretsManagerGenerateSecretStringBuilder<GenerateStringStartState> {
     }
 }
 
-impl SecretsManagerGenerateSecretStringBuilder<GenerateStringKeyState> {
-    pub fn secret_string_template(self, secret_string_template: Value) -> SecretsManagerGenerateSecretStringBuilder<SecretStringTemplateState> {
-        SecretsManagerGenerateSecretStringBuilder {
+impl GenerateSecretStringBuilder<GenerateStringKeyState> {
+    pub fn secret_string_template(self, secret_string_template: Value) -> GenerateSecretStringBuilder<SecretStringTemplateState> {
+        GenerateSecretStringBuilder {
             phantom_data: Default::default(),
             secret_string_template: Some(secret_string_template.to_string()),
             generate_string_key: self.generate_string_key,
@@ -246,7 +240,7 @@ impl SecretsManagerGenerateSecretStringBuilder<GenerateStringKeyState> {
     }
 }
 
-impl SecretsManagerGenerateSecretStringBuilder<SecretStringTemplateState> {
+impl GenerateSecretStringBuilder<SecretStringTemplateState> {
     #[must_use]
     pub fn build(self) -> GenerateSecretString {
         self.build_internal()

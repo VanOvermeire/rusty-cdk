@@ -1,11 +1,11 @@
 use crate::intrinsic_functions::get_att;
-use crate::s3::dto::S3BucketPolicy;
+use crate::s3::dto::BucketPolicy;
 use crate::shared::Id;
 use serde::Serialize;
 use serde_json::Value;
 
 #[derive(Debug, Serialize)]
-pub struct CloudFrontOriginAccessControl {
+pub struct OriginAccessControl {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -13,10 +13,10 @@ pub struct CloudFrontOriginAccessControl {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: CloudFrontOriginControlProperties,
+    pub(crate) properties: OriginControlProperties,
 }
 
-impl CloudFrontOriginAccessControl {
+impl OriginAccessControl {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -31,13 +31,13 @@ impl CloudFrontOriginAccessControl {
 }
 
 #[derive(Debug, Serialize)]
-pub struct CloudFrontOriginControlProperties {
+pub struct OriginControlProperties {
     #[serde(rename = "OriginAccessControlConfig")]
-    pub(crate) config: CloudFrontOriginAccessControlConfig,
+    pub(crate) config: OriginAccessControlConfig,
 }
 
 #[derive(Debug, Serialize)]
-pub struct CloudFrontOriginAccessControlConfig {
+pub struct OriginAccessControlConfig {
     #[serde(rename = "Name")]
     pub(crate) name: String,
     #[serde(rename = "OriginAccessControlOriginType")]
@@ -133,7 +133,7 @@ pub struct CookiesConfig {
 }
 
 #[derive(Debug, Serialize)]
-pub struct CloudFrontDistribution {
+pub struct Distribution {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -141,10 +141,10 @@ pub struct CloudFrontDistribution {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: CloudFrontDistributionProperties,
+    pub(crate) properties: DistributionProperties,
 }
 
-impl CloudFrontDistribution {
+impl Distribution {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -155,7 +155,7 @@ impl CloudFrontDistribution {
 }
 
 #[derive(Debug, Serialize)]
-pub struct CloudFrontDistributionProperties {
+pub struct DistributionProperties {
     #[serde(rename = "DistributionConfig")]
     pub(crate) config: DistributionConfig,
 }
@@ -266,7 +266,7 @@ pub struct Origin {
     #[serde(skip)]
     pub(crate) referenced_ids: Vec<String>, // TODO pass on to the using resource
     #[serde(skip)]
-    pub(crate) s3_bucket_policy: Option<S3BucketPolicy>,
+    pub(crate) s3_bucket_policy: Option<BucketPolicy>,
     #[serde(rename = "DomainName")]
     pub(crate) domain_name: Value,
     #[serde(rename = "ConnectionAttempts", skip_serializing_if = "Option::is_none")]

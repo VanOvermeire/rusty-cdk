@@ -1,9 +1,9 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, StatementBuilder, IamPrincipalBuilder};
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, StatementBuilder, PrincipalBuilder};
 use crate::s3::dto;
 use crate::s3::dto::{
     BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
-    NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, S3Bucket, S3BucketPolicy, S3BucketPolicyProperties,
-    S3BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
+    NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, Bucket, BucketPolicy, S3BucketPolicyProperties,
+    BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
@@ -18,15 +18,15 @@ use crate::intrinsic_functions::{join};
 //  CDK approach with custom resources is one way
 //  other way would be for the deploy to do extra work... but then the cloudformation template can only work correctly with our deploy method
 
-pub struct S3BucketPolicyBuilder {
+pub struct BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
     policy_document: PolicyDocument,
     referenced_ids: Vec<String>,
 }
 
-impl S3BucketPolicyBuilder {
-    pub fn new(id: &str, bucket: &S3Bucket, policy_document: PolicyDocument) -> Self {
+impl BucketPolicyBuilder {
+    pub fn new(id: &str, bucket: &Bucket, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
             bucket_name: bucket.get_ref(),
@@ -42,10 +42,10 @@ impl S3BucketPolicyBuilder {
     }
 
     #[must_use]
-    pub fn build(self) -> S3BucketPolicy {
+    pub fn build(self) -> BucketPolicy {
         let resource_id = Resource::generate_id("S3BucketPolicy");
 
-        S3BucketPolicy {
+        BucketPolicy {
             id: self.id,
             resource_id,
             referenced_ids: self.referenced_ids,
@@ -72,7 +72,7 @@ impl From<VersioningConfiguration> for String {
     }
 }
 
-pub enum S3Encryption {
+pub enum Encryption {
     S3Managed,
     KmsManaged,
     DsseManaged,
@@ -80,25 +80,23 @@ pub enum S3Encryption {
     // DSSE, => add, similar
 }
 
-impl From<S3Encryption> for String {
-    fn from(value: S3Encryption) -> Self {
+impl From<Encryption> for String {
+    fn from(value: Encryption) -> Self {
         match value {
-            S3Encryption::S3Managed => "AES256".to_string(),
-            S3Encryption::KmsManaged => "aws:kms".to_string(),
-            S3Encryption::DsseManaged => "aws:kms:dsse".to_string(),
+            Encryption::S3Managed => "AES256".to_string(),
+            Encryption::KmsManaged => "aws:kms".to_string(),
+            Encryption::DsseManaged => "aws:kms:dsse".to_string(),
         }
     }
 }
 
-pub trait S3BucketBuilderState {}
-
+pub trait BucketBuilderState {}
 pub struct StartState {}
-impl S3BucketBuilderState for StartState {}
-
+impl BucketBuilderState for StartState {}
 pub struct WebsiteState {}
-impl S3BucketBuilderState for WebsiteState {}
+impl BucketBuilderState for WebsiteState {}
 
-pub struct S3BucketBuilder<T: S3BucketBuilderState> {
+pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
     name: Option<String>,
@@ -109,10 +107,10 @@ pub struct S3BucketBuilder<T: S3BucketBuilderState> {
     error_document: Option<String>,
     redirect_all_requests_to: Option<(String, Option<Protocol>)>,
     cors_config: Option<CorsConfiguration>,
-    bucket_encryption: Option<S3Encryption>,
+    bucket_encryption: Option<Encryption>,
 }
 
-impl S3BucketBuilder<StartState> {
+impl BucketBuilder<StartState> {
     pub fn new(id: &str) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -130,13 +128,13 @@ impl S3BucketBuilder<StartState> {
     }
 
     #[must_use]
-    pub fn build(self) -> S3Bucket {
+    pub fn build(self) -> Bucket {
         let (bucket, _) = self.build_internal(false);
         bucket
     }
 }
 
-impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
+impl<T: BucketBuilderState> BucketBuilder<T> {
     pub fn name(self, name: BucketName) -> Self {
         Self {
             name: Some(name.0),
@@ -165,15 +163,15 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
-    pub fn encryption(self, encryption: S3Encryption) -> Self {
+    pub fn encryption(self, encryption: Encryption) -> Self {
         Self {
             bucket_encryption: Some(encryption),
             ..self
         }
     }
 
-    pub fn website<I: Into<String>>(self, index_document: I) -> S3BucketBuilder<WebsiteState> {
-        S3BucketBuilder {
+    pub fn website<I: Into<String>>(self, index_document: I) -> BucketBuilder<WebsiteState> {
+        BucketBuilder {
             phantom_data: Default::default(),
             id: self.id,
             name: self.name,
@@ -188,7 +186,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
         }
     }
 
-    fn build_internal(self, website: bool) -> (S3Bucket, Option<S3BucketPolicy>) {
+    fn build_internal(self, website: bool) -> (Bucket, Option<BucketPolicy>) {
         let resource_id = Resource::generate_id("S3Bucket");
 
         let versioning_configuration = self
@@ -236,7 +234,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             }
         });
 
-        let properties = S3BucketProperties {
+        let properties = BucketProperties {
             bucket_name: self.name,
             cors_configuration: self.cors_config,
             lifecycle_configuration: self.lifecycle_configuration,
@@ -247,7 +245,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             notification_configuration: None,
         };
 
-        let bucket = S3Bucket {
+        let bucket = Bucket {
             id: self.id.clone(),
             resource_id,
             r#type: "AWS::S3::Bucket".to_string(),
@@ -259,11 +257,11 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
             let bucket_resource = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
             let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
                 .resources(bucket_resource)
-                .principal(IamPrincipalBuilder::new().normal("*").build())
+                .principal(PrincipalBuilder::new().normal("*").build())
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]);
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-            let s3_policy = S3BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
+            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
             Some(s3_policy)
         } else {
             None
@@ -273,7 +271,7 @@ impl<T: S3BucketBuilderState> S3BucketBuilder<T> {
     }
 }
 
-impl S3BucketBuilder<WebsiteState> {
+impl BucketBuilder<WebsiteState> {
     pub fn error_document<I: Into<String>>(self, error: I) -> Self {
         Self {
             error_document: Some(error.into()),
@@ -296,7 +294,7 @@ impl S3BucketBuilder<WebsiteState> {
     }
 
     #[must_use]
-    pub fn build(self) -> (S3Bucket, S3BucketPolicy) {
+    pub fn build(self) -> (Bucket, BucketPolicy) {
         let (bucket, policy) = self.build_internal(true);
         (bucket, policy.expect("for website, bucket policy should always be present"))
     }

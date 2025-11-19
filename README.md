@@ -142,12 +142,8 @@ In theory, CloudFormation should propagate the tags to its resources, in practic
 ## TODO
 
 - note that I'm not adding all legacy fields
-- think about naming
-  - do you need S3/SQS/... prefixes when the import is from that packages
-    - probably not
-    - but wrappers do need to be clearer...
-  - maybe always do a build even when no more args are required
-  - can we find better/clearer names for the wrappers?
+  - think about naming
+    - can we find better/clearer names for the wrappers?
 - docs
   - add more to the example(s) directory and refer user to that and the tests in cloud-infra; add readme to examples with more info
   - add docs with example code to all builders

@@ -1,32 +1,32 @@
 use std::marker::PhantomData;
-use crate::dynamodb::DynamoDBTable;
-use crate::iam::{AssumeRolePolicyDocument, IamRole, IamRoleProperties, Policy, PolicyDocument, IamPrincipal, Statement, AWSPrincipal, ServicePrincipal};
+use crate::dynamodb::Table;
+use crate::iam::{AssumeRolePolicyDocument, Role, IamRoleProperties, Policy, PolicyDocument, Principal, Statement, AWSPrincipal, ServicePrincipal};
 use crate::intrinsic_functions::{get_arn, join};
-use crate::s3::dto::S3Bucket;
+use crate::s3::dto::Bucket;
 use crate::shared::Id;
-use crate::sqs::SqsQueue;
+use crate::sqs::Queue;
 use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::vec;
 
-pub trait IamPrincipalState {}
+pub trait PrincipalState {}
 
 pub struct StartState {}
-impl IamPrincipalState for StartState {}
+impl PrincipalState for StartState {}
 
 pub struct ChosenState {}
-impl IamPrincipalState for ChosenState {}
+impl PrincipalState for ChosenState {}
 
-pub struct IamPrincipalBuilder<T: IamPrincipalState> {
+pub struct PrincipalBuilder<T: PrincipalState> {
     phantom_data: PhantomData<T>,
     service: Option<String>,
     aws: Option<String>,
     normal: Option<String>
 }
 
-impl IamPrincipalBuilder<StartState> {
-    pub fn new() -> IamPrincipalBuilder<StartState> {
-        IamPrincipalBuilder {
+impl PrincipalBuilder<StartState> {
+    pub fn new() -> PrincipalBuilder<StartState> {
+        PrincipalBuilder {
             phantom_data: Default::default(),
             service: None,
             aws: None,
@@ -34,8 +34,8 @@ impl IamPrincipalBuilder<StartState> {
         }
     }
     
-    pub fn service<T: Into<String>>(self, service: T) -> IamPrincipalBuilder<ChosenState> {
-        IamPrincipalBuilder {
+    pub fn service<T: Into<String>>(self, service: T) -> PrincipalBuilder<ChosenState> {
+        PrincipalBuilder {
             phantom_data: Default::default(),
             service: Some(service.into()),
             aws: self.aws,
@@ -43,8 +43,8 @@ impl IamPrincipalBuilder<StartState> {
         }
     }
 
-    pub fn aws<T: Into<String>>(self, aws: T) -> IamPrincipalBuilder<ChosenState> {
-        IamPrincipalBuilder {
+    pub fn aws<T: Into<String>>(self, aws: T) -> PrincipalBuilder<ChosenState> {
+        PrincipalBuilder {
             phantom_data: Default::default(),
             aws: Some(aws.into()),
             service: self.service,
@@ -52,8 +52,8 @@ impl IamPrincipalBuilder<StartState> {
         }
     }
 
-    pub fn normal<T: Into<String>>(self, normal: T) -> IamPrincipalBuilder<ChosenState> {
-        IamPrincipalBuilder {
+    pub fn normal<T: Into<String>>(self, normal: T) -> PrincipalBuilder<ChosenState> {
+        PrincipalBuilder {
             phantom_data: Default::default(),
             normal: Some(normal.into()),
             service: self.service,
@@ -62,29 +62,29 @@ impl IamPrincipalBuilder<StartState> {
     }
 }
 
-impl IamPrincipalBuilder<ChosenState> {
-    pub fn build(self) -> IamPrincipal {
+impl PrincipalBuilder<ChosenState> {
+    pub fn build(self) -> Principal {
         if let Some(aws) = self.aws {
-            IamPrincipal::AWS(AWSPrincipal {
+            Principal::AWS(AWSPrincipal {
                 aws,
             })
         } else if let Some(service) = self.service {
-            IamPrincipal::Service(ServicePrincipal {
+            Principal::Service(ServicePrincipal {
                 service,
             })
         } else if let Some(normal) = self.normal {
-            IamPrincipal::Custom(normal)
+            Principal::Custom(normal)
         } else {
             unreachable!("can only reach build state when one of the above is present")
         }
     }
 }
 
-pub struct IamRoleBuilder {}
+pub struct RoleBuilder {}
 
-impl IamRoleBuilder {
-    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> IamRole {
-        IamRole {
+impl RoleBuilder {
+    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> Role {
+        Role {
             id: Id(id.to_string()),
             resource_id: resource_id.to_string(),
             potentially_missing_services: vec![],
@@ -93,8 +93,8 @@ impl IamRoleBuilder {
         }
     }
 
-    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> IamRole {
-        IamRole {
+    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> Role {
+        Role {
             id: Id(id.to_string()),
             resource_id: resource_id.to_string(),
             potentially_missing_services: potentially_missing,
@@ -104,16 +104,16 @@ impl IamRoleBuilder {
     }
 }
 
-pub struct IamRolePropertiesBuilder {
+pub struct RolePropertiesBuilder {
     assumed_role_policy_document: AssumeRolePolicyDocument,
     managed_policy_arns: Vec<Value>,
     policies: Option<Vec<Policy>>,
     role_name: Option<String>,
 }
 
-impl IamRolePropertiesBuilder {
-    pub fn new(assumed_role_policy_document: AssumeRolePolicyDocument, managed_policy_arns: Vec<Value>) -> IamRolePropertiesBuilder {
-        IamRolePropertiesBuilder {
+impl RolePropertiesBuilder {
+    pub fn new(assumed_role_policy_document: AssumeRolePolicyDocument, managed_policy_arns: Vec<Value>) -> RolePropertiesBuilder {
+        RolePropertiesBuilder {
             assumed_role_policy_document,
             managed_policy_arns,
             policies: None,
@@ -121,14 +121,14 @@ impl IamRolePropertiesBuilder {
         }
     }
 
-    pub fn policies(self, policies: Vec<Policy>) -> IamRolePropertiesBuilder {
+    pub fn policies(self, policies: Vec<Policy>) -> RolePropertiesBuilder {
         Self {
             policies: Some(policies),
             ..self
         }
     }
 
-    pub fn role_name<T: Into<String>>(self, role_name: T) -> IamRolePropertiesBuilder {
+    pub fn role_name<T: Into<String>>(self, role_name: T) -> RolePropertiesBuilder {
         Self {
             role_name: Some(role_name.into()),
             ..self
@@ -205,14 +205,13 @@ impl From<Effect> for String {
 }
 
 pub trait StatementState {}
-
 pub struct StatementStartState {}
 impl StatementState for StatementStartState {}
 
 pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,
-    principal: Option<IamPrincipal>,
+    principal: Option<Principal>,
     resource: Option<Vec<Value>>,
     condition: Option<Value>
 }
@@ -232,7 +231,7 @@ impl StatementBuilder {
         Self::internal_new(actions.into_iter().map(|a| a.0).collect(), effect)
     }
 
-    pub fn principal(self, principal: IamPrincipal) -> Self {
+    pub fn principal(self, principal: Principal) -> Self {
         Self {
             principal: Some(principal),
             ..self
@@ -287,10 +286,10 @@ impl CustomPermission {
 }
 
 pub enum Permission<'a> {
-    DynamoDBRead(&'a DynamoDBTable),
-    DynamoDBReadWrite(&'a DynamoDBTable),
-    SqsRead(&'a SqsQueue),
-    S3ReadWrite(&'a S3Bucket),
+    DynamoDBRead(&'a Table),
+    DynamoDBReadWrite(&'a Table),
+    SqsRead(&'a Queue),
+    S3ReadWrite(&'a Bucket),
     Custom(CustomPermission),
 }
 

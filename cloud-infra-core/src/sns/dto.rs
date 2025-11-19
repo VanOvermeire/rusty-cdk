@@ -4,7 +4,7 @@ use crate::intrinsic_functions::get_ref;
 use crate::shared::Id;
 
 #[derive(Debug, Serialize)]
-pub struct SnsTopic {
+pub struct Topic {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -12,10 +12,10 @@ pub struct SnsTopic {
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: SnsTopicProperties,
+    pub(crate) properties: TopicProperties,
 }
 
-impl SnsTopic {
+impl Topic {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
@@ -30,7 +30,7 @@ impl SnsTopic {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SnsTopicProperties {
+pub struct TopicProperties {
     #[serde(rename = "TopicName", skip_serializing_if = "Option::is_none")]
     pub(crate) topic_name: Option<String>,
     #[serde(rename = "FifoTopic", skip_serializing_if = "Option::is_none")]
@@ -42,7 +42,7 @@ pub struct SnsTopicProperties {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SnsSubscription {
+pub struct Subscription {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
@@ -55,7 +55,7 @@ pub struct SnsSubscription {
     pub(crate) properties: SnsSubscriptionProperties,
 }
 
-impl SnsSubscription {
+impl Subscription {
     pub fn get_id(&self) -> &Id {
         &self.id
     }

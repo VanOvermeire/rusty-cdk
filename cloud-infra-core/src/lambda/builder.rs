@@ -1,7 +1,7 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, IamRole, IamRoleBuilder, IamRolePropertiesBuilder, Permission, Policy, StatementBuilder, IamPrincipalBuilder, map_toml_dependencies_to_services, find_missing_services};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, Role, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, LambdaFunction, LambdaFunctionProperties, LambdaPermission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
-use crate::sqs::SqsQueue;
+use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
+use crate::sqs::Queue;
 use crate::stack::{Asset, Resource};
 use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
 use serde_json::Value;
@@ -74,25 +74,25 @@ pub enum Code {
     Zip(Zip)
 }
 
-pub trait LambdaFunctionBuilderState {}
+pub trait FunctionBuilderState {}
 
 pub struct StartState {}
-impl LambdaFunctionBuilderState for StartState {}
+impl FunctionBuilderState for StartState {}
 pub struct ZipState {}
-impl LambdaFunctionBuilderState for ZipState {}
+impl FunctionBuilderState for ZipState {}
 pub struct ZipStateWithHandler {}
-impl LambdaFunctionBuilderState for ZipStateWithHandler {}
+impl FunctionBuilderState for ZipStateWithHandler {}
 pub struct ZipStateWithHandlerAndRuntime {}
-impl LambdaFunctionBuilderState for ZipStateWithHandlerAndRuntime {}
+impl FunctionBuilderState for ZipStateWithHandlerAndRuntime {}
 pub struct EventSourceMappingState {}
-impl LambdaFunctionBuilderState for EventSourceMappingState {}
+impl FunctionBuilderState for EventSourceMappingState {}
 
 struct EventSourceMappingInfo {
     id: String,
     max_concurrency: Option<u16>,
 }
 
-pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
+pub struct FunctionBuilder<T: FunctionBuilderState> {
     state: PhantomData<T>,
     id: Id,
     architecture: Architecture,
@@ -110,15 +110,15 @@ pub struct LambdaFunctionBuilder<T: LambdaFunctionBuilderState> {
     reserved_concurrent_executions: Option<u32>,
 }
 
-impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
-    pub fn function_name(self, name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> LambdaFunctionBuilder<T> {
+impl<T: FunctionBuilderState> FunctionBuilder<T> {
+    pub fn function_name(self, name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> FunctionBuilder<T> {
         Self {
             function_name: Some(name.0),
             ..self
         }
     }
 
-    pub fn permissions(mut self, permission: Permission) -> LambdaFunctionBuilder<T> {
+    pub fn permissions(mut self, permission: IamPermission) -> FunctionBuilder<T> {
         if let Some(id) = permission.get_referenced_id() {
             self.referenced_ids.push(id.to_string());
         }
@@ -138,28 +138,28 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         }
     }
     
-    pub fn env_var(mut self, key: EnvVarKey, value: Value) -> LambdaFunctionBuilder<T> {
+    pub fn env_var(mut self, key: EnvVarKey, value: Value) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, value));
         Self {
             ..self
         }
     }
 
-    pub fn env_var_string<V: Into<String>>(mut self, key: EnvVarKey, value: V) -> LambdaFunctionBuilder<T> {
+    pub fn env_var_string<V: Into<String>>(mut self, key: EnvVarKey, value: V) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, Value::String(value.into())));
         Self {
             ..self
         }
     }
 
-    pub fn reserved_concurrent_executions(self, executions: u32) -> LambdaFunctionBuilder<T> {
+    pub fn reserved_concurrent_executions(self, executions: u32) -> FunctionBuilder<T> {
         Self {
             reserved_concurrent_executions: Some(executions),
             ..self
         }
     }
     
-    fn build_internal(mut self) -> (LambdaFunction, IamRole, LogGroup, Option<EventSourceMapping>) {
+    fn build_internal(mut self) -> (Function, Role, LogGroup, Option<EventSourceMapping>) {
         let function_resource_id = Resource::generate_id("LambdaFunction");
         
         let code = match self.code.expect("code to be present, enforced by builder") {
@@ -202,17 +202,17 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
         };
         
         let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
-            .principal(IamPrincipalBuilder::new().service("lambda.amazonaws.com").build())
+            .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
             .build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let potentially_missing = find_missing_services(&self.aws_services_in_dependencies, &self.additional_policies);
-        let props = IamRolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
+        let props = RolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
         
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
-        let role = IamRoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing);
+        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing);
         self.referenced_ids.push(role_resource_id);
 
         let environment = if self.env_vars.is_empty() {
@@ -249,7 +249,7 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
             logging_info,
         };
 
-        let function = LambdaFunction {
+        let function = Function {
             id: self.id,
             resource_id: function_resource_id,
             referenced_ids: self.referenced_ids,
@@ -267,9 +267,9 @@ impl<T: LambdaFunctionBuilderState> LambdaFunctionBuilder<T> {
     }
 }
 
-impl LambdaFunctionBuilder<StartState> {
-    pub fn new(id: &str, architecture: Architecture, memory: Memory, timeout: Timeout) -> LambdaFunctionBuilder<StartState> {
-        LambdaFunctionBuilder {
+impl FunctionBuilder<StartState> {
+    pub fn new(id: &str, architecture: Architecture, memory: Memory, timeout: Timeout) -> FunctionBuilder<StartState> {
+        FunctionBuilder {
             state: Default::default(),
             id: Id(id.to_string()),
             architecture,
@@ -288,8 +288,8 @@ impl LambdaFunctionBuilder<StartState> {
         }
     }
 
-    pub fn zip(self, zip: Zip) -> LambdaFunctionBuilder<ZipState> {
-        LambdaFunctionBuilder {
+    pub fn zip(self, zip: Zip) -> FunctionBuilder<ZipState> {
+        FunctionBuilder {
             code: Some(Code::Zip(zip)),
             state: Default::default(),
             id: self.id,
@@ -309,9 +309,9 @@ impl LambdaFunctionBuilder<StartState> {
     }
 }
 
-impl LambdaFunctionBuilder<ZipState> {
-    pub fn handler<T: Into<String>>(self, handler: T) -> LambdaFunctionBuilder<ZipStateWithHandler> {
-        LambdaFunctionBuilder {
+impl FunctionBuilder<ZipState> {
+    pub fn handler<T: Into<String>>(self, handler: T) -> FunctionBuilder<ZipStateWithHandler> {
+        FunctionBuilder {
             id: self.id,
             handler: Some(handler.into()),
             state: Default::default(),
@@ -331,9 +331,9 @@ impl LambdaFunctionBuilder<ZipState> {
     }
 }
 
-impl LambdaFunctionBuilder<ZipStateWithHandler> {
-    pub fn runtime(self, runtime: Runtime) -> LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-        LambdaFunctionBuilder {
+impl FunctionBuilder<ZipStateWithHandler> {
+    pub fn runtime(self, runtime: Runtime) -> FunctionBuilder<ZipStateWithHandlerAndRuntime> {
+        FunctionBuilder {
             id: self.id,
             runtime: Some(runtime),
             state: Default::default(),
@@ -353,9 +353,9 @@ impl LambdaFunctionBuilder<ZipStateWithHandler> {
     }
 }
 
-impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn sqs_event_source_mapping(mut self, sqs_queue: &SqsQueue, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> LambdaFunctionBuilder<EventSourceMappingState>  {
-        self.additional_policies.push(Permission::SqsRead(sqs_queue).into_policy());
+impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
+    pub fn sqs_event_source_mapping(mut self, sqs_queue: &Queue, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
+        self.additional_policies.push(IamPermission::SqsRead(sqs_queue).into_policy());
         self.referenced_ids.push(sqs_queue.get_resource_id().to_string());
         
         let mapping = EventSourceMappingInfo {
@@ -363,7 +363,7 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
             max_concurrency: max_concurrency.map(|c| c.0),
         };
         
-        LambdaFunctionBuilder {
+        FunctionBuilder {
             id: self.id,
             sqs_event_source_mapping: Some(mapping),
             state: Default::default(),
@@ -383,21 +383,21 @@ impl LambdaFunctionBuilder<ZipStateWithHandlerAndRuntime> {
     }
 
     #[must_use]
-    pub fn build(self) -> (LambdaFunction, IamRole, LogGroup) {
+    pub fn build(self) -> (Function, Role, LogGroup) {
         let (lambda, iam_role, log_group, _) = self.build_internal();
         (lambda, iam_role, log_group)
     }
 }
 
-impl LambdaFunctionBuilder<EventSourceMappingState> {
+impl FunctionBuilder<EventSourceMappingState> {
     #[must_use]
-    pub fn build(self) -> (LambdaFunction, IamRole, LogGroup, EventSourceMapping) {
+    pub fn build(self) -> (Function, Role, LogGroup, EventSourceMapping) {
         let (lambda, iam_role, log_group, mapping) = self.build_internal();
         (lambda, iam_role, log_group, mapping.expect("should be `Some` because we are in the event source mapping state"))
     }
 }
 
-pub struct LambdaPermissionBuilder {
+pub struct PermissionBuilder {
     id: Id,
     action: String, // TODO should start with 'lambda:' => macro
     function_name: Value,
@@ -406,7 +406,7 @@ pub struct LambdaPermissionBuilder {
     referenced_ids: Vec<String>,
 }
 
-impl LambdaPermissionBuilder {
+impl PermissionBuilder {
     pub fn new<T: Into<String>, R: Into<String>>(id: &str, action: T, function_name: Value, principal: R) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -432,7 +432,7 @@ impl LambdaPermissionBuilder {
         }
     }
 
-    pub fn build(self) -> LambdaPermission {
+    pub fn build(self) -> Permission {
         let permission_resource_id = Resource::generate_id("LambdaPermission");
         let properties = LambdaPermissionProperties {
             action: self.action,
@@ -441,7 +441,7 @@ impl LambdaPermissionBuilder {
             source_arn: self.source_arn,
         };
 
-        LambdaPermission {
+        Permission {
             id: self.id,
             resource_id: permission_resource_id,
             referenced_ids: self.referenced_ids,
