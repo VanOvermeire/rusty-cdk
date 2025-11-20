@@ -8,7 +8,7 @@ use cloud_infra_core::secretsmanager::builder::{GenerateSecretStringBuilder, Sec
 use cloud_infra_core::shared::http::HttpMethod;
 use cloud_infra_core::sns::builder::{FifoThroughputScope, TopicBuilder, SubscriptionType};
 use cloud_infra_core::sqs::QueueBuilder;
-use cloud_infra_core::stack::{Stack, StackBuilder};
+use cloud_infra_core::stack::{StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
@@ -120,7 +120,7 @@ fn lambda() {
 #[test]
 fn sns() {
     let mut stack_builder = StackBuilder::new();
-    let sns = TopicBuilder::new("topic")
+    TopicBuilder::new("topic")
         .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
         .fifo()
         .fifo_throughput_scope(FifoThroughputScope::Topic)
@@ -141,7 +141,7 @@ fn sns() {
 #[test]
 fn sqs() {
     let mut stack_builder = StackBuilder::new();
-    let sqs = QueueBuilder::new("queue")
+    QueueBuilder::new("queue")
         .fifo_queue()
         .content_based_deduplication(true)
         .delay_seconds(delay_seconds!(30))
@@ -167,7 +167,7 @@ fn lambda_with_sns_subscription() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, _role, _log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
@@ -245,12 +245,12 @@ fn lambda_with_api_gateway() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
 
-    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    let (fun, _role, _log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
-    let (api, stage, routes) = ApiGatewayV2Builder::new("AGW")
+    ApiGatewayV2Builder::new("AGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);
@@ -338,7 +338,7 @@ fn lambda_with_dynamodb_and_sqs() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     let bucket = get_bucket();
-    let (fun, role, log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+    FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
         .permissions(Permission::DynamoDBRead(&table))
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")

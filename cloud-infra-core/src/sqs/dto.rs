@@ -8,7 +8,7 @@ ref_struct!(QueueRef);
 #[derive(Debug, Serialize)]
 pub struct Queue {
     #[serde(skip)]
-    pub(crate) id: Id, // TODO if stack builder works internally, do we still have to hide this in the dto?
+    pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]

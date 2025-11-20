@@ -8,7 +8,6 @@ use crate::secretsmanager::dto::Secret;
 use crate::shared::Id;
 use crate::sns::dto::{Subscription, Topic};
 use crate::sqs::Queue;
-use crate::stack::StackBuilder;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -244,7 +243,7 @@ mod tests {
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id() {
         let mut stack_builder = StackBuilder::new();
-        let topic = TopicBuilder::new("topic").build(&mut stack_builder);
+        TopicBuilder::new("topic").build(&mut stack_builder);
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
         let mut stack = stack_builder.build().unwrap();
@@ -260,8 +259,8 @@ mod tests {
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id_keeping_new_queue_id() {
         let mut stack_builder = StackBuilder::new();
-        let topic = TopicBuilder::new("topic").build(&mut stack_builder);
-        let sqs = QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
+        TopicBuilder::new("topic").build(&mut stack_builder);
+        QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
         let mut stack = stack_builder.build().unwrap();

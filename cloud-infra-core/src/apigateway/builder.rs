@@ -1,6 +1,6 @@
-use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2IntegrationRef, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2RouteRef, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
+use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{FunctionRef, PermissionBuilder, PermissionRef};
+use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::http::HttpMethod;
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
@@ -80,22 +80,20 @@ impl ApiGatewayV2Builder {
         Self { ..self }
     }
 
-    // TODO check whether we need to export all these refs
     pub fn build(
         self, stack_builder: &mut StackBuilder
     ) -> (
         ApiGatewayV2ApiRef,
         ApiGatewayV2StageRef,
-        Vec<(ApiGatewayV2RouteRef, ApiGatewayV2IntegrationRef, PermissionRef)>,
     ) {
         let api_resource_id = Resource::generate_id("HttpApiGateway");
         let stage_resource_id = Resource::generate_id("HttpApiStage");
         let stage_id = Id::generate_id(&self.id, "Stage");
 
-        let routes: Vec<_> = self
+        self
             .route_info
             .into_iter()
-            .map(|info| {
+            .for_each(|info| {
                 let route_id = Id::combine_with_resource_id(&self.id, &info.lambda_id);
                 let route_permission_id = Id::generate_id(&self.id, "Permission");
                 let route_integration_id = Id::generate_id(&self.id, "Integration");
@@ -103,7 +101,7 @@ impl ApiGatewayV2Builder {
                 let integration_resource_id = Resource::generate_id("HttpApiIntegration");
                 let route_resource_id = Resource::generate_id("HttpApiRoute");
 
-                let permission = PermissionBuilder::new(
+                PermissionBuilder::new(
                     &route_permission_id,
                     "lambda:InvokeFunction".to_string(),
                     get_arn(&info.resource_id),
@@ -165,14 +163,7 @@ impl ApiGatewayV2Builder {
                     },
                 };
                 stack_builder.add_resource(route);
-
-                let integration = ApiGatewayV2IntegrationRef::new(integration_resource_id);
-                let route = ApiGatewayV2RouteRef::new(route_resource_id);
-
-                (route, integration, permission)
-            })
-            .collect();
-
+            });
         
         stack_builder.add_resource(ApiGatewayV2Stage {
             id: stage_id,
@@ -202,7 +193,7 @@ impl ApiGatewayV2Builder {
         let stage = ApiGatewayV2StageRef::new(stage_resource_id);
         let api = ApiGatewayV2ApiRef::new(api_resource_id);
 
-        (api, stage, routes)
+        (api, stage)
     }
 }
 
