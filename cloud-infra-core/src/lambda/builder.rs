@@ -106,7 +106,6 @@ pub struct FunctionBuilder<T: FunctionBuilderState> {
     env_vars: Vec<(String, Value)>,
     function_name: Option<String>,
     sqs_event_source_mapping: Option<EventSourceMappingInfo>,
-    referenced_ids: Vec<String>, // TODO rename everywhere to referenced_resource_ids?
     reserved_concurrent_executions: Option<u32>,
 }
 
@@ -119,9 +118,6 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
     }
 
     pub fn permissions(mut self, permission: IamPermission) -> FunctionBuilder<T> {
-        if let Some(id) = permission.get_referenced_id() {
-            self.referenced_ids.push(id.to_string());
-        }
         self.additional_policies.push(permission.into_policy());
         Self {
             ..self
@@ -195,7 +191,6 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
                     scaling_config: mapping.max_concurrency.map(|c| ScalingConfig { max_concurrency: c }),
                 },
             };
-            self.referenced_ids.push(event_resource_id);
             stack_builder.add_resource_alt(event_source_mapping);
         };
         
@@ -211,7 +206,6 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
         let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing, stack_builder);
-        self.referenced_ids.push(role_resource_id);
 
         let environment = if self.env_vars.is_empty() {
             None
@@ -250,7 +244,6 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         stack_builder.add_resource_alt(Function {
             id: self.id.clone(),
             resource_id: function_resource_id.clone(),
-            referenced_ids: self.referenced_ids,
             asset: code.0,
             r#type: "AWS::Lambda::Function".to_string(),
             properties,
@@ -282,7 +275,6 @@ impl FunctionBuilder<StartState> {
             env_vars: vec![],
             function_name: None,
             sqs_event_source_mapping: None,
-            referenced_ids: vec![],
             reserved_concurrent_executions: None,
         }
     }
@@ -302,7 +294,6 @@ impl FunctionBuilder<StartState> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
-            referenced_ids: self.referenced_ids,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
@@ -324,7 +315,6 @@ impl FunctionBuilder<ZipState> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
-            referenced_ids: self.referenced_ids,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
@@ -346,7 +336,6 @@ impl FunctionBuilder<ZipStateWithHandler> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
-            referenced_ids: self.referenced_ids,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
@@ -355,7 +344,6 @@ impl FunctionBuilder<ZipStateWithHandler> {
 impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
     pub fn sqs_event_source_mapping(mut self, sqs_queue: &QueueRef, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
         self.additional_policies.push(IamPermission::SqsRead(sqs_queue).into_policy());
-        self.referenced_ids.push(sqs_queue.get_resource_id().to_string());
         
         let mapping = EventSourceMappingInfo {
             id: sqs_queue.get_resource_id().to_string(),
@@ -376,7 +364,6 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
             aws_services_in_dependencies: self.aws_services_in_dependencies,
             env_vars: self.env_vars,
             function_name: self.function_name,
-            referenced_ids: self.referenced_ids,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
         }
     }
@@ -398,7 +385,6 @@ pub struct PermissionBuilder {
     function_name: Value,
     principal: String,
     source_arn: Option<Value>,
-    referenced_ids: Vec<String>,
 }
 
 impl PermissionBuilder {
@@ -409,20 +395,12 @@ impl PermissionBuilder {
             function_name,
             principal: principal.into(),
             source_arn: None,
-            referenced_ids: vec![],
         }
     }
 
     pub fn source_arn(self, arn: Value) -> Self {
         Self {
             source_arn: Some(arn),
-            ..self
-        }
-    }
-    
-    pub(crate) fn referenced_ids(self, referenced_ids: Vec<String>) -> Self {
-        Self {
-            referenced_ids,
             ..self
         }
     }
@@ -439,7 +417,6 @@ impl PermissionBuilder {
         stack_builder.add_resource_alt(Permission {
             id: self.id,
             resource_id: permission_resource_id.clone(),
-            referenced_ids: self.referenced_ids,
             r#type: "AWS::Lambda::Permission".to_string(),
             properties,
         });

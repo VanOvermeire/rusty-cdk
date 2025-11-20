@@ -43,8 +43,6 @@ pub struct Function {
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(skip)]
-    pub(crate) referenced_ids: Vec<String>,
-    #[serde(skip)]
     pub(crate) asset: Asset,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
@@ -161,8 +159,6 @@ pub struct Permission {
     pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
-    #[serde(skip)]
-    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]

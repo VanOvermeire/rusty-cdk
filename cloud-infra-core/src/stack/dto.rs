@@ -182,32 +182,6 @@ impl Resource {
         }
     }
 
-    pub fn get_refenced_ids(&self) -> Vec<&str> {
-        match self {
-            // TODO remove?
-            // TODO check resources (except when references are impossible)
-            Resource::Function(_) => vec![],
-            Resource::Subscription(_) => vec![],
-            Resource::Permission(_) => vec![],
-            Resource::ApiGatewayV2Route(_) => vec![],
-            Resource::ApiGatewayV2Integration(_) => vec![],
-            Resource::BucketPolicy(_) => vec![],
-            Resource::Table(_) => vec![],
-            Resource::Queue(_) => vec![],
-            Resource::EventSourceMapping(_) => vec![],
-            Resource::Role(_) => vec![],
-            Resource::LogGroup(_) => vec![],
-            Resource::Topic(_) => vec![],
-            Resource::ApiGatewayV2Api(_) => vec![],
-            Resource::ApiGatewayV2Stage(_) => vec![],
-            Resource::Bucket(_) => vec![],
-            Resource::Secret(_) => vec![],
-            Resource::Distribution(_) => vec![],
-            Resource::CachePolicy(_) => vec![],
-            Resource::OriginAccessControl(_) => vec![],
-        }
-    }
-
     pub(crate) fn generate_id(resource_name: &str) -> String {
         let mut rng = rand::rng();
         let random_suffix: u32 = rng.random();

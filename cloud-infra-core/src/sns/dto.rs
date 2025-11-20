@@ -45,8 +45,6 @@ pub struct Subscription {
     pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
-    #[serde(skip)]
-    pub(crate) referenced_ids: Vec<String>,
     #[serde(rename = "Type")]
     pub(crate) r#type: String,
     #[serde(rename = "Properties")]
@@ -60,10 +58,6 @@ impl Subscription {
     
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-
-    pub fn get_referenced_ids(&self) -> Vec<&str> {
-        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 

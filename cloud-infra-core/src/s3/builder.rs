@@ -22,7 +22,6 @@ pub struct BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
     policy_document: PolicyDocument,
-    referenced_ids: Vec<String>,
 }
 
 impl BucketPolicyBuilder {
@@ -30,7 +29,6 @@ impl BucketPolicyBuilder {
         Self {
             id: Id(id.to_string()),
             bucket_name: bucket.get_ref(),
-            referenced_ids: vec![bucket.get_resource_id().to_string()],
             policy_document,
         }
     }
@@ -46,7 +44,6 @@ impl BucketPolicyBuilder {
         let policy = BucketPolicy {
             id: self.id,
             resource_id: resource_id.to_string(),
-            referenced_ids: self.referenced_ids,
             r#type: "AWS::S3::BucketPolicy".to_string(),
             properties: S3BucketPolicyProperties {
                 bucket_name: self.bucket_name,

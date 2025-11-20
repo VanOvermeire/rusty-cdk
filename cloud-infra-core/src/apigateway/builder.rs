@@ -128,7 +128,6 @@ impl ApiGatewayV2Builder {
                 let integration = ApiGatewayV2Integration {
                     id: route_integration_id,
                     resource_id: integration_resource_id.clone(),
-                    referenced_ids: vec![api_resource_id.clone()],
                     r#type: "AWS::ApiGatewayV2::Integration".to_string(),
                     properties: ApiGatewayV2IntegrationProperties {
                         api_id: get_ref(&api_resource_id),
@@ -155,7 +154,6 @@ impl ApiGatewayV2Builder {
                 let route = ApiGatewayV2Route {
                     id: route_id,
                     resource_id: route_resource_id.clone(),
-                    referenced_ids: vec![api_resource_id.clone(), integration_resource_id.clone()],
                     r#type: "AWS::ApiGatewayV2::Route".to_string(),
                     properties: ApiGatewayV2RouteProperties {
                         api_id: get_ref(&api_resource_id),

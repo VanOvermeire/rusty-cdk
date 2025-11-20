@@ -365,7 +365,6 @@ impl OriginState for OriginS3OriginState {}
 pub struct OriginBuilder<'a, T: OriginState> {
     phantom_data: PhantomData<T>,
     id: String,
-    referenced_ids: Vec<String>,
     bucket: Option<&'a BucketRef>,
     domain_name: Option<Value>,
     connection_attempts: Option<u16>,
@@ -384,7 +383,6 @@ impl OriginBuilder<'_, OriginStartState> {
         Self {
             phantom_data: Default::default(),
             id: origin_id.to_string(),
-            referenced_ids: vec![],
             bucket: None,
             domain_name: None,
             connection_attempts: None,
@@ -404,8 +402,6 @@ impl OriginBuilder<'_, OriginStartState> {
         oac: &OriginAccessControlRef,
         origin_read_timeout: Option<S3OriginReadTimeout>,
     ) -> OriginBuilder<'a, OriginS3OriginState> {
-        self.referenced_ids.push(bucket.get_resource_id().to_string());
-
         let s3origin_config = S3OriginConfig {
             origin_read_timeout: origin_read_timeout.map(|v| v.0),
         };
@@ -415,7 +411,6 @@ impl OriginBuilder<'_, OriginStartState> {
         OriginBuilder {
             phantom_data: Default::default(),
             id: self.id.to_string(),
-            referenced_ids: self.referenced_ids,
             bucket: Some(bucket),
             domain_name: Some(domain),
             connection_attempts: self.connection_attempts,
@@ -456,7 +451,6 @@ impl<T: OriginState> OriginBuilder<'_, T> {
     fn build_internal(self) -> Origin {
         Origin {
             id: self.id,
-            referenced_ids: self.referenced_ids,
             s3_bucket_policy: None,
             domain_name: self.domain_name.expect("domain name should be present for cloudfront distribution"),
             connection_attempts: self.connection_attempts,

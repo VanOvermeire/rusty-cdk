@@ -271,8 +271,6 @@ pub struct Origin {
     #[serde(rename = "Id")]
     pub(crate) id: String,
     #[serde(skip)]
-    pub(crate) referenced_ids: Vec<String>, // TODO pass on to the using resource
-    #[serde(skip)]
     pub(crate) s3_bucket_policy: Option<BucketPolicy>,
     #[serde(rename = "DomainName")]
     pub(crate) domain_name: Value,

@@ -131,14 +131,12 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             let subscription_resource_id = Resource::generate_id("SnsSubscription");
             
             PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
-                .referenced_ids(vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()])
                 .source_arn(get_ref(&topic_resource_id))
                 .build(stack_builder);
 
             let subscription = Subscription {
                 id: subscription_id,
                 resource_id: subscription_resource_id,
-                referenced_ids: vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()],
                 r#type: "AWS::SNS::Subscription".to_string(),
                 properties: SnsSubscriptionProperties {
                     protocol: "lambda".to_string(),
