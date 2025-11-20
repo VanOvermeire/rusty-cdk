@@ -3,13 +3,14 @@ use serde_json::Value;
 use crate::secretsmanager::dto::{GenerateSecretString, Secret, SecretProperties, SecretRef};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
 use crate::wrappers::StringForSecret;
 
-pub trait SecretBuilderState {}
-pub struct StartState {}
-impl SecretBuilderState for StartState {}
-pub struct SelectedSecretTypeState {}
-impl SecretBuilderState for SelectedSecretTypeState {}
+type_state!(
+    SecretBuilderState,
+    StartState,
+    SelectedSecretTypeState,
+);
 
 pub struct SecretBuilder<T: SecretBuilderState> {
     phantom_data: PhantomData<T>,
@@ -89,14 +90,12 @@ impl SecretBuilder<SelectedSecretTypeState> {
     }
 }
 
-// TODO could write a macro for the state stuff
-pub trait GenerateSecretStringBuilderState {}
-pub struct GenerateStringStartState {}
-impl GenerateSecretStringBuilderState for GenerateStringStartState {}
-pub struct GenerateStringKeyState {}
-impl GenerateSecretStringBuilderState for GenerateStringKeyState {}
-pub struct SecretStringTemplateState {}
-impl GenerateSecretStringBuilderState for SecretStringTemplateState {}
+type_state!(
+    GenerateSecretStringBuilderState,
+    GenerateStringStartState,
+    GenerateStringKeyState,
+    SecretStringTemplateState,
+);
 
 pub struct GenerateSecretStringBuilder<T: GenerateSecretStringBuilderState> {
     phantom_data: PhantomData<T>,

@@ -4,6 +4,7 @@ use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
 use crate::sns::dto::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
 use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 
 const FIFO_SUFFIX: &str = ".fifo";
@@ -26,15 +27,13 @@ impl From<FifoThroughputScope> for String {
     }
 }
 
-pub trait TopicBuilderState {}
-pub struct StartState {}
-impl TopicBuilderState for StartState {}
-pub struct StandardStateWithSubscriptions {}
-impl TopicBuilderState for StandardStateWithSubscriptions {}
-pub struct FifoState {}
-impl TopicBuilderState for FifoState {}
-pub struct FifoStateWithSubscriptions {}
-impl TopicBuilderState for FifoStateWithSubscriptions {}
+type_state!(
+    TopicBuilderState,
+    StartState,
+    StandardStateWithSubscriptions,
+    FifoState,
+    FifoStateWithSubscriptions,
+);
 
 pub struct TopicBuilder<T: TopicBuilderState> {
     state: PhantomData<T>,

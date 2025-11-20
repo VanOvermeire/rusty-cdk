@@ -8,6 +8,7 @@ use crate::wrappers::{
 };
 use serde_json::Value;
 use std::marker::PhantomData;
+use crate::type_state;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -39,13 +40,12 @@ impl From<FifoThroughputLimit> for String {
     }
 }
 
-pub trait QueueBuilderState {}
-pub struct StartState {}
-impl QueueBuilderState for StartState {}
-pub struct StandardState {}
-impl QueueBuilderState for StandardState {}
-pub struct FifoState {}
-impl QueueBuilderState for FifoState {}
+type_state!(
+    QueueBuilderState,
+    StartState,
+    StandardState,
+    FifoState,
+);
 
 pub struct QueueBuilder<T: QueueBuilderState> {
     state: PhantomData<T>,

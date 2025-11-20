@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 use std::vec;
 use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
 use crate::shared::Id;
+use crate::type_state;
 
 pub enum Runtime {
     NodeJs22,
@@ -74,18 +75,14 @@ pub enum Code {
     Zip(Zip)
 }
 
-pub trait FunctionBuilderState {}
-
-pub struct StartState {}
-impl FunctionBuilderState for StartState {}
-pub struct ZipState {}
-impl FunctionBuilderState for ZipState {}
-pub struct ZipStateWithHandler {}
-impl FunctionBuilderState for ZipStateWithHandler {}
-pub struct ZipStateWithHandlerAndRuntime {}
-impl FunctionBuilderState for ZipStateWithHandlerAndRuntime {}
-pub struct EventSourceMappingState {}
-impl FunctionBuilderState for EventSourceMappingState {}
+type_state!(
+    FunctionBuilderState,
+    StartState,
+    ZipState,
+    ZipStateWithHandler,
+    ZipStateWithHandlerAndRuntime,
+    EventSourceMappingState,
+);
 
 struct EventSourceMappingInfo {
     id: String,

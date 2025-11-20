@@ -4,6 +4,7 @@ use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 use std::marker::PhantomData;
+use crate::type_state;
 
 #[derive(PartialEq)]
 pub enum BillingMode {
@@ -47,20 +48,14 @@ impl Key {
     }
 }
 
-pub trait TableBuilderState {}
-
-pub struct StartState {}
-impl TableBuilderState for StartState {}
-
-pub struct ProvisionedStateStart {}
-impl TableBuilderState for ProvisionedStateStart {}
-pub struct ProvisionedStateReadSet {}
-impl TableBuilderState for ProvisionedStateReadSet {}
-pub struct ProvisionedStateWriteSet {}
-impl TableBuilderState for ProvisionedStateWriteSet {}
-
-pub struct PayPerRequestState {}
-impl TableBuilderState for PayPerRequestState {}
+type_state!(
+    TableBuilderState,
+    StartState,
+    ProvisionedStateStart,
+    ProvisionedStateReadSet,
+    ProvisionedStateWriteSet,
+    PayPerRequestState,
+);
 
 pub struct TableBuilder<T: TableBuilderState> {
     state: PhantomData<T>,

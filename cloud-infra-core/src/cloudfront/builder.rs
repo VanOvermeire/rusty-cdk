@@ -15,6 +15,7 @@ use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
+use crate::type_state;
 
 pub enum SslSupportedMethod {
     SniOnly,
@@ -58,16 +59,12 @@ impl From<MinProtocolVersion> for String {
     }
 }
 
-pub trait ViewerCertificateState {}
-
-pub struct ViewerCertificateStateStartState {}
-impl ViewerCertificateState for ViewerCertificateStateStartState {}
-
-pub struct ViewerCertificateStateEndState {}
-impl ViewerCertificateState for ViewerCertificateStateEndState {}
-
-pub struct ViewerCertificateStateAcmOrIamState {}
-impl ViewerCertificateState for ViewerCertificateStateAcmOrIamState {}
+type_state!(
+    ViewerCertificateState,
+    ViewerCertificateStateStartState,
+    ViewerCertificateStateAcmOrIamState,
+    ViewerCertificateStateEndState,
+);
 
 pub struct ViewerCertificateBuilder<T: ViewerCertificateState> {
     phantom_data: PhantomData<T>,
@@ -358,13 +355,11 @@ impl From<PriceClass> for String {
     }
 }
 
-pub trait OriginState {}
-
-pub struct OriginStartState {}
-impl OriginState for OriginStartState {}
-
-pub struct OriginS3OriginState {}
-impl OriginState for OriginS3OriginState {}
+type_state!(
+    OriginState,
+    OriginStartState,
+    OriginS3OriginState,
+);
 
 // TODO other origins
 pub struct OriginBuilder<'a, T: OriginState> {
@@ -612,11 +607,11 @@ impl DefaultCacheBehaviorBuilder {
     }
 }
 
-pub trait DistributionState {}
-pub struct DistributionStartState {}
-impl DistributionState for DistributionStartState {}
-pub struct DistributionOriginState {}
-impl DistributionState for DistributionOriginState {}
+type_state!(
+    DistributionState,
+    DistributionStartState,
+    DistributionOriginState,
+);
 
 pub enum SigningBehavior {
     Never,

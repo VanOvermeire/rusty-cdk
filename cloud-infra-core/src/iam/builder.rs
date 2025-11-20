@@ -9,14 +9,13 @@ use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
+use crate::type_state;
 
-pub trait PrincipalState {}
-
-pub struct StartState {}
-impl PrincipalState for StartState {}
-
-pub struct ChosenState {}
-impl PrincipalState for ChosenState {}
+type_state!(
+    PrincipalState,
+    StartState,
+    ChosenState,
+);
 
 pub struct PrincipalBuilder<T: PrincipalState> {
     phantom_data: PhantomData<T>,

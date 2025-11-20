@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
 pub mod http;
-pub mod ref_structs;
+pub mod macros;
 
 #[derive(Debug, Clone)]
 pub struct Id(pub String);

@@ -30,3 +30,12 @@ macro_rules! ref_struct {
         }
     };
 }
+
+#[macro_export]
+macro_rules! type_state {
+    ($state_trait:ident,$($structs:ident,)*) => {
+        pub trait $state_trait {}
+        $(pub struct $structs {})*
+        $(impl $state_trait for $structs {})*
+    };
+}
