@@ -1,9 +1,14 @@
-use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
+use crate::cloudfront::{
+    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, DefaultCacheBehavior,
+    Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl,
+    OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader,
+    ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig,
+};
 use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
 use crate::s3::builder::BucketPolicyBuilder;
-use crate::s3::dto::{BucketRef};
+use crate::s3::dto::BucketRef;
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
@@ -397,7 +402,7 @@ impl OriginBuilder<'_, OriginStartState> {
     }
 
     pub fn s3_origin<'a>(
-        mut self,
+        self,
         bucket: &'a BucketRef,
         oac: &OriginAccessControlRef,
         origin_read_timeout: Option<S3OriginReadTimeout>,
@@ -476,7 +481,7 @@ impl OriginBuilder<'_, OriginS3OriginState> {
                 service: "cloudfront.amazonaws.com".to_string(),
             }))
             .build();
-        let doc = PolicyDocumentBuilder::new(vec![statement]);
+        let doc = PolicyDocumentBuilder::new(vec![statement]).build();
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);
         let (_, s3_policy) = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).raw_build();
 
@@ -787,7 +792,6 @@ impl DistributionBuilder<DistributionOriginState> {
                         "AWS:SourceArn": source_arn_value
                     }
                 });
-                // TODO use add_condition_to_statements for this
                 policy
                     .properties
                     .policy_document

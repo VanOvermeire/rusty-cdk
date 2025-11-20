@@ -1,4 +1,3 @@
-use crate::intrinsic_functions::{get_att};
 use crate::s3::dto::BucketPolicy;
 use crate::shared::Id;
 use serde::Serialize;
@@ -26,10 +25,6 @@ impl OriginAccessControl {
 
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-
-    pub fn get_att(&self, att: &str) -> Value {
-        get_att(self.get_resource_id(), att)
     }
 }
 
@@ -72,10 +67,6 @@ impl CachePolicy {
 
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-
-    pub fn get_att_id(&self) -> Value {
-        get_att(self.get_resource_id(), "Id")
     }
 }
 

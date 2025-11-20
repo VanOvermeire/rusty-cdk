@@ -645,7 +645,7 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
 
     // replace with if let Some
     if first.is_some() && second.is_some() && first.unwrap() > second.unwrap() {
-        return Error::new(Span::call_site(), format!("first number in `lifecycle_object_sizes` should be smaller than second"))
+        return Error::new(Span::call_site(), format!("first number ({}) in `lifecycle_object_sizes` should be smaller than second ({})", first.unwrap(), second.unwrap()))
             .into_compile_error()
             .into();
     }

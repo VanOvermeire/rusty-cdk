@@ -155,7 +155,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
     
-    fn build_internal(mut self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
+    fn build_internal(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         let function_resource_id = Resource::generate_id("LambdaFunction");
         
         let code = match self.code.expect("code to be present, enforced by builder") {
@@ -205,7 +205,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
-        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing, stack_builder);
+        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing).build(stack_builder);
 
         let environment = if self.env_vars.is_empty() {
             None

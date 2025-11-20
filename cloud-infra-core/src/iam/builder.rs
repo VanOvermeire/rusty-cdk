@@ -1,14 +1,14 @@
-use std::marker::PhantomData;
-use crate::dynamodb::{Table, TableRef};
-use crate::iam::{AssumeRolePolicyDocument, Role, IamRoleProperties, Policy, PolicyDocument, Principal, Statement, AWSPrincipal, ServicePrincipal, RoleRef};
+use crate::dynamodb::TableRef;
+use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, ServicePrincipal, Statement};
 use crate::intrinsic_functions::{get_arn, join};
-use crate::s3::dto::{Bucket, BucketRef};
+use crate::s3::dto::BucketRef;
 use crate::shared::Id;
-use crate::sqs::{Queue, QueueRef};
+use crate::sqs::QueueRef;
+use crate::stack::StackBuilder;
 use crate::wrappers::IamAction;
 use serde_json::Value;
+use std::marker::PhantomData;
 use std::vec;
-use crate::stack::StackBuilder;
 
 pub trait PrincipalState {}
 
@@ -81,23 +81,36 @@ impl PrincipalBuilder<ChosenState> {
     }
 }
 
-pub struct RoleBuilder {}
+pub struct RoleBuilder {
+    id: Id,
+    resource_id: String,
+    properties: IamRoleProperties,
+    potentially_missing: Vec<String>
+}
 
-// TODO should have a build method
 impl RoleBuilder {
-    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties, stack_builder: &mut StackBuilder) -> RoleRef {
-        Self::new_with_missing_info(id, resource_id, properties, vec![], stack_builder)
+    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> RoleBuilder {
+        Self::new_with_missing_info(id, resource_id, properties, vec![])
     }
 
-    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>, stack_builder: &mut StackBuilder) -> RoleRef {
-        stack_builder.add_resource_alt(Role {
+    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> RoleBuilder {
+        Self {
             id: Id(id.to_string()),
             resource_id: resource_id.to_string(),
-            potentially_missing_services: potentially_missing,
-            r#type: "AWS::IAM::Role".to_string(),
             properties,
+            potentially_missing,
+        }
+    }
+    
+    pub fn build(self, stack_builder: &mut StackBuilder) -> RoleRef {
+        stack_builder.add_resource_alt(Role {
+            id: self.id,
+            resource_id: self.resource_id.clone(),
+            potentially_missing_services: self.potentially_missing,
+            r#type: "AWS::IAM::Role".to_string(),
+            properties: self.properties,
         });
-        RoleRef::new(resource_id.to_string())
+        RoleRef::new(self.resource_id)
     }
 }
 
@@ -165,13 +178,21 @@ impl PolicyBuilder {
     }
 }
 
-pub struct PolicyDocumentBuilder {}
+pub struct PolicyDocumentBuilder {
+    statements: Vec<Statement>
+}
 
 impl PolicyDocumentBuilder {
-    pub fn new(statements: Vec<Statement>) -> PolicyDocument {
+    pub fn new(statements: Vec<Statement>) -> PolicyDocumentBuilder {
+        Self {
+            statements
+        }
+    }
+    
+    pub fn build(self) -> PolicyDocument {
         PolicyDocument {
             version: "2012-10-17".to_string(),
-            statements,
+            statements: self.statements,
         }
     }
 }
@@ -291,17 +312,6 @@ pub enum Permission<'a> {
 }
 
 impl Permission<'_> {
-    pub(crate) fn get_referenced_id(&self) -> Option<&str> {
-        let id = match self {
-            Permission::DynamoDBRead(d) => d.get_resource_id(),
-            Permission::DynamoDBReadWrite(d) => d.get_resource_id(),
-            Permission::SqsRead(s) => s.get_resource_id(),
-            Permission::S3ReadWrite(s) => s.get_resource_id(),
-            Permission::Custom { .. } => return None,
-        };
-        Some(id)
-    }
-
     pub(crate) fn into_policy(self) -> Policy {
         match self {
             Permission::DynamoDBRead(table) => {
@@ -320,7 +330,7 @@ impl Permission<'_> {
                     principal: None,
                     condition: None,
                 };
-                let policy_document = PolicyDocumentBuilder::new(vec![statement]);
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::DynamoDBReadWrite(table) => {
@@ -343,7 +353,7 @@ impl Permission<'_> {
                     principal: None,
                     condition: None,
                 };
-                let policy_document = PolicyDocumentBuilder::new(vec![statement]);
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
             }
             Permission::SqsRead(queue) => {
@@ -360,7 +370,7 @@ impl Permission<'_> {
                 )
                 .resources(vec![get_arn(id)])
                 .build();
-                let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]);
+                let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]).build();
                 PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::S3ReadWrite(bucket) => {
@@ -384,11 +394,11 @@ impl Permission<'_> {
                 .resources(vec![arn.clone(), join("/", vec![arn, Value::String("*".to_string())])])
                 .build();
 
-                let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]);
+                let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]).build();
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
             }
             Permission::Custom(CustomPermission { id, statement }) => {
-                let policy_document = PolicyDocumentBuilder::new(vec![statement]);
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
                 PolicyBuilder::new(id, policy_document).build()
             }
         }

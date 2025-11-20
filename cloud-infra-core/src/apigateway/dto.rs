@@ -174,10 +174,6 @@ impl ApiGatewayV2Route {
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
-    
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
 }
 
 #[derive(Debug, Serialize)]

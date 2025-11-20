@@ -32,12 +32,6 @@ impl BucketPolicyBuilder {
             policy_document,
         }
     }
-
-    pub(crate) fn add_condition_to_statements(mut self, condition: Value) {
-        self.policy_document.statements.iter_mut().for_each(|s| {
-            s.condition = Some(condition.clone());
-        })
-    }
     
     pub(crate) fn raw_build(self) -> (String, BucketPolicy) {
         let resource_id = Resource::generate_id("S3BucketPolicy");
@@ -262,9 +256,9 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .resources(bucket_resource)
                 .principal(PrincipalBuilder::new().normal("*").build())
                 .build();
-            let doc = PolicyDocumentBuilder::new(vec![statement]);
+            let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build(stack_builder);
+            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, policy_doc).build(stack_builder);
             Some(s3_policy)
         } else {
             None
