@@ -49,7 +49,7 @@ That leads to a slow feedback loop, where you're constantly fixing errors and go
 Compare the above with the following:
 
 ```rust
-use cloud_infra::wrappers::*; // importing all wrappers is a good idea to simplify larger setups
+use cloud_infra::wrappers::*; // importing all wrappers simplifies larger projects
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
 use cloud_infra::dynamodb::{AttributeType, Key, TableBuilder};
 use cloud_infra::stack::{Resource, Stack};
@@ -71,7 +71,8 @@ fn iac() {
 }
 ```
 
-Partition keys can only contain alphanumeric characters and underscores, so they can only be created through a macro that validates this at compile time.
+It's about the same amount of code. 
+But partition keys can now only contain alphanumeric characters and underscores, so they can only be created through a macro that validates this at compile time.
 And (max) read capacity can only be set when you choose the correct billing mode.
 
 With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible.
