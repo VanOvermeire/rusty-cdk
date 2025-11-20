@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
 pub mod http;
+pub mod ref_structs;
 
 #[derive(Debug, Clone)]
 pub struct Id(pub String);
@@ -27,5 +28,9 @@ impl Id {
     
     pub fn combine_ids(first: &Id, second: &Id) -> Id {
         Id(format!("{}{}", first.0, second.0))
+    }    
+    
+    pub fn combine_with_resource_id(first: &Id, second: &str) -> Id {
+        Id(format!("{}{}", first.0, second))
     }
 }

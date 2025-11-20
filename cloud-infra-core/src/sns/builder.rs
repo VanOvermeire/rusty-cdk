@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 use crate::intrinsic_functions::{get_arn, get_ref};
-use crate::lambda::{Function, Permission, PermissionBuilder};
+use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
-use crate::sns::dto::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties};
-use crate::stack::Resource;
+use crate::sns::dto::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 
 const FIFO_SUFFIX: &str = ".fifo";
@@ -14,7 +14,7 @@ pub enum FifoThroughputScope {
 }
 
 pub enum SubscriptionType<'a> {
-    Lambda(&'a Function)
+    Lambda(&'a FunctionRef)
 }
 
 impl From<FifoThroughputScope> for String {
@@ -70,10 +70,8 @@ impl TopicBuilder<StartState> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> Topic {
-        let (topic, _) = self.build_internal(false);
-        topic
+    pub fn build(self, stack_builder: &mut StackBuilder) -> TopicRef {
+        self.build_internal(false, stack_builder)
     }
 }
 
@@ -91,9 +89,8 @@ impl TopicBuilder<StandardStateWithSubscriptions> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> (Topic, Vec<(Subscription, Permission)>) {
-        self.build_internal(false)
+    pub fn build(self, stack_builder: &mut StackBuilder) -> TopicRef {
+        self.build_internal(false, stack_builder)
     }
 }
 
@@ -126,33 +123,32 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
         };
     }
     
-    fn build_internal(self, fifo: bool) -> (Topic, Vec<(Subscription, Permission)>) {
+    fn build_internal(self, fifo: bool, stack_builder: &mut StackBuilder) -> TopicRef {
         let topic_resource_id = Resource::generate_id("SnsTopic");
         
-        let subscriptions: Vec<_> = self.lambda_subscription_ids.iter().map(|(to_subscribe_id, to_subscribe_resource_id)| {
+        self.lambda_subscription_ids.iter().for_each(|(to_subscribe_id, to_subscribe_resource_id)| {
             let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
             let subscription_resource_id = Resource::generate_id("SnsSubscription");
             
-            let permission = PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
+            PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
                 .referenced_ids(vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()])
                 .source_arn(get_ref(&topic_resource_id))
-                .build();
+                .build(stack_builder);
 
-            let properties = SnsSubscriptionProperties {
-                protocol: "lambda".to_string(),
-                endpoint: get_arn(to_subscribe_resource_id),
-                topic_arn: get_ref(&topic_resource_id),
-            };
             let subscription = Subscription {
                 id: subscription_id,
                 resource_id: subscription_resource_id,
                 referenced_ids: vec![to_subscribe_resource_id.to_string(), topic_resource_id.to_string()],
                 r#type: "AWS::SNS::Subscription".to_string(),
-                properties,
+                properties: SnsSubscriptionProperties {
+                    protocol: "lambda".to_string(),
+                    endpoint: get_arn(to_subscribe_resource_id),
+                    topic_arn: get_ref(&topic_resource_id),
+                },
             };
 
-            (subscription, permission)
-        }).collect();
+            stack_builder.add_resource_alt(subscription);
+        });
         
         let properties = TopicProperties {
             topic_name: self.topic_name,
@@ -161,14 +157,14 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             fifo_throughput_scope: self.fifo_throughput_scope.map(Into::into),
         };
         
-        let topic = Topic {
+        stack_builder.add_resource_alt(Topic {
             id: self.id,
-            resource_id: topic_resource_id,
+            resource_id: topic_resource_id.to_string(),
             r#type: "AWS::SNS::Topic".to_string(),
             properties,
-        };
+        });
 
-        (topic, subscriptions)
+        TopicRef::new(topic_resource_id)
     }
 }
 
@@ -200,15 +196,13 @@ impl TopicBuilder<FifoState> {
         }
     }
 
-    #[must_use]
-    pub fn build(mut self) -> Topic {
+    pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {
             if !name.ends_with(FIFO_SUFFIX) {
                 self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         }
-        let (topic, _) = self.build_internal(true);
-        topic
+        self.build_internal(true, stack_builder)
     }
 }
 
@@ -240,13 +234,12 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
         }
     }
 
-    #[must_use]
-    pub fn build(mut self) -> (Topic, Vec<(Subscription, Permission)>) {
+    pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {
             if !name.ends_with(FIFO_SUFFIX) {
                 self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         }
-        self.build_internal(true)
+        self.build_internal(true, stack_builder)
     }
 }

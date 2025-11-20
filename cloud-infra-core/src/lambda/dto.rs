@@ -1,9 +1,40 @@
-use std::collections::HashMap;
-use serde::Serialize;
-use serde_json::Value;
-use crate::intrinsic_functions::get_ref;
+use crate::ref_struct;
 use crate::shared::Id;
 use crate::stack::Asset;
+use serde::Serialize;
+use serde_json::Value;
+use std::collections::HashMap;
+
+pub struct FunctionRef {
+    id: Id,
+    resource_id: String,
+}
+
+impl FunctionRef {
+    pub fn new(id: Id, resource_id: String) -> Self {
+        Self { id, resource_id }
+    }
+    
+    pub fn get_id(&self) -> &Id {
+        &self.id
+    }
+
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
+    }
+
+    pub fn get_ref(&self) -> Value {
+        crate::intrinsic_functions::get_ref(self.get_resource_id())
+    }
+
+    pub fn get_arn(&self) -> Value {
+        crate::intrinsic_functions::get_arn(self.get_resource_id())
+    }
+
+    pub fn get_att(&self, id: &str) -> Value {
+        crate::intrinsic_functions::get_att(self.get_resource_id(), id)
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct Function {
@@ -25,17 +56,9 @@ impl Function {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
-    
+
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
-
-    pub fn get_referenced_ids(&self) -> Vec<&str> {
-        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 
@@ -62,9 +85,8 @@ pub struct LambdaFunctionProperties {
     #[serde(rename = "ReservedConcurrentExecutions", skip_serializing_if = "Option::is_none")]
     pub(crate) reserved_concurrent_executions: Option<u32>,
     #[serde(rename = "LoggingConfig")]
-    pub(crate) logging_info: LoggingInfo
-    // package_type: Option<String>,
-    // "VpcConfig": VpcConfig
+    pub(crate) logging_info: LoggingInfo, // package_type: Option<String>,
+                                          // "VpcConfig": VpcConfig
 }
 
 #[derive(Debug, Serialize)]
@@ -82,7 +104,7 @@ pub struct LambdaCode {
 #[derive(Debug, Serialize)]
 pub struct Environment {
     #[serde(rename = "Variables")]
-    pub(crate) variables: HashMap<String, Value>
+    pub(crate) variables: HashMap<String, Value>,
 }
 
 #[derive(Debug, Serialize)]
@@ -90,6 +112,8 @@ pub struct LoggingInfo {
     #[serde(rename = "LogGroup")]
     pub(crate) log_group: Option<Value>,
 }
+
+ref_struct!(EventSourceMappingRef);
 
 #[derive(Debug, Serialize)]
 pub struct EventSourceMapping {
@@ -107,7 +131,7 @@ impl EventSourceMapping {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
-    
+
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
     }
@@ -129,6 +153,8 @@ pub struct ScalingConfig {
     pub(crate) max_concurrency: u16,
 }
 
+ref_struct!(PermissionRef);
+
 #[derive(Debug, Serialize)]
 pub struct Permission {
     #[serde(skip)]
@@ -147,13 +173,9 @@ impl Permission {
     pub fn get_id(&self) -> &Id {
         &self.id
     }
-    
+
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-
-    pub fn get_referenced_ids(&self) -> Vec<&str> {
-        self.referenced_ids.iter().map(|r| r.as_str()).collect()
     }
 }
 
@@ -166,5 +188,5 @@ pub struct LambdaPermissionProperties {
     #[serde(rename = "Principal")]
     pub(crate) principal: String,
     #[serde(rename = "SourceArn", skip_serializing_if = "Option::is_none")]
-    pub(crate) source_arn: Option<Value>
+    pub(crate) source_arn: Option<Value>,
 }

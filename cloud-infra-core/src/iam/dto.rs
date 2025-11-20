@@ -1,7 +1,10 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
+use crate::ref_struct;
 use crate::shared::Id;
+
+ref_struct!(RoleRef);
 
 #[derive(Debug, Serialize)]
 pub struct Role {

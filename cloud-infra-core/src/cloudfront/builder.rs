@@ -1,17 +1,12 @@
-use crate::cloudfront::{
-    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, Distribution, DistributionProperties,
-    OriginAccessControl, OriginAccessControlConfig, OriginControlProperties, CookiesConfig,
-    DefaultCacheBehavior, DistributionConfig, HeadersConfig, Origin, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin,
-    QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig,
-};
+use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
 use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
-use crate::s3::builder::{BucketPolicyBuilder};
-use crate::s3::dto::{Bucket, BucketPolicy};
+use crate::s3::builder::BucketPolicyBuilder;
+use crate::s3::dto::{BucketRef};
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
@@ -159,12 +154,14 @@ impl ViewerCertificateBuilder<ViewerCertificateStateAcmOrIamState> {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> ViewerCertificate {
         self.build_internal()
     }
 }
 
 impl ViewerCertificateBuilder<ViewerCertificateStateEndState> {
+    #[must_use]
     pub fn build(self) -> ViewerCertificate {
         self.build_internal()
     }
@@ -260,6 +257,7 @@ impl ParametersInCacheKeyAndForwardedToOriginBuilder {
         }
     }
 
+    #[must_use]
     pub fn build(self) -> ParametersInCacheKeyAndForwardedToOrigin {
         ParametersInCacheKeyAndForwardedToOrigin {
             cookies_config: self.cookies_config,
@@ -299,11 +297,11 @@ impl CachePolicyBuilder {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> CachePolicy {
-        CachePolicy {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> CachePolicyRef {
+        let resource_id = Resource::generate_id("CachePolicy");
+        stack_builder.add_resource_alt(CachePolicy {
             id: self.id,
-            resource_id: Resource::generate_id("CachePolicy"),
+            resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::CachePolicy".to_string(),
             properties: CachePolicyProperties {
                 config: CachePolicyConfig {
@@ -314,7 +312,8 @@ impl CachePolicyBuilder {
                     params_in_cache_key_and_forwarded: self.cache_params,
                 },
             },
-        }
+        });
+        CachePolicyRef::new(resource_id)
     }
 }
 
@@ -367,7 +366,7 @@ pub struct OriginBuilder<'a, T: OriginState> {
     phantom_data: PhantomData<T>,
     id: String,
     referenced_ids: Vec<String>,
-    bucket: Option<&'a Bucket>,
+    bucket: Option<&'a BucketRef>,
     domain_name: Option<Value>,
     connection_attempts: Option<u16>,
     connection_timeout: Option<u16>,
@@ -401,8 +400,8 @@ impl OriginBuilder<'_, OriginStartState> {
 
     pub fn s3_origin<'a>(
         mut self,
-        bucket: &'a Bucket,
-        oac: &OriginAccessControl,
+        bucket: &'a BucketRef,
+        oac: &OriginAccessControlRef,
         origin_read_timeout: Option<S3OriginReadTimeout>,
     ) -> OriginBuilder<'a, OriginS3OriginState> {
         self.referenced_ids.push(bucket.get_resource_id().to_string());
@@ -485,7 +484,7 @@ impl OriginBuilder<'_, OriginS3OriginState> {
             .build();
         let doc = PolicyDocumentBuilder::new(vec![statement]);
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-        let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
+        let (_, s3_policy) = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).raw_build();
 
         let mut origin = self.build_internal();
         origin.s3_bucket_policy = Some(s3_policy);
@@ -558,11 +557,10 @@ pub struct DefaultCacheBehaviorBuilder {
 }
 
 impl DefaultCacheBehaviorBuilder {
-    // TODO note reference to resources
-    pub fn new(origin: &Origin, policy: &CachePolicy, viewer_protocol_policy: ViewerProtocolPolicy) -> Self {
+    pub fn new(origin: &Origin, policy: &CachePolicyRef, viewer_protocol_policy: ViewerProtocolPolicy) -> Self {
         Self {
             target_origin_id: origin.get_origin_id().to_string(),
-            cache_policy_id: policy.get_att_id(),
+            cache_policy_id: policy.get_att("Id"),
             viewer_protocol_policy: viewer_protocol_policy.into(),
             allowed_methods: None,
             cached_methods: None,
@@ -692,12 +690,11 @@ impl OriginAccessControlBuilder {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> OriginAccessControl {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> OriginAccessControlRef {
         let resource_id = Resource::generate_id("OAC");
-        OriginAccessControl {
+        stack_builder.add_resource_alt(OriginAccessControl {
             id: self.id,
-            resource_id,
+            resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::OriginAccessControl".to_string(),
             properties: OriginControlProperties {
                 config: OriginAccessControlConfig {
@@ -707,7 +704,8 @@ impl OriginAccessControlBuilder {
                     signing_protocol: self.signing_protocol.into(),
                 },
             },
-        }
+        });
+        OriginAccessControlRef::new(resource_id)
     }
 }
 
@@ -768,12 +766,11 @@ impl DistributionBuilder<DistributionStartState> {
 }
 
 impl DistributionBuilder<DistributionOriginState> {
-    #[must_use]
-    pub fn build(mut self) -> (Distribution, Vec<BucketPolicy>) {
+    pub fn build(mut self, stack_builder: &mut StackBuilder) -> DistributionRef {
         let mut origins = self.origins.take().expect("origins to be present in distribution origin state");
         let resource_id = Resource::generate_id("CloudFrontDistribution");
 
-        let policies: Vec<_> = origins
+        origins
             .iter_mut()
             .filter(|o| o.s3_bucket_policy.is_some())
             .map(|s3| {
@@ -796,6 +793,7 @@ impl DistributionBuilder<DistributionOriginState> {
                         "AWS:SourceArn": source_arn_value
                     }
                 });
+                // TODO use add_condition_to_statements for this
                 policy
                     .properties
                     .policy_document
@@ -804,13 +802,13 @@ impl DistributionBuilder<DistributionOriginState> {
                     .for_each(|v| v.condition = Some(distro_condition.clone()));
                 policy
             })
-            .collect();
+            .for_each(|p| {
+                stack_builder.add_resource_alt(p);
+            });
 
         self.origins = Some(origins);
 
-        let distro = self.build_internal(resource_id);
-
-        (distro, policies)
+        self.build_internal(resource_id, stack_builder)
     }
 }
 
@@ -880,7 +878,7 @@ impl<T: DistributionState> DistributionBuilder<T> {
         }
     }
 
-    fn build_internal(self, resource_id: String) -> Distribution {
+    fn build_internal(self, resource_id: String, stack_builder: &mut StackBuilder) -> DistributionRef {
         let config = DistributionConfig {
             enabled: self.enabled,
             default_cache_behavior: self.default_cache_behavior,
@@ -895,11 +893,13 @@ impl<T: DistributionState> DistributionBuilder<T> {
             origins: self.origins,
             origin_groups: None,
         };
-        Distribution {
+        stack_builder.add_resource_alt(Distribution {
             id: self.id,
-            resource_id,
+            resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::Distribution".to_string(),
             properties: DistributionProperties { config },
-        }
+        });
+
+        DistributionRef::new(resource_id)
     }
 }

@@ -1,9 +1,9 @@
-use std::marker::PhantomData;
-use crate::dynamodb::dto::{AttributeDefinition, Table, TableProperties, KeySchema};
-use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput};
+use crate::dynamodb::dto::{AttributeDefinition, KeySchema, Table, TableProperties};
+use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput, TableRef};
 use crate::shared::Id;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
+use std::marker::PhantomData;
 
 #[derive(PartialEq)]
 pub enum BillingMode {
@@ -15,7 +15,7 @@ impl From<BillingMode> for String {
     fn from(value: BillingMode) -> Self {
         match value {
             BillingMode::PayPerRequest => "PAY_PER_REQUEST".to_string(),
-            BillingMode::Provisioned => "PROVISIONED".to_string()
+            BillingMode::Provisioned => "PROVISIONED".to_string(),
         }
     }
 }
@@ -31,7 +31,7 @@ impl From<AttributeType> for String {
         match value {
             AttributeType::String => "S".to_string(),
             AttributeType::Number => "N".to_string(),
-            AttributeType::Binary => "B".to_string()
+            AttributeType::Binary => "B".to_string(),
         }
     }
 }
@@ -43,10 +43,7 @@ pub struct Key {
 
 impl Key {
     pub fn new(key: StringWithOnlyAlphaNumericsAndUnderscores, key_type: AttributeType) -> Self {
-        Self {
-            key: key.0,
-            key_type,
-        }
+        Self { key: key.0, key_type }
     }
 }
 
@@ -140,16 +137,22 @@ impl<T: TableBuilderState> TableBuilder<T> {
         }
     }
 
-    fn build_internal(self) -> Table {
+    fn build_internal(self, stack_builder: &mut StackBuilder) -> TableRef {
         let Key { key, key_type } = self.partition_key.unwrap();
-        let mut key_schema = vec![KeySchema { attribute_name: key.clone(), key_type: "HASH".to_string() }];
+        let mut key_schema = vec![KeySchema {
+            attribute_name: key.clone(),
+            key_type: "HASH".to_string(),
+        }];
         let mut key_attributes = vec![AttributeDefinition {
             attribute_name: key,
             attribute_type: key_type.into(),
         }];
-        
+
         if let Some(Key { key, key_type }) = self.sort_key {
-            let sort_key = KeySchema { attribute_name: key.clone(), key_type: "RANGE".to_string() };
+            let sort_key = KeySchema {
+                attribute_name: key.clone(),
+                key_type: "RANGE".to_string(),
+            };
             let sort_key_attributes = AttributeDefinition {
                 attribute_name: key,
                 attribute_type: key_type.into(),
@@ -158,17 +161,23 @@ impl<T: TableBuilderState> TableBuilder<T> {
             key_attributes.push(sort_key_attributes);
         }
 
-        let billing_mode = self.billing_mode.expect("billing mode should be set, as this is enforced by the builder");
-        
+        let billing_mode = self
+            .billing_mode
+            .expect("billing mode should be set, as this is enforced by the builder");
+
         let provisioned_throughput = if billing_mode == BillingMode::Provisioned {
             Some(ProvisionedThroughput {
-                read_capacity: self.read_capacity.expect("for provisioned billing mode, read capacity should be set"),
-                write_capacity: self.write_capacity.expect("for provisioned billing mode, write capacity should be set"),
+                read_capacity: self
+                    .read_capacity
+                    .expect("for provisioned billing mode, read capacity should be set"),
+                write_capacity: self
+                    .write_capacity
+                    .expect("for provisioned billing mode, write capacity should be set"),
             })
         } else {
             None
         };
-        
+
         let on_demand_throughput = if billing_mode == BillingMode::PayPerRequest {
             Some(OnDemandThroughput {
                 max_read_capacity: self.max_read_capacity,
@@ -185,13 +194,16 @@ impl<T: TableBuilderState> TableBuilder<T> {
             provisioned_throughput,
             on_demand_throughput,
         };
-        
-        Table {
+
+        let resource_id = Resource::generate_id("DynamoDBTable");
+        stack_builder.add_resource_alt(Table {
             id: self.id,
-            resource_id: Resource::generate_id("DynamoDBTable"),
+            resource_id: resource_id.clone(),
             r#type: "AWS::DynamoDB::Table".to_string(),
             properties,
-        }
+        });
+
+        TableRef::new(resource_id)
     }
 }
 
@@ -210,9 +222,8 @@ impl TableBuilder<PayPerRequestState> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> Table {
-        self.build_internal()
+    pub fn build(self, stack_builder: &mut StackBuilder) -> TableRef {
+        self.build_internal(stack_builder)
     }
 }
 
@@ -251,8 +262,7 @@ impl TableBuilder<ProvisionedStateReadSet> {
 }
 
 impl TableBuilder<ProvisionedStateWriteSet> {
-    #[must_use]
-    pub fn build(self) -> Table {
-        self.build_internal()
+    pub fn build(self, stack_builder: &mut StackBuilder) -> TableRef {
+        self.build_internal(stack_builder)
     }
 }

@@ -1,8 +1,11 @@
-use crate::intrinsic_functions::get_att;
+use crate::intrinsic_functions::{get_att};
 use crate::s3::dto::BucketPolicy;
 use crate::shared::Id;
 use serde::Serialize;
 use serde_json::Value;
+use crate::ref_struct;
+
+ref_struct!(OriginAccessControlRef);
 
 #[derive(Debug, Serialize)]
 pub struct OriginAccessControl {
@@ -47,6 +50,8 @@ pub struct OriginAccessControlConfig {
     #[serde(rename = "SigningProtocol")]
     pub(crate) signing_protocol: String,
 }
+
+ref_struct!(CachePolicyRef);
 
 #[derive(Debug, Serialize)]
 pub struct CachePolicy {
@@ -131,6 +136,8 @@ pub struct CookiesConfig {
     #[serde(rename = "Cookies", skip_serializing_if = "Option::is_none")]
     pub(crate) cookies: Option<Vec<String>>,
 }
+
+ref_struct!(DistributionRef);
 
 #[derive(Debug, Serialize)]
 pub struct Distribution {

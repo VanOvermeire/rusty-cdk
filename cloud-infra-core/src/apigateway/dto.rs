@@ -1,7 +1,10 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::intrinsic_functions::get_ref;
+use crate::ref_struct;
 use crate::shared::Id;
+
+ref_struct!(ApiGatewayV2ApiRef);
 
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Api {
@@ -53,6 +56,8 @@ pub struct CorsConfiguration {
     pub(crate) max_age: Option<u64>,
 }
 
+ref_struct!(ApiGatewayV2StageRef);
+
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
@@ -93,6 +98,8 @@ pub struct ApiGatewayV2StageProperties {
     #[serde(rename = "RouteSettings", skip_serializing_if = "Option::is_none")]
     pub(crate) route_settings: Option<Value>,
 }
+
+ref_struct!(ApiGatewayV2IntegrationRef);
 
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Integration {
@@ -150,6 +157,8 @@ pub struct ApiGatewayV2IntegrationProperties {
     #[serde(rename = "TimeoutInMillis", skip_serializing_if = "Option::is_none")]
     pub(crate) timeout_in_millis: Option<u32>,
 }
+
+ref_struct!(ApiGatewayV2RouteRef);
 
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Route {

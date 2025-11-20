@@ -184,13 +184,14 @@ impl Resource {
 
     pub fn get_refenced_ids(&self) -> Vec<&str> {
         match self {
+            // TODO remove?
             // TODO check resources (except when references are impossible)
-            Resource::Function(f) => f.get_referenced_ids(),
-            Resource::Subscription(s) => s.get_referenced_ids(),
-            Resource::Permission(l) => l.get_referenced_ids(),
-            Resource::ApiGatewayV2Route(r) => r.get_referenced_ids(),
-            Resource::ApiGatewayV2Integration(i) => i.get_referenced_ids(),
-            Resource::BucketPolicy(r) => r.get_referenced_ids(),
+            Resource::Function(_) => vec![],
+            Resource::Subscription(_) => vec![],
+            Resource::Permission(_) => vec![],
+            Resource::ApiGatewayV2Route(_) => vec![],
+            Resource::ApiGatewayV2Integration(_) => vec![],
+            Resource::BucketPolicy(_) => vec![],
             Resource::Table(_) => vec![],
             Resource::Queue(_) => vec![],
             Resource::EventSourceMapping(_) => vec![],
@@ -253,35 +254,36 @@ mod tests {
 
     #[test]
     fn should_do_nothing_for_empty_stack_and_empty_existing_ids() {
-        let mut stack = StackBuilder::new().build().unwrap();
+        let mut stack_builder = StackBuilder::new().build().unwrap();
         let existing_ids = HashMap::new();
 
-        stack.update_resource_ids_for_existing_stack(existing_ids);
+        stack_builder.update_resource_ids_for_existing_stack(existing_ids);
 
-        assert_eq!(stack.resources.len(), 0);
-        assert_eq!(stack.metadata.len(), 0);
-        assert_eq!(stack.to_replace.len(), 0);
+        assert_eq!(stack_builder.resources.len(), 0);
+        assert_eq!(stack_builder.metadata.len(), 0);
+        assert_eq!(stack_builder.to_replace.len(), 0);
     }
 
     #[test]
     fn should_do_nothing_for_empty_stack() {
-        let mut stack = StackBuilder::new().build().unwrap();
+        let mut stack_builder = StackBuilder::new().build().unwrap();
         let mut existing_ids = HashMap::new();
         existing_ids.insert("fun".to_string(), "abc123".to_string());
 
-        stack.update_resource_ids_for_existing_stack(existing_ids);
+        stack_builder.update_resource_ids_for_existing_stack(existing_ids);
 
-        assert_eq!(stack.resources.len(), 0);
-        assert_eq!(stack.metadata.len(), 0);
-        assert_eq!(stack.to_replace.len(), 0);
+        assert_eq!(stack_builder.resources.len(), 0);
+        assert_eq!(stack_builder.metadata.len(), 0);
+        assert_eq!(stack_builder.to_replace.len(), 0);
     }
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id() {
-        let topic = TopicBuilder::new("topic").build();
-        let mut stack = StackBuilder::new().add_resource(topic).build().unwrap();
+        let mut stack_builder = StackBuilder::new();
+        let topic = TopicBuilder::new("topic").build(&mut stack_builder);
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
+        let mut stack = stack_builder.build().unwrap();
 
         stack.update_resource_ids_for_existing_stack(existing_ids);
 
@@ -293,11 +295,12 @@ mod tests {
 
     #[test]
     fn should_replace_topic_resource_id_with_the_existing_id_keeping_new_queue_id() {
-        let topic = TopicBuilder::new("topic").build();
-        let sqs = QueueBuilder::new("queue").standard_queue().build();
-        let mut stack = StackBuilder::new().add_resource(topic).add_resource(sqs).build().unwrap();
+        let mut stack_builder = StackBuilder::new();
+        let topic = TopicBuilder::new("topic").build(&mut stack_builder);
+        let sqs = QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
         let mut existing_ids = HashMap::new();
         existing_ids.insert("topic".to_string(), "abc123".to_string());
+        let mut stack = stack_builder.build().unwrap();
 
         stack.update_resource_ids_for_existing_stack(existing_ids);
 

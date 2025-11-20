@@ -1,12 +1,13 @@
-use crate::sqs::dto::{RedrivePolicy, Queue, QueueProperties};
-use crate::stack::Resource;
+use crate::shared::Id;
+use crate::sqs::dto::{Queue, QueueProperties, RedrivePolicy};
+use crate::sqs::QueueRef;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{
-    DelaySeconds, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber,
-    ReceiveMessageWaitTime, StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout,
+    DelaySeconds, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber, ReceiveMessageWaitTime,
+    StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout,
 };
 use serde_json::Value;
 use std::marker::PhantomData;
-use crate::shared::Id;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -189,7 +190,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
         }
     }
 
-    fn build_internal(self, fifo: bool) -> Queue {
+    fn build_internal(self, fifo: bool, stack_builder: &mut StackBuilder) -> QueueRef {
         let properties = QueueProperties {
             queue_name: self.queue_name,
             delay_seconds: self.delay_seconds,
@@ -206,19 +207,21 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
             redrive_allow_policy: self.redrive_allow_policy,
         };
 
-        Queue {
+        let resource_id = Resource::generate_id("SqsQueue");
+        stack_builder.add_resource_alt(Queue {
             id: self.id,
-            resource_id: Resource::generate_id("SqsQueue"),
+            resource_id: resource_id.clone(),
             r#type: "AWS::SQS::Queue".to_string(),
             properties,
-        }
+        });
+        
+        QueueRef::new(resource_id)
     }
 }
 
 impl QueueBuilder<StandardState> {
-    #[must_use]
-    pub fn build(self) -> Queue {
-        self.build_internal(false)
+    pub fn build(self, stack_builder: &mut StackBuilder) -> QueueRef {
+        self.build_internal(false, stack_builder)
     }
 }
 
@@ -252,13 +255,12 @@ impl QueueBuilder<FifoState> {
         }
     }
 
-    #[must_use]
-    pub fn build(mut self) -> Queue {
+    pub fn build(mut self, stack_builder: &mut StackBuilder) -> QueueRef {
         if let Some(ref name) = self.queue_name {
             if !name.ends_with(FIFO_SUFFIX) {
                 self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         }
-        self.build_internal(true)
+        self.build_internal(true, stack_builder)
     }
 }

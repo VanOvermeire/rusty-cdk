@@ -1,13 +1,13 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, Role, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services};
+use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services, RoleRef};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig};
-use crate::sqs::Queue;
-use crate::stack::{Asset, Resource};
+use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig, FunctionRef, PermissionRef};
+use crate::sqs::{QueueRef};
+use crate::stack::{Asset, Resource, StackBuilder};
 use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
-use crate::cloudwatch::{LogGroup, LogGroupBuilder};
+use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
 use crate::shared::Id;
 
 pub enum Runtime {
@@ -159,7 +159,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
     
-    fn build_internal(mut self) -> (Function, Role, LogGroup, Option<EventSourceMapping>) {
+    fn build_internal(mut self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         let function_resource_id = Resource::generate_id("LambdaFunction");
         
         let code = match self.code.expect("code to be present, enforced by builder") {
@@ -182,7 +182,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             }
         };
 
-        let mapping = if let Some(mapping) = self.sqs_event_source_mapping {
+        if let Some(mapping) = self.sqs_event_source_mapping {
             let event_id = Id::generate_id(&self.id, "ESM");
             let event_resource_id = format!("EventSourceMapping{}", function_resource_id);
             let event_source_mapping = EventSourceMapping {
@@ -196,9 +196,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
                 },
             };
             self.referenced_ids.push(event_resource_id);
-            Some(event_source_mapping)
-        } else {
-            None
+            stack_builder.add_resource_alt(event_source_mapping);
         };
         
         let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
@@ -212,7 +210,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
-        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing);
+        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing, stack_builder);
         self.referenced_ids.push(role_resource_id);
 
         let environment = if self.env_vars.is_empty() {
@@ -228,9 +226,9 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let base_builder = LogGroupBuilder::new(&log_group_id)
             .log_group_retention(RetentionInDays(731));
         let log_group = if let Some(name) = log_group_name {
-            base_builder.log_group_name_string(LogGroupName(name)).build()
+            base_builder.log_group_name_string(LogGroupName(name)).build(stack_builder)
         } else {
-            base_builder.build()
+            base_builder.build(stack_builder)
         };
         
         let logging_info = LoggingInfo { log_group: Some( get_ref(log_group.get_resource_id())) };
@@ -249,20 +247,21 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             logging_info,
         };
 
-        let function = Function {
-            id: self.id,
-            resource_id: function_resource_id,
+        stack_builder.add_resource_alt(Function {
+            id: self.id.clone(),
+            resource_id: function_resource_id.clone(),
             referenced_ids: self.referenced_ids,
             asset: code.0,
             r#type: "AWS::Lambda::Function".to_string(),
             properties,
-        };
-        
+        });
+
+        let function = FunctionRef::new(self.id, function_resource_id);
+
         (
             function,
             role,
             log_group,
-            mapping,
         )
     }
 }
@@ -354,7 +353,7 @@ impl FunctionBuilder<ZipStateWithHandler> {
 }
 
 impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
-    pub fn sqs_event_source_mapping(mut self, sqs_queue: &Queue, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
+    pub fn sqs_event_source_mapping(mut self, sqs_queue: &QueueRef, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
         self.additional_policies.push(IamPermission::SqsRead(sqs_queue).into_policy());
         self.referenced_ids.push(sqs_queue.get_resource_id().to_string());
         
@@ -382,18 +381,14 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> (Function, Role, LogGroup) {
-        let (lambda, iam_role, log_group, _) = self.build_internal();
-        (lambda, iam_role, log_group)
+    pub fn build(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
+        self.build_internal(stack_builder)
     }
 }
 
 impl FunctionBuilder<EventSourceMappingState> {
-    #[must_use]
-    pub fn build(self) -> (Function, Role, LogGroup, EventSourceMapping) {
-        let (lambda, iam_role, log_group, mapping) = self.build_internal();
-        (lambda, iam_role, log_group, mapping.expect("should be `Some` because we are in the event source mapping state"))
+    pub fn build(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
+        self.build_internal(stack_builder)
     }
 }
 
@@ -432,7 +427,7 @@ impl PermissionBuilder {
         }
     }
 
-    pub fn build(self) -> Permission {
+    pub fn build(self , stack_builder: &mut StackBuilder) -> PermissionRef {
         let permission_resource_id = Resource::generate_id("LambdaPermission");
         let properties = LambdaPermissionProperties {
             action: self.action,
@@ -441,12 +436,14 @@ impl PermissionBuilder {
             source_arn: self.source_arn,
         };
 
-        Permission {
+        stack_builder.add_resource_alt(Permission {
             id: self.id,
-            resource_id: permission_resource_id,
+            resource_id: permission_resource_id.clone(),
             referenced_ids: self.referenced_ids,
             r#type: "AWS::Lambda::Permission".to_string(),
             properties,
-        }
+        });
+        
+        PermissionRef::new(permission_resource_id)
     }
 }

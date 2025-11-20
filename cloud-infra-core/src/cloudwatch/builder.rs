@@ -1,8 +1,8 @@
-use serde_json::Value;
-use crate::cloudwatch::{LogGroup, LogGroupProperties};
+use crate::cloudwatch::{LogGroup, LogGroupProperties, LogGroupRef};
 use crate::shared::Id;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{LogGroupName, RetentionInDays};
+use serde_json::Value;
 
 pub enum LogGroupClass {
     Standard,
@@ -22,7 +22,7 @@ pub struct LogGroupBuilder {
     id: Id,
     log_group_name: Option<Value>,
     log_group_class: Option<LogGroupClass>,
-    log_group_retention: Option<u16>
+    log_group_retention: Option<u16>,
 }
 
 impl LogGroupBuilder {
@@ -34,48 +34,51 @@ impl LogGroupBuilder {
             log_group_retention: None,
         }
     }
-    
+
     pub fn log_group_name_string(self, log_group_name: LogGroupName) -> Self {
         Self {
             log_group_name: Some(Value::String(log_group_name.0)),
             ..self
         }
     }
-    
+
     pub fn log_group_name_value(self, log_group_name: Value) -> Self {
         Self {
             log_group_name: Some(log_group_name),
             ..self
         }
     }
-    
+
     pub fn log_group_class(self, log_group_class: LogGroupClass) -> Self {
         Self {
             log_group_class: Some(log_group_class),
             ..self
         }
     }
-    
+
     pub fn log_group_retention(self, log_group_retention_in_days: RetentionInDays) -> Self {
         Self {
-            log_group_retention: Some(log_group_retention_in_days.0), 
+            log_group_retention: Some(log_group_retention_in_days.0),
             ..self
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> LogGroup {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> LogGroupRef {
         let properties = LogGroupProperties {
             log_group_name: self.log_group_name,
             log_group_class: self.log_group_class.map(Into::into),
             log_group_retention: self.log_group_retention,
         };
+
+        let resource_id = Resource::generate_id("LogGroup");
         
-        LogGroup {
+        stack_builder.add_resource_alt(LogGroup {
             id: self.id,
-            resource_id: Resource::generate_id("LogGroup"),
+            resource_id: resource_id.clone(),
             r#type: "AWS::Logs::LogGroup".to_string(),
             properties,
-        }
+        });
+        
+        LogGroupRef::new(resource_id)
     }
 }

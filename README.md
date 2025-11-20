@@ -51,21 +51,23 @@ Compare the above with the following:
 ```rust
 use cloud_infra::wrappers::*; // importing all wrappers is a good idea to simplify larger setups
 use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
-use cloud_infra::dynamodb::{AttributeType, DynamoDBKey, DynamoDBTableBuilder};
+use cloud_infra::dynamodb::{AttributeType, Key, TableBuilder};
 use cloud_infra::stack::{Resource, Stack};
 use cloud_infra::stack::StackBuilder;
 
 fn iac() {
-  let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
+  let mut stack_builder = StackBuilder::new();
   
-  let table = DynamoDBTableBuilder::new("table", DynamoDBKey::new(dynamo_key, AttributeType::String))
+  let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
+  let table = TableBuilder::new("table", Key::new(dynamo_key, AttributeType::String))
             .provisioned_billing()
             .read_capacity(non_zero_number!(5))
             .write_capacity(non_zero_number!(1))
-            .build();
+            .build(&mut stack_builder);
   
-  let stack_builder = StackBuilder::new().add_resource(table).build().unwrap();
-  // ready to synth / deploy
+  let stack = stack_builder.build().unwrap();
+  
+  // ready to synth and deploy
 }
 ```
 
@@ -122,18 +124,13 @@ They are not present in the CloudFormation template, because a root property for
 
 ```rust
 use cloud_infra::stack::StackBuilder;
-use cloud_infra::sqs::SqsQueueBuilder;
+use cloud_infra::sqs::QueueBuilder;
 
 async fn tagging() {
-  let queue = SqsQueueBuilder::new("myQueue").standard_queue().build();
-  
-  let stack = StackBuilder::new()
-      .add_resource(queue)
-      .add_tag("OWNER", "me")
-      .build();
-
-  // now deploy
-  // cloud_infra::deploy("Example", stack.unwrap()).await;
+  let mut stack_builder = StackBuilder::new();
+  // add resources
+  stack_builder.add_tag("OWNER", "me").build();
+  // and deploy
 }
 ```
 

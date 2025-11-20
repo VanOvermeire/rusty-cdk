@@ -42,6 +42,11 @@ impl StackBuilder {
         Self { resources: vec![], tags: vec![] }
     }
 
+    pub fn add_resource_alt<T: Into<Resource>>(&mut self, resource: T) {
+        let resource = resource.into();
+        self.resources.push(resource);
+    }
+
     pub fn add_resource<T: Into<Resource>>(mut self, resource: T) -> Self {
         let resource = resource.into();
         self.resources.push(resource);

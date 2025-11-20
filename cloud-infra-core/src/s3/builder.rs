@@ -1,18 +1,18 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, StatementBuilder, PrincipalBuilder};
+use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
+use crate::intrinsic_functions::join;
 use crate::s3::dto;
 use crate::s3::dto::{
-    BucketEncryption, CorsConfiguration, CorsRule, LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition,
-    NonCurrentVersionTransition, PublicAccessBlockConfiguration, RedirectAllRequestsTo, Bucket, BucketPolicy, S3BucketPolicyProperties,
-    BucketProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
+    Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
+    LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
+    RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{BucketName, IamAction, S3LifecycleObjectSizes};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::time::Duration;
-use crate::intrinsic_functions::{join};
 
 // TODO notifications will require custom work to avoid circular dependencies
 //  CDK approach with custom resources is one way
@@ -26,7 +26,7 @@ pub struct BucketPolicyBuilder {
 }
 
 impl BucketPolicyBuilder {
-    pub fn new(id: &str, bucket: &Bucket, policy_document: PolicyDocument) -> Self {
+    pub fn new(id: &str, bucket: &BucketRef, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
             bucket_name: bucket.get_ref(),
@@ -34,27 +34,32 @@ impl BucketPolicyBuilder {
             policy_document,
         }
     }
-    
+
     pub(crate) fn add_condition_to_statements(mut self, condition: Value) {
         self.policy_document.statements.iter_mut().for_each(|s| {
             s.condition = Some(condition.clone());
         })
     }
-
-    #[must_use]
-    pub fn build(self) -> BucketPolicy {
+    
+    pub(crate) fn raw_build(self) -> (String, BucketPolicy) {
         let resource_id = Resource::generate_id("S3BucketPolicy");
-
-        BucketPolicy {
+        let policy = BucketPolicy {
             id: self.id,
-            resource_id,
+            resource_id: resource_id.to_string(),
             referenced_ids: self.referenced_ids,
             r#type: "AWS::S3::BucketPolicy".to_string(),
             properties: S3BucketPolicyProperties {
                 bucket_name: self.bucket_name,
                 policy_document: self.policy_document,
             },
-        }
+        };
+        (resource_id, policy)
+    }
+
+    pub fn build(self, stack_builder: &mut StackBuilder) -> BucketPolicyRef {
+        let (resource_id, policy) = self.raw_build();
+        stack_builder.add_resource_alt(policy);
+        BucketPolicyRef::new(resource_id)
     }
 }
 
@@ -127,9 +132,8 @@ impl BucketBuilder<StartState> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> Bucket {
-        let (bucket, _) = self.build_internal(false);
+    pub fn build(self, stack_builder: &mut StackBuilder) -> BucketRef {
+        let (bucket, _) = self.build_internal(false, stack_builder);
         bucket
     }
 }
@@ -186,7 +190,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
-    fn build_internal(self, website: bool) -> (Bucket, Option<BucketPolicy>) {
+    fn build_internal(self, website: bool, stack_builder: &mut StackBuilder) -> (BucketRef, Option<BucketPolicyRef>) {
         let resource_id = Resource::generate_id("S3Bucket");
 
         let versioning_configuration = self
@@ -245,12 +249,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             notification_configuration: None,
         };
 
-        let bucket = Bucket {
+        stack_builder.add_resource_alt(Bucket {
             id: self.id.clone(),
-            resource_id,
+            resource_id: resource_id.clone(),
             r#type: "AWS::S3::Bucket".to_string(),
             properties,
-        };
+        });
+
+        let bucket = BucketRef::new(resource_id);
 
         let policy = if website {
             // website needs a policy to allow GETs
@@ -261,7 +267,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]);
             let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build();
+            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).build(stack_builder);
             Some(s3_policy)
         } else {
             None
@@ -293,9 +299,8 @@ impl BucketBuilder<WebsiteState> {
         }
     }
 
-    #[must_use]
-    pub fn build(self) -> (Bucket, BucketPolicy) {
-        let (bucket, policy) = self.build_internal(true);
+    pub fn build(self, stack_builder: &mut StackBuilder) -> (BucketRef, BucketPolicyRef) {
+        let (bucket, policy) = self.build_internal(true, stack_builder);
         (bucket, policy.expect("for website, bucket policy should always be present"))
     }
 }
@@ -501,7 +506,10 @@ impl LifecycleRuleBuilder {
     }
 
     pub fn id<T: Into<String>>(self, id: T) -> Self {
-        Self { id: Some(id.into()), ..self }
+        Self {
+            id: Some(id.into()),
+            ..self
+        }
     }
 
     pub fn expiration_in_days(self, days: u16) -> Self {

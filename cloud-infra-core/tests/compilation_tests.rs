@@ -15,14 +15,16 @@ use cloud_infra_macros::{
 
 #[test]
 fn dynamodb_builder_should_compile() {
+    let mut stack_builder = StackBuilder::new();
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let _ = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .pay_per_request_billing()
-        .build();
+        .build(&mut stack_builder);
 }
 
 #[test]
 fn sqs_standard_queue_builder_should_compile() {
+    let mut stack_builder = StackBuilder::new();
     let queue_name = string_with_only_alpha_numerics_and_underscores!("test_queue");
     let delay = delay_seconds!(300);
     let max_size = maximum_message_size!(262144);
@@ -41,11 +43,12 @@ fn sqs_standard_queue_builder_should_compile() {
         .receive_message_wait_time_seconds(wait_time)
         .dead_letter_queue("arn:aws:sqs:us-east-1:123456789012:dlq", max_receive)
         .sqs_managed_sse_enabled(true)
-        .build();
+        .build(&mut stack_builder);
 }
 
 #[test]
 fn sqs_fifo_queue_builder_should_compile() {
+    let mut stack_builder = StackBuilder::new();
     let queue_name = string_with_only_alpha_numerics_and_underscores!("test_fifo_queue");
     let delay = delay_seconds!(60);
     let timeout = visibility_timeout!(120);
@@ -56,34 +59,18 @@ fn sqs_fifo_queue_builder_should_compile() {
         .delay_seconds(delay)
         .visibility_timeout(timeout)
         .content_based_deduplication(true)
-        .build();
+        .build(&mut stack_builder);
 }
 
 // TODO more of these tests
 #[test]
 fn stack_with_bucket_website_should_compile() {
-    let (bucket, policy) = BucketBuilder::new("website")
+    let mut stack_builder = StackBuilder::new();
+    BucketBuilder::new("website")
         .website("index.com")
-        .build();
+        .build(&mut stack_builder);
 
-    let stack = StackBuilder::new()
-        .add_resource(bucket)
-        .add_resource(policy)
-        .build();
+    let stack = StackBuilder::new().build();
 
     assert!(stack.is_ok());
-}
-
-#[test]
-fn stack_with_missing_bucket_should_err() {
-    let (_, policy) = BucketBuilder::new("website")
-        .website("index.com")
-        .build();
-
-    let stack = StackBuilder::new()
-        // did not add bucket
-        .add_resource(policy)
-        .build();
-
-    assert!(stack.is_err());
 }

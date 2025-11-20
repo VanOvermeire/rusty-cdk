@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 use serde_json::Value;
-use crate::secretsmanager::dto::{GenerateSecretString, Secret, SecretProperties};
+use crate::secretsmanager::dto::{GenerateSecretString, Secret, SecretProperties, SecretRef};
 use crate::shared::Id;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::StringForSecret;
 
 pub trait SecretBuilderState {}
@@ -70,13 +70,12 @@ impl SecretBuilder<StartState> {
 }
 
 impl SecretBuilder<SelectedSecretTypeState> {
-    #[must_use]
-    pub fn build(self) -> Secret {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> SecretRef {
         let resource_id = Resource::generate_id("SecretsManagerSecret");
         
-        Secret {
+        stack_builder.add_resource_alt(Secret {
             id: self.id,
-            resource_id,
+            resource_id: resource_id.to_string(),
             r#type: "AWS::SecretsManager::Secret".to_string(),
             properties: SecretProperties {
                 name: self.name,
@@ -84,7 +83,9 @@ impl SecretBuilder<SelectedSecretTypeState> {
                 generate_secret_string: self.generate_secret_string,
                 secret_string: self.secret_string,
             },
-        }
+        });
+        
+        SecretRef::new(resource_id)
     }
 }
 

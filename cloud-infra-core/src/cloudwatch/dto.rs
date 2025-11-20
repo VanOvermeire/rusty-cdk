@@ -1,6 +1,9 @@
 use serde::Serialize;
 use serde_json::Value;
+use crate::ref_struct;
 use crate::shared::Id;
+
+ref_struct!(LogGroupRef);
 
 #[derive(Debug, Serialize)]
 pub struct LogGroup {

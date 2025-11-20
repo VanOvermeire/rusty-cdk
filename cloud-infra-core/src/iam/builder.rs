@@ -1,13 +1,14 @@
 use std::marker::PhantomData;
-use crate::dynamodb::Table;
-use crate::iam::{AssumeRolePolicyDocument, Role, IamRoleProperties, Policy, PolicyDocument, Principal, Statement, AWSPrincipal, ServicePrincipal};
+use crate::dynamodb::{Table, TableRef};
+use crate::iam::{AssumeRolePolicyDocument, Role, IamRoleProperties, Policy, PolicyDocument, Principal, Statement, AWSPrincipal, ServicePrincipal, RoleRef};
 use crate::intrinsic_functions::{get_arn, join};
-use crate::s3::dto::Bucket;
+use crate::s3::dto::{Bucket, BucketRef};
 use crate::shared::Id;
-use crate::sqs::Queue;
+use crate::sqs::{Queue, QueueRef};
 use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::vec;
+use crate::stack::StackBuilder;
 
 pub trait PrincipalState {}
 
@@ -82,25 +83,21 @@ impl PrincipalBuilder<ChosenState> {
 
 pub struct RoleBuilder {}
 
+// TODO should have a build method
 impl RoleBuilder {
-    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> Role {
-        Role {
-            id: Id(id.to_string()),
-            resource_id: resource_id.to_string(),
-            potentially_missing_services: vec![],
-            r#type: "AWS::IAM::Role".to_string(),
-            properties,
-        }
+    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties, stack_builder: &mut StackBuilder) -> RoleRef {
+        Self::new_with_missing_info(id, resource_id, properties, vec![], stack_builder)
     }
 
-    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> Role {
-        Role {
+    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>, stack_builder: &mut StackBuilder) -> RoleRef {
+        stack_builder.add_resource_alt(Role {
             id: Id(id.to_string()),
             resource_id: resource_id.to_string(),
             potentially_missing_services: potentially_missing,
             r#type: "AWS::IAM::Role".to_string(),
             properties,
-        }
+        });
+        RoleRef::new(resource_id.to_string())
     }
 }
 
@@ -286,10 +283,10 @@ impl CustomPermission {
 }
 
 pub enum Permission<'a> {
-    DynamoDBRead(&'a Table),
-    DynamoDBReadWrite(&'a Table),
-    SqsRead(&'a Queue),
-    S3ReadWrite(&'a Bucket),
+    DynamoDBRead(&'a TableRef),
+    DynamoDBReadWrite(&'a TableRef),
+    SqsRead(&'a QueueRef),
+    S3ReadWrite(&'a BucketRef),
     Custom(CustomPermission),
 }
 

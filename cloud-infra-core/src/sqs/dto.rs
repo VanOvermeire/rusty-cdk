@@ -1,12 +1,14 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::intrinsic_functions::get_ref;
+use crate::ref_struct;
 use crate::shared::Id;
+
+ref_struct!(QueueRef);
 
 #[derive(Debug, Serialize)]
 pub struct Queue {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(crate) id: Id, // TODO if stack builder works internally, do we still have to hide this in the dto?
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
@@ -22,10 +24,6 @@ impl Queue {
     
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-    
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
     }
 }
 

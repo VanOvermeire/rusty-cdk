@@ -1,7 +1,9 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::intrinsic_functions::get_ref;
+use crate::ref_struct;
 use crate::shared::Id;
+
+ref_struct!(SecretRef);
 
 #[derive(Debug, Serialize)]
 pub struct Secret {
@@ -22,10 +24,6 @@ impl Secret {
     
     pub fn get_resource_id(&self) -> &str {
         self.resource_id.as_str()
-    }
-    
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
     }
 }
 
