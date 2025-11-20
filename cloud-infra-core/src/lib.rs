@@ -13,4 +13,5 @@ pub mod cloudfront;
 pub mod shared;
 
 mod intrinsic_functions;
+mod appconfig;
 
