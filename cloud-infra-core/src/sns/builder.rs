@@ -145,7 +145,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
                 },
             };
 
-            stack_builder.add_resource_alt(subscription);
+            stack_builder.add_resource(subscription);
         });
         
         let properties = TopicProperties {
@@ -155,7 +155,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             fifo_throughput_scope: self.fifo_throughput_scope.map(Into::into),
         };
         
-        stack_builder.add_resource_alt(Topic {
+        stack_builder.add_resource(Topic {
             id: self.id,
             resource_id: topic_resource_id.to_string(),
             r#type: "AWS::SNS::Topic".to_string(),

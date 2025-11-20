@@ -191,7 +191,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
                     scaling_config: mapping.max_concurrency.map(|c| ScalingConfig { max_concurrency: c }),
                 },
             };
-            stack_builder.add_resource_alt(event_source_mapping);
+            stack_builder.add_resource(event_source_mapping);
         };
         
         let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
@@ -241,7 +241,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             logging_info,
         };
 
-        stack_builder.add_resource_alt(Function {
+        stack_builder.add_resource(Function {
             id: self.id.clone(),
             resource_id: function_resource_id.clone(),
             asset: code.0,
@@ -414,7 +414,7 @@ impl PermissionBuilder {
             source_arn: self.source_arn,
         };
 
-        stack_builder.add_resource_alt(Permission {
+        stack_builder.add_resource(Permission {
             id: self.id,
             resource_id: permission_resource_id.clone(),
             r#type: "AWS::Lambda::Permission".to_string(),

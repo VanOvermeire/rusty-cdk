@@ -304,7 +304,7 @@ impl CachePolicyBuilder {
 
     pub fn build(self, stack_builder: &mut StackBuilder) -> CachePolicyRef {
         let resource_id = Resource::generate_id("CachePolicy");
-        stack_builder.add_resource_alt(CachePolicy {
+        stack_builder.add_resource(CachePolicy {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::CachePolicy".to_string(),
@@ -691,7 +691,7 @@ impl OriginAccessControlBuilder {
 
     pub fn build(self, stack_builder: &mut StackBuilder) -> OriginAccessControlRef {
         let resource_id = Resource::generate_id("OAC");
-        stack_builder.add_resource_alt(OriginAccessControl {
+        stack_builder.add_resource(OriginAccessControl {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::OriginAccessControl".to_string(),
@@ -801,7 +801,7 @@ impl DistributionBuilder<DistributionOriginState> {
                 policy
             })
             .for_each(|p| {
-                stack_builder.add_resource_alt(p);
+                stack_builder.add_resource(p);
             });
 
         self.origins = Some(origins);
@@ -891,7 +891,7 @@ impl<T: DistributionState> DistributionBuilder<T> {
             origins: self.origins,
             origin_groups: None,
         };
-        stack_builder.add_resource_alt(Distribution {
+        stack_builder.add_resource(Distribution {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::CloudFront::Distribution".to_string(),

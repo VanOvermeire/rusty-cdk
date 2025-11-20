@@ -72,7 +72,7 @@ impl LogGroupBuilder {
 
         let resource_id = Resource::generate_id("LogGroup");
         
-        stack_builder.add_resource_alt(LogGroup {
+        stack_builder.add_resource(LogGroup {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::Logs::LogGroup".to_string(),

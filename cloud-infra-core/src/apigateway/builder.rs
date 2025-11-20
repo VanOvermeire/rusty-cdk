@@ -142,7 +142,7 @@ impl ApiGatewayV2Builder {
                         timeout_in_millis: None,
                     },
                 };
-                stack_builder.add_resource_alt(integration);
+                stack_builder.add_resource(integration);
 
                 let route_key = if let Some(method) = info.method {
                     let method: String = method.into();
@@ -164,7 +164,7 @@ impl ApiGatewayV2Builder {
                         )),
                     },
                 };
-                stack_builder.add_resource_alt(route);
+                stack_builder.add_resource(route);
 
                 let integration = ApiGatewayV2IntegrationRef::new(integration_resource_id);
                 let route = ApiGatewayV2RouteRef::new(route_resource_id);
@@ -174,7 +174,7 @@ impl ApiGatewayV2Builder {
             .collect();
 
         
-        stack_builder.add_resource_alt(ApiGatewayV2Stage {
+        stack_builder.add_resource(ApiGatewayV2Stage {
             id: stage_id,
             resource_id: stage_resource_id.clone(),
             r#type: "AWS::ApiGatewayV2::Stage".to_string(),
@@ -187,7 +187,7 @@ impl ApiGatewayV2Builder {
             },
         });
 
-        stack_builder.add_resource_alt(ApiGatewayV2Api {
+        stack_builder.add_resource(ApiGatewayV2Api {
             id: self.id,
             resource_id: api_resource_id.clone(),
             r#type: "AWS::ApiGatewayV2::Api".to_string(),

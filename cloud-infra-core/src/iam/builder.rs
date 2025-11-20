@@ -103,7 +103,7 @@ impl RoleBuilder {
     }
     
     pub fn build(self, stack_builder: &mut StackBuilder) -> RoleRef {
-        stack_builder.add_resource_alt(Role {
+        stack_builder.add_resource(Role {
             id: self.id,
             resource_id: self.resource_id.clone(),
             potentially_missing_services: self.potentially_missing,

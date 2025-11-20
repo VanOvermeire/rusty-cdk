@@ -208,7 +208,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
         };
 
         let resource_id = Resource::generate_id("SqsQueue");
-        stack_builder.add_resource_alt(Queue {
+        stack_builder.add_resource(Queue {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::SQS::Queue".to_string(),

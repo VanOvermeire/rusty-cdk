@@ -196,7 +196,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
         };
 
         let resource_id = Resource::generate_id("DynamoDBTable");
-        stack_builder.add_resource_alt(Table {
+        stack_builder.add_resource(Table {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: "AWS::DynamoDB::Table".to_string(),

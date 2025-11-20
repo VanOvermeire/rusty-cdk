@@ -73,7 +73,7 @@ impl SecretBuilder<SelectedSecretTypeState> {
     pub fn build(self, stack_builder: &mut StackBuilder) -> SecretRef {
         let resource_id = Resource::generate_id("SecretsManagerSecret");
         
-        stack_builder.add_resource_alt(Secret {
+        stack_builder.add_resource(Secret {
             id: self.id,
             resource_id: resource_id.to_string(),
             r#type: "AWS::SecretsManager::Secret".to_string(),

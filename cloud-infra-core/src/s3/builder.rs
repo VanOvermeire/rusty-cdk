@@ -49,7 +49,7 @@ impl BucketPolicyBuilder {
 
     pub fn build(self, stack_builder: &mut StackBuilder) -> BucketPolicyRef {
         let (resource_id, policy) = self.raw_build();
-        stack_builder.add_resource_alt(policy);
+        stack_builder.add_resource(policy);
         BucketPolicyRef::new(resource_id)
     }
 }
@@ -240,7 +240,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             notification_configuration: None,
         };
 
-        stack_builder.add_resource_alt(Bucket {
+        stack_builder.add_resource(Bucket {
             id: self.id.clone(),
             resource_id: resource_id.clone(),
             r#type: "AWS::S3::Bucket".to_string(),

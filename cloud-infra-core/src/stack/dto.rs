@@ -98,16 +98,6 @@ impl Stack {
     }
 }
 
-impl TryFrom<Vec<Resource>> for Stack {
-    type Error = String;
-
-    fn try_from(resources: Vec<Resource>) -> Result<Self, Self::Error> {
-        let stack_builder = StackBuilder::new().add_resources(resources);
-        let stack = stack_builder.build().map_err(|e| e.to_string())?;
-        Ok(stack)
-    }
-}
-
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {

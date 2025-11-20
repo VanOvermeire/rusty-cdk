@@ -36,60 +36,9 @@ impl StackBuilder {
         Self { resources: vec![], tags: vec![] }
     }
 
-    pub fn add_resource_alt<T: Into<Resource>>(&mut self, resource: T) {
+    pub fn add_resource<T: Into<Resource>>(&mut self, resource: T) {
         let resource = resource.into();
         self.resources.push(resource);
-    }
-
-    pub fn add_resource<T: Into<Resource>>(mut self, resource: T) -> Self {
-        let resource = resource.into();
-        self.resources.push(resource);
-        self
-    }
-
-    pub fn add_resource_tuple<T: Into<Resource>, R: Into<Resource>>(self, resources: (T, R)) -> Self {
-        self.add_resource_tuples(vec![resources])
-    }
-
-    pub fn add_resource_triple<T: Into<Resource>, R: Into<Resource>, S: Into<Resource>>(self, resources: (T, R, S)) -> Self {
-        self.add_resource_triples(vec![resources])
-    }
-
-    pub fn add_resource_quadruple<T: Into<Resource>, R: Into<Resource>, S: Into<Resource>, U: Into<Resource>>(
-        self,
-        resources: (T, R, S, U),
-    ) -> Self {
-        self.add_resource_quadruples(vec![resources])
-    }
-
-    pub fn add_resources<T: Into<Resource>>(mut self, resources: Vec<T>) -> Self {
-        let mut resources: Vec<_> = resources.into_iter().map(Into::into).collect();
-        self.resources.append(&mut resources);
-        self
-    }
-
-    pub fn add_resource_tuples<T: Into<Resource>, R: Into<Resource>>(mut self, resources: Vec<(T, R)>) -> Self {
-        let mut resources: Vec<_> = resources.into_iter().flat_map(|r| [r.0.into(), r.1.into()]).collect();
-        self.resources.append(&mut resources);
-        self
-    }
-
-    pub fn add_resource_triples<T: Into<Resource>, R: Into<Resource>, S: Into<Resource>>(mut self, resources: Vec<(T, R, S)>) -> Self {
-        let mut resources: Vec<_> = resources.into_iter().flat_map(|r| [r.0.into(), r.1.into(), r.2.into()]).collect();
-        self.resources.append(&mut resources);
-        self
-    }
-
-    pub fn add_resource_quadruples<T: Into<Resource>, R: Into<Resource>, S: Into<Resource>, U: Into<Resource>>(
-        mut self,
-        resources: Vec<(T, R, S, U)>,
-    ) -> Self {
-        let mut resources: Vec<_> = resources
-            .into_iter()
-            .flat_map(|r| [r.0.into(), r.1.into(), r.2.into(), r.3.into()])
-            .collect();
-        self.resources.append(&mut resources);
-        self
     }
 
     pub fn add_tag<T: Into<String>>(mut self, key: T, value: T) -> Self {
