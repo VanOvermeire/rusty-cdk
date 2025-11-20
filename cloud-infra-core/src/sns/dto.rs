@@ -61,7 +61,6 @@ impl Subscription {
     }
 }
 
-// TODO add reference ids
 #[derive(Debug, Serialize)]
 pub struct SnsSubscriptionProperties {
     #[serde(rename = "Protocol")]
