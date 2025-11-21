@@ -90,7 +90,7 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty(vec!['_']);
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
@@ -116,7 +116,7 @@ pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStrea
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty(vec!['_', '-']);
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
@@ -141,7 +141,7 @@ pub fn string_for_secret(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty(vec!['/', '_', '+', '=', '.', '@', '-']);
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['/', '_', '+', '=', '.', '@', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
@@ -738,4 +738,19 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
     quote! {
         S3LifecycleObjectSizes(#first_output, #second_output)
     }.into()
+}
+
+#[proc_macro]
+pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_prefix("lambda");
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            LambdaPermissionAction(#value.to_string())
+        ).into(),
+        Some(e) => e.into_compile_error().into(),
+    }
 }

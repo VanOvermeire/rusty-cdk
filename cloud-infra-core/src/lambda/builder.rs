@@ -3,7 +3,7 @@ use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig, FunctionRef, PermissionRef};
 use crate::sqs::{QueueRef};
 use crate::stack::{Asset, Resource, StackBuilder};
-use crate::wrappers::{Bucket, EnvVarKey, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
+use crate::wrappers::{Bucket, EnvVarKey, LambdaPermissionAction, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -385,10 +385,10 @@ pub struct PermissionBuilder {
 }
 
 impl PermissionBuilder {
-    pub fn new<T: Into<String>, R: Into<String>>(id: &str, action: T, function_name: Value, principal: R) -> Self {
+    pub fn new<R: Into<String>>(id: &str, action: LambdaPermissionAction, function_name: Value, principal: R) -> Self {
         Self {
             id: Id(id.to_string()),
-            action: action.into(),
+            action: action.0,
             function_name,
             principal: principal.into(),
             source_arn: None,
@@ -404,18 +404,17 @@ impl PermissionBuilder {
 
     pub fn build(self , stack_builder: &mut StackBuilder) -> PermissionRef {
         let permission_resource_id = Resource::generate_id("LambdaPermission");
-        let properties = LambdaPermissionProperties {
-            action: self.action,
-            function_name: self.function_name,
-            principal: self.principal,
-            source_arn: self.source_arn,
-        };
 
         stack_builder.add_resource(Permission {
             id: self.id,
             resource_id: permission_resource_id.clone(),
             r#type: "AWS::Lambda::Permission".to_string(),
-            properties,
+            properties: LambdaPermissionProperties {
+                action: self.action,
+                function_name: self.function_name,
+                principal: self.principal,
+                source_arn: self.source_arn,
+            },
         });
         
         PermissionRef::new(permission_resource_id)

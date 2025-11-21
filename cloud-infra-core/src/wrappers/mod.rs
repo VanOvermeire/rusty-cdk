@@ -319,3 +319,6 @@ pub struct DefaultRootObject(pub String);
 
 #[derive(Debug, Clone)]
 pub struct S3OriginReadTimeout(pub u16);
+
+#[derive(Debug, Clone)]
+pub struct LambdaPermissionAction(pub String);

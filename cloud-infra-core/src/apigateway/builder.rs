@@ -6,7 +6,7 @@ use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
 use std::time::Duration;
-
+use crate::wrappers::LambdaPermissionAction;
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
 // auth also still to do
 
@@ -103,7 +103,7 @@ impl ApiGatewayV2Builder {
 
                 PermissionBuilder::new(
                     &route_permission_id,
-                    "lambda:InvokeFunction".to_string(),
+                    LambdaPermissionAction("lambda:InvokeFunction".to_string()),
                     get_arn(&info.resource_id),
                     "apigateway.amazonaws.com".to_string(),
                 )

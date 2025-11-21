@@ -5,7 +5,7 @@ use crate::shared::Id;
 use crate::sns::dto::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
+use crate::wrappers::{LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens};
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -129,7 +129,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
             let subscription_resource_id = Resource::generate_id("SnsSubscription");
             
-            PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), "lambda:InvokeFunction".to_string(), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
+            PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), LambdaPermissionAction("lambda:InvokeFunction".to_string()), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
                 .source_arn(get_ref(&topic_resource_id))
                 .build(stack_builder);
 
