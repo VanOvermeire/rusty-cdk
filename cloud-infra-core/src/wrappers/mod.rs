@@ -1,4 +1,4 @@
-//! Type-safe wrapper types for cloud infrastructure configuration.
+//! Type-safe wrapper types
 //!
 //! This module provides newtype wrappers that enforce type safety and validation
 //! for various configuration values used in AWS resources. These wrappers help

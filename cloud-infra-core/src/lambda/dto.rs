@@ -5,6 +5,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
 
+// this one also needs the `id` field for some custom ids used by API Gateway and subscriptions
 pub struct FunctionRef {
     id: Id,
     resource_id: String,

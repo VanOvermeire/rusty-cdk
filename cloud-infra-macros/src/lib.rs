@@ -1,6 +1,4 @@
 #![allow(unused_comparisons)]
-//! # Cloud Infrastructure Macros
-//!
 //! This crate provides compile-time validation macros for AWS cloud infrastructure configuration.
 //! These macros ensure type safety and enforce AWS service limits at build time, preventing
 //! runtime errors from invalid configurations.
