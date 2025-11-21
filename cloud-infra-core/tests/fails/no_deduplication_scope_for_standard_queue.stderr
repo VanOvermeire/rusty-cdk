@@ -1,0 +1,15 @@
+error[E0599]: no method named `deduplication_scope` found for struct `QueueBuilder<StandardState>` in the current scope
+  --> tests/fails/no_deduplication_scope_for_standard_queue.rs:12:10
+   |
+9  |       QueueBuilder::new("myQueue")
+   |       ----------------------------
+   |       |
+   |  _____method `deduplication_scope` is available on `QueueBuilder<cloud_infra_core::sqs::StartState>`
+   | |
+10 | |         .standard_queue()
+   | |          ---------------- method `deduplication_scope` is available on `QueueBuilder<StandardState>`
+11 | |         .queue_name(queue_name)
+12 | |         .deduplication_scope(DeduplicationScope::Queue)
+   | |         -^^^^^^^^^^^^^^^^^^^ private field, not a method
+   | |_________|
+   |

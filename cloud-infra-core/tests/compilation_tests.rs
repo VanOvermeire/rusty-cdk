@@ -1,24 +1,40 @@
+use cloud_infra_core::dynamodb::AttributeType;
 use cloud_infra_core::dynamodb::Key;
 use cloud_infra_core::dynamodb::TableBuilder;
-use cloud_infra_core::dynamodb::AttributeType;
-use cloud_infra_core::s3::builder::BucketBuilder;
-use cloud_infra_core::sqs::{QueueBuilder};
-use cloud_infra_core::stack::StackBuilder;
-use cloud_infra_core::wrappers::{
-    StringWithOnlyAlphaNumericsAndUnderscores, DelaySeconds, MaximumMessageSize,
-    MessageRetentionPeriod, VisibilityTimeout, ReceiveMessageWaitTime, NonZeroNumber
+use cloud_infra_core::iam::{
+    AssumeRolePolicyDocumentBuilder, Effect, PrincipalBuilder, RoleBuilder, RolePropertiesBuilder, StatementBuilder,
 };
+use cloud_infra_core::s3::builder::BucketBuilder;
+use cloud_infra_core::sqs::QueueBuilder;
+use cloud_infra_core::stack::StackBuilder;
+use cloud_infra_core::wrappers::IamAction;
+use cloud_infra_core::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
+use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::{
-    string_with_only_alpha_numerics_and_underscores, delay_seconds, maximum_message_size,
-    message_retention_period, visibility_timeout, receive_message_wait_time, non_zero_number
+    delay_seconds, iam_action, maximum_message_size, message_retention_period, non_zero_number, receive_message_wait_time,
+    string_with_only_alpha_numerics_and_underscores, visibility_timeout,
 };
 
 #[test]
-fn dynamodb_builder_should_compile() {
+fn dynamodb_pay_per_request_billing_should_compile() {
     let mut stack_builder = StackBuilder::new();
     let key = string_with_only_alpha_numerics_and_underscores!("test");
     let _ = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .pay_per_request_billing()
+        .build(&mut stack_builder);
+}
+
+#[test]
+fn dynamodb_provisioned_billing_should_compile() {
+    let mut stack_builder = StackBuilder::new();
+    let key = string_with_only_alpha_numerics_and_underscores!("id");
+    let read_cap = non_zero_number!(5);
+    let write_cap = non_zero_number!(5);
+
+    TableBuilder::new("myTable", Key::new(key, AttributeType::String))
+        .provisioned_billing()
+        .read_capacity(read_cap)
+        .write_capacity(write_cap)
         .build(&mut stack_builder);
 }
 
@@ -32,7 +48,7 @@ fn sqs_standard_queue_builder_should_compile() {
     let timeout = visibility_timeout!(30);
     let wait_time = receive_message_wait_time!(10);
     let max_receive = non_zero_number!(3);
-    
+
     let _ = QueueBuilder::new("myQueue")
         .standard_queue()
         .queue_name(queue_name)
@@ -52,7 +68,7 @@ fn sqs_fifo_queue_builder_should_compile() {
     let queue_name = string_with_only_alpha_numerics_and_underscores!("test_fifo_queue");
     let delay = delay_seconds!(60);
     let timeout = visibility_timeout!(120);
-    
+
     let _ = QueueBuilder::new("myQueue")
         .fifo_queue()
         .queue_name(queue_name)
@@ -62,15 +78,68 @@ fn sqs_fifo_queue_builder_should_compile() {
         .build(&mut stack_builder);
 }
 
-// TODO more of these tests
 #[test]
 fn stack_with_bucket_website_should_compile() {
     let mut stack_builder = StackBuilder::new();
-    BucketBuilder::new("website")
-        .website("index.com")
-        .build(&mut stack_builder);
+    BucketBuilder::new("website").website("index.com").build(&mut stack_builder);
 
     let stack = StackBuilder::new().build();
 
     assert!(stack.is_ok());
+}
+
+#[test]
+fn sns_standard_topic_builder_should_compile() {
+    use cloud_infra_core::sns::builder::TopicBuilder;
+    use cloud_infra_macros::string_with_only_alpha_numerics_underscores_and_hyphens;
+
+    let mut stack_builder = StackBuilder::new();
+    let topic_name = string_with_only_alpha_numerics_underscores_and_hyphens!("test_topic");
+
+    TopicBuilder::new("myTopic").topic_name(topic_name).build(&mut stack_builder);
+}
+
+#[test]
+fn sns_fifo_topic_builder_should_compile() {
+    use cloud_infra_core::sns::builder::{FifoThroughputScope, TopicBuilder};
+    use cloud_infra_macros::string_with_only_alpha_numerics_underscores_and_hyphens;
+
+    let mut stack_builder = StackBuilder::new();
+    let topic_name = string_with_only_alpha_numerics_underscores_and_hyphens!("test_fifo_topic");
+
+    TopicBuilder::new("myTopic")
+        .fifo()
+        .topic_name(topic_name)
+        .content_based_deduplication(true)
+        .fifo_throughput_scope(FifoThroughputScope::MessageGroup)
+        .build(&mut stack_builder);
+}
+
+#[test]
+fn cloudwatch_log_group_builder_should_compile() {
+    use cloud_infra_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
+    use cloud_infra_core::wrappers::{LogGroupName, RetentionInDays};
+
+    let mut stack_builder = StackBuilder::new();
+    let log_group_name = LogGroupName("/aws/lambda/my-function".to_string());
+
+    LogGroupBuilder::new("myLogGroup")
+        .log_group_name_string(log_group_name)
+        .log_group_class(LogGroupClass::Standard)
+        .log_group_retention(RetentionInDays(7))
+        .build(&mut stack_builder);
+}
+
+#[test]
+fn iam_principal_builder_should_compile() {
+    let mut stack_builder = StackBuilder::new();
+
+    let statement = StatementBuilder::new(vec![iam_action!("s3:*")], Effect::Allow)
+        .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
+        .build();
+
+    let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![statement]);
+    let properties = RolePropertiesBuilder::new(assume_role_policy, vec![]).build();
+
+    RoleBuilder::new("myRole", "MyRoleResource", properties).build(&mut stack_builder);
 }
