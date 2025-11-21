@@ -1,0 +1,5 @@
+error: value `some:stuff` does not contain required prefix `lambda`
+ --> tests/fails/missing_lambda_prefix.rs:4:31
+  |
+4 |     lambda_permission_action!("some:stuff");
+  |                               ^^^^^^^^^^^^

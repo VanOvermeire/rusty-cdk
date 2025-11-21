@@ -35,7 +35,7 @@ pub(crate) fn check_string_requirements(value: &str, span: Span, requirements: S
     
     if let Some(prefix) = requirements.prefix {
         if !value.starts_with(&prefix) {
-            return Some(Error::new(span, format!("Value {} does not contain required prefix {}", value, prefix)));   
+            return Some(Error::new(span, format!("value `{}` does not contain required prefix `{}`", value, prefix)));   
         }
     }
     
