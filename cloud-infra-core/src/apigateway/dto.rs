@@ -31,29 +31,29 @@ impl ApiGatewayV2Api {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2ApiProperties {
     #[serde(rename = "Name", skip_serializing_if = "Option::is_none")]
-    pub(crate) name: Option<String>,
+    pub(super) name: Option<String>,
     #[serde(rename = "ProtocolType")]
-    pub(crate) protocol_type: String,
+    pub(super) protocol_type: String,
     #[serde(rename = "DisableExecuteApiEndpoint", skip_serializing_if = "Option::is_none")]
-    pub(crate) disable_execute_api_endpoint: Option<bool>,
+    pub(super) disable_execute_api_endpoint: Option<bool>,
     #[serde(rename = "CorsConfiguration", skip_serializing_if = "Option::is_none")]
-    pub(crate) cors_configuration: Option<CorsConfiguration>,
+    pub(super) cors_configuration: Option<CorsConfiguration>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct CorsConfiguration {
     #[serde(rename = "AllowCredentials", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_credentials: Option<bool>,
+    pub(super) allow_credentials: Option<bool>,
     #[serde(rename = "AllowHeaders", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_headers: Option<Vec<String>>,
+    pub(super) allow_headers: Option<Vec<String>>,
     #[serde(rename = "AllowMethods", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_methods: Option<Vec<String>>,
+    pub(super) allow_methods: Option<Vec<String>>,
     #[serde(rename = "AllowOrigins", skip_serializing_if = "Option::is_none")]
-    pub(crate) allow_origins: Option<Vec<String>>,
+    pub(super) allow_origins: Option<Vec<String>>,
     #[serde(rename = "ExposeHeaders", skip_serializing_if = "Option::is_none")]
-    pub(crate) expose_headers: Option<Vec<String>>,
+    pub(super) expose_headers: Option<Vec<String>>,
     #[serde(rename = "MaxAge", skip_serializing_if = "Option::is_none")]
-    pub(crate) max_age: Option<u64>,
+    pub(super) max_age: Option<u64>,
 }
 
 ref_struct!(ApiGatewayV2StageRef);
@@ -61,13 +61,13 @@ ref_struct!(ApiGatewayV2StageRef);
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: ApiGatewayV2StageProperties,
+    pub(super) properties: ApiGatewayV2StageProperties,
 }
 
 impl ApiGatewayV2Stage {
@@ -87,15 +87,15 @@ impl ApiGatewayV2Stage {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2StageProperties {
     #[serde(rename = "ApiId")]
-    pub(crate) api_id: Value,
+    pub(super) api_id: Value,
     #[serde(rename = "StageName")]
-    pub(crate) stage_name: String,
+    pub(super) stage_name: String,
     #[serde(rename = "AutoDeploy")]
-    pub(crate) auto_deploy: bool,
+    pub(super) auto_deploy: bool,
     #[serde(rename = "DefaultRouteSettings", skip_serializing_if = "Option::is_none")]
-    pub(crate) default_route_settings: Option<RouteSettings>,
+    pub(super) default_route_settings: Option<RouteSettings>,
     #[serde(rename = "RouteSettings", skip_serializing_if = "Option::is_none")]
-    pub(crate) route_settings: Option<Value>,
+    pub(super) route_settings: Option<Value>,
 }
 
 ref_struct!(ApiGatewayV2IntegrationRef);
@@ -103,13 +103,13 @@ ref_struct!(ApiGatewayV2IntegrationRef);
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Integration {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: ApiGatewayV2IntegrationProperties,
+    pub(super) properties: ApiGatewayV2IntegrationProperties,
 }
 
 impl ApiGatewayV2Integration {
@@ -129,25 +129,25 @@ impl ApiGatewayV2Integration {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2IntegrationProperties {
     #[serde(rename = "ApiId")]
-    pub(crate) api_id: Value,
+    pub(super) api_id: Value,
     #[serde(rename = "IntegrationType")]
-    pub(crate) integration_type: String,
+    pub(super) integration_type: String,
     #[serde(rename = "CredentialsArn", skip_serializing_if = "Option::is_none")]
-    pub(crate) integration_method: Option<String>,
+    pub(super) integration_method: Option<String>,
     #[serde(rename = "IntegrationUri", skip_serializing_if = "Option::is_none")]
-    pub(crate) integration_uri: Option<Value>,
+    pub(super) integration_uri: Option<Value>,
     #[serde(rename = "PassthroughBehavior", skip_serializing_if = "Option::is_none")]
-    pub(crate) passthrough_behavior: Option<String>,
+    pub(super) passthrough_behavior: Option<String>,
     #[serde(rename = "PayloadFormatVersion", skip_serializing_if = "Option::is_none")]
-    pub(crate) payload_format_version: Option<String>,
+    pub(super) payload_format_version: Option<String>,
     #[serde(rename = "RequestParameters", skip_serializing_if = "Option::is_none")]
-    pub(crate) request_parameters: Option<Value>,
+    pub(super) request_parameters: Option<Value>,
     #[serde(rename = "RequestTemplates", skip_serializing_if = "Option::is_none")]
-    pub(crate) request_templates: Option<Value>,
+    pub(super) request_templates: Option<Value>,
     #[serde(rename = "ResponseParameters", skip_serializing_if = "Option::is_none")]
-    pub(crate) response_parameters: Option<Value>,
+    pub(super) response_parameters: Option<Value>,
     #[serde(rename = "TimeoutInMillis", skip_serializing_if = "Option::is_none")]
-    pub(crate) timeout_in_millis: Option<u32>,
+    pub(super) timeout_in_millis: Option<u32>,
 }
 
 ref_struct!(ApiGatewayV2RouteRef);
@@ -155,13 +155,13 @@ ref_struct!(ApiGatewayV2RouteRef);
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2Route {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: ApiGatewayV2RouteProperties,
+    pub(super) properties: ApiGatewayV2RouteProperties,
 }
 
 impl ApiGatewayV2Route {
@@ -177,17 +177,17 @@ impl ApiGatewayV2Route {
 #[derive(Debug, Serialize)]
 pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "ApiId")]
-    pub(crate) api_id: Value,
+    pub(super) api_id: Value,
     #[serde(rename = "RouteKey")]
-    pub(crate) route_key: String,
+    pub(super) route_key: String,
     #[serde(rename = "Target", skip_serializing_if = "Option::is_none")]
-    pub(crate) target: Option<Value>,
+    pub(super) target: Option<Value>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct RouteSettings {
     #[serde(rename = "ThrottlingBurstLimit", skip_serializing_if = "Option::is_none")]
-    pub(crate) throttling_burst_limit: Option<u32>,
+    pub(super) throttling_burst_limit: Option<u32>,
     #[serde(rename = "ThrottlingRateLimit", skip_serializing_if = "Option::is_none")]
-    pub(crate) throttling_rate_limit: Option<f64>,
+    pub(super) throttling_rate_limit: Option<f64>,
 }

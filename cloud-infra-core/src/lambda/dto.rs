@@ -39,15 +39,15 @@ impl FunctionRef {
 #[derive(Debug, Serialize)]
 pub struct Function {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(skip)]
     pub(crate) asset: Asset,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: LambdaFunctionProperties,
+    pub(super) properties: LambdaFunctionProperties,
 }
 
 impl Function {
@@ -63,36 +63,36 @@ impl Function {
 #[derive(Debug, Serialize)]
 pub struct LambdaFunctionProperties {
     #[serde(rename = "Code")]
-    pub(crate) code: LambdaCode,
+    pub(super) code: LambdaCode,
     #[serde(rename = "MemorySize")]
-    pub(crate) memory_size: u16,
+    pub(super) memory_size: u16,
     #[serde(rename = "Timeout")]
-    pub(crate) timeout: u16,
+    pub(super) timeout: u16,
     #[serde(rename = "Architectures")]
-    pub(crate) architectures: Vec<String>,
+    pub(super) architectures: Vec<String>,
     #[serde(rename = "Role")]
-    pub(crate) role: Value,
+    pub(super) role: Value,
     #[serde(rename = "Runtime", skip_serializing_if = "Option::is_none")]
-    pub(crate) runtime: Option<String>,
+    pub(super) runtime: Option<String>,
     #[serde(rename = "Handler", skip_serializing_if = "Option::is_none")]
-    pub(crate) handler: Option<String>,
+    pub(super) handler: Option<String>,
     #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
-    pub(crate) function_name: Option<String>,
+    pub(super) function_name: Option<String>,
     #[serde(rename = "Environment", skip_serializing_if = "Option::is_none")]
-    pub(crate) environment: Option<Environment>,
+    pub(super) environment: Option<Environment>,
     #[serde(rename = "ReservedConcurrentExecutions", skip_serializing_if = "Option::is_none")]
-    pub(crate) reserved_concurrent_executions: Option<u32>,
+    pub(super) reserved_concurrent_executions: Option<u32>,
     #[serde(rename = "LoggingConfig")]
-    pub(crate) logging_info: LoggingInfo, // package_type: Option<String>,
+    pub(super) logging_info: LoggingInfo, // package_type: Option<String>,
                                           // "VpcConfig": VpcConfig
 }
 
 #[derive(Debug, Serialize)]
 pub struct LambdaCode {
     #[serde(rename = "S3Bucket")]
-    pub(crate) s3_bucket: Option<String>,
+    pub(super) s3_bucket: Option<String>,
     #[serde(rename = "S3Key")]
-    pub(crate) s3_key: Option<String>,
+    pub(super) s3_key: Option<String>,
     // s3_object_version: Option<String>,
     // zipfile: Option<String>,
     // image_uri: Option<String>,
@@ -102,13 +102,13 @@ pub struct LambdaCode {
 #[derive(Debug, Serialize)]
 pub struct Environment {
     #[serde(rename = "Variables")]
-    pub(crate) variables: HashMap<String, Value>,
+    pub(super) variables: HashMap<String, Value>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct LoggingInfo {
     #[serde(rename = "LogGroup")]
-    pub(crate) log_group: Option<Value>,
+    pub(super) log_group: Option<Value>,
 }
 
 ref_struct!(EventSourceMappingRef);
@@ -116,13 +116,13 @@ ref_struct!(EventSourceMappingRef);
 #[derive(Debug, Serialize)]
 pub struct EventSourceMapping {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: EventSourceProperties,
+    pub(super) properties: EventSourceProperties,
 }
 
 impl EventSourceMapping {
@@ -138,17 +138,17 @@ impl EventSourceMapping {
 #[derive(Debug, Serialize)]
 pub struct EventSourceProperties {
     #[serde(rename = "EventSourceArn", skip_serializing_if = "Option::is_none")]
-    pub(crate) event_source_arn: Option<Value>,
+    pub(super) event_source_arn: Option<Value>,
     #[serde(rename = "FunctionName", skip_serializing_if = "Option::is_none")]
-    pub(crate) function_name: Option<Value>,
+    pub(super) function_name: Option<Value>,
     #[serde(rename = "ScalingConfig", skip_serializing_if = "Option::is_none")]
-    pub(crate) scaling_config: Option<ScalingConfig>,
+    pub(super) scaling_config: Option<ScalingConfig>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ScalingConfig {
     #[serde(rename = "MaximumConcurrency")]
-    pub(crate) max_concurrency: u16,
+    pub(super) max_concurrency: u16,
 }
 
 ref_struct!(PermissionRef);
@@ -156,13 +156,13 @@ ref_struct!(PermissionRef);
 #[derive(Debug, Serialize)]
 pub struct Permission {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: LambdaPermissionProperties,
+    pub(super) properties: LambdaPermissionProperties,
 }
 
 impl Permission {
@@ -178,11 +178,11 @@ impl Permission {
 #[derive(Debug, Serialize)]
 pub struct LambdaPermissionProperties {
     #[serde(rename = "Action")]
-    pub(crate) action: String,
+    pub(super) action: String,
     #[serde(rename = "FunctionName")]
-    pub(crate) function_name: Value,
+    pub(super) function_name: Value,
     #[serde(rename = "Principal")]
-    pub(crate) principal: String,
+    pub(super) principal: String,
     #[serde(rename = "SourceArn", skip_serializing_if = "Option::is_none")]
-    pub(crate) source_arn: Option<Value>,
+    pub(super) source_arn: Option<Value>,
 }

@@ -19,27 +19,27 @@ impl From<GrowthType> for String {
 #[derive(Debug, Serialize)]
 pub struct DeploymentStrategy {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: DeploymentStrategyProperties
+    pub(super) properties: DeploymentStrategyProperties
 }
 
 #[derive(Debug, Serialize)]
 pub struct DeploymentStrategyProperties {
     #[serde(rename = "Name")]
-    pub(crate) name: String, // 1 - 64 chars
+    pub(super) name: String, // 1 - 64 chars
     #[serde(rename = "DeploymentDurationInMinutes")]
-    pub(crate) deployment_duration_in_minutes: u16, // 0 - 1440
+    pub(super) deployment_duration_in_minutes: u16, // 0 - 1440
     #[serde(rename = "FinalBakeTimeInMinutes")]
-    pub(crate) final_bake_time_in_minutes: u16, // 0 - 1440
+    pub(super) final_bake_time_in_minutes: u16, // 0 - 1440
     #[serde(rename = "GrowthFactor")]
-    pub(crate) growth_factor: u16, // 0 - 100 ?
+    pub(super) growth_factor: u16, // 0 - 100 ?
     #[serde(rename = "GrowthType", skip_serializing_if = "Option::is_none")]
-    pub(crate) growth_type: Option<GrowthType>,
+    pub(super) growth_type: Option<GrowthType>,
     // #[serde(rename = "ReplicateTo")]
 }
 
@@ -63,22 +63,22 @@ impl From<DeletionProtectionCheck> for String {
 #[derive(Debug, Serialize)]
 pub struct Environment {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: EnvironmentProperties,
+    pub(super) properties: EnvironmentProperties,
 }
 
 #[derive(Debug, Serialize)]
 pub struct EnvironmentProperties {
     #[serde(rename = "Name")]
-    pub(crate) name: String, // 1 - 64 chars
+    pub(super) name: String, // 1 - 64 chars
     #[serde(rename = "ApplicationId")]
-    pub(crate) application_id: String,
+    pub(super) application_id: String,
     #[serde(rename = "DeletionProtectionCheck", skip_serializing_if = "Option::is_none")]
-    pub(crate) deletion_protection_check: Option<DeletionProtectionCheck>
+    pub(super) deletion_protection_check: Option<DeletionProtectionCheck>
     // "Monitors" : [ Monitor, ... ],
 }

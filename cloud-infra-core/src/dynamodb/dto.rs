@@ -8,13 +8,13 @@ ref_struct!(TableRef);
 #[derive(Debug, Serialize)]
 pub struct Table {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: TableProperties,
+    pub(super) properties: TableProperties,
 }
 
 impl Table {
@@ -30,15 +30,15 @@ impl Table {
 #[derive(Debug, Serialize)]
 pub struct TableProperties {
     #[serde(rename = "KeySchema")]
-    pub(crate) key_schema: Vec<KeySchema>,
+    pub(super) key_schema: Vec<KeySchema>,
     #[serde(rename = "AttributeDefinitions")]
-    pub(crate) attribute_definitions: Vec<AttributeDefinition>,
+    pub(super) attribute_definitions: Vec<AttributeDefinition>,
     #[serde(rename = "BillingMode")]
-    pub(crate) billing_mode: String,
+    pub(super) billing_mode: String,
     #[serde(rename = "ProvisionedThroughput", skip_serializing_if = "Option::is_none")]
-    pub(crate) provisioned_throughput: Option<ProvisionedThroughput>,
+    pub(super) provisioned_throughput: Option<ProvisionedThroughput>,
     #[serde(rename = "OnDemandThroughput", skip_serializing_if = "Option::is_none")]
-    pub(crate) on_demand_throughput: Option<OnDemandThroughput>,
+    pub(super) on_demand_throughput: Option<OnDemandThroughput>,
     // "GlobalSecondaryIndexes" : [ GlobalSecondaryIndex, ... ],
     // "LocalSecondaryIndexes" : [ LocalSecondaryIndex, ... ],
     // "PointInTimeRecoverySpecification" : PointInTimeRecoverySpecification,
@@ -51,31 +51,31 @@ pub struct TableProperties {
 #[derive(Debug, Serialize)]
 pub struct AttributeDefinition {
     #[serde(rename = "AttributeName")]
-    pub(crate) attribute_name: String,
+    pub(super) attribute_name: String,
     #[serde(rename = "AttributeType")]
-    pub(crate) attribute_type: String,
+    pub(super) attribute_type: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct KeySchema {
     #[serde(rename = "AttributeName")]
-    pub(crate) attribute_name: String,
+    pub(super) attribute_name: String,
     #[serde(rename = "KeyType")]
-    pub(crate) key_type: String,
+    pub(super) key_type: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ProvisionedThroughput {
     #[serde(rename = "ReadCapacityUnits")]
-    pub(crate) read_capacity: u32,
+    pub(super) read_capacity: u32,
     #[serde(rename = "WriteCapacityUnits")]
-    pub(crate) write_capacity: u32,
+    pub(super) write_capacity: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct OnDemandThroughput {
     #[serde(rename = "MaxReadRequestUnits", skip_serializing_if = "Option::is_none")]
-    pub(crate) max_read_capacity: Option<u32>,
+    pub(super) max_read_capacity: Option<u32>,
     #[serde(rename = "MaxWriteRequestUnits", skip_serializing_if = "Option::is_none")]
-    pub(crate) max_write_capacity: Option<u32>,
+    pub(super) max_write_capacity: Option<u32>,
 }

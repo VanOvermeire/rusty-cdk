@@ -8,13 +8,13 @@ ref_struct!(LogGroupRef);
 #[derive(Debug, Serialize)]
 pub struct LogGroup {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: LogGroupProperties,
+    pub(super) properties: LogGroupProperties,
 }
 
 impl LogGroup {
@@ -30,9 +30,9 @@ impl LogGroup {
 #[derive(Debug, Serialize)]
 pub struct LogGroupProperties {
     #[serde(rename = "LogGroupClass", skip_serializing_if = "Option::is_none")]
-    pub(crate) log_group_class: Option<String>,
+    pub(super) log_group_class: Option<String>,
     #[serde(rename = "LogGroupName", skip_serializing_if = "Option::is_none")]
-    pub(crate) log_group_name: Option<Value>,
+    pub(super) log_group_name: Option<Value>,
     #[serde(rename = "RetentionInDays", skip_serializing_if = "Option::is_none")]
-    pub(crate) log_group_retention: Option<u16>,
+    pub(super) log_group_retention: Option<u16>,
 }

@@ -8,13 +8,13 @@ ref_struct!(TopicRef);
 #[derive(Debug, Serialize)]
 pub struct Topic {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: TopicProperties,
+    pub(super) properties: TopicProperties,
 }
 
 impl Topic {
@@ -30,25 +30,25 @@ impl Topic {
 #[derive(Debug, Serialize)]
 pub struct TopicProperties {
     #[serde(rename = "TopicName", skip_serializing_if = "Option::is_none")]
-    pub(crate) topic_name: Option<String>,
+    pub(super) topic_name: Option<String>,
     #[serde(rename = "FifoTopic", skip_serializing_if = "Option::is_none")]
-    pub(crate) fifo_topic: Option<bool>,
+    pub(super) fifo_topic: Option<bool>,
     #[serde(rename = "ContentBasedDeduplication", skip_serializing_if = "Option::is_none")]
-    pub(crate) content_based_deduplication: Option<bool>,
+    pub(super) content_based_deduplication: Option<bool>,
     #[serde(rename = "FifoThroughputScope", skip_serializing_if = "Option::is_none")]
-    pub(crate) fifo_throughput_scope: Option<String>,
+    pub(super) fifo_throughput_scope: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Subscription {
     #[serde(skip)]
-    pub(crate) id: Id,
+    pub(super) id: Id,
     #[serde(skip)]
-    pub(crate) resource_id: String,
+    pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(crate) properties: SnsSubscriptionProperties,
+    pub(super) properties: SnsSubscriptionProperties,
 }
 
 impl Subscription {
@@ -64,9 +64,9 @@ impl Subscription {
 #[derive(Debug, Serialize)]
 pub struct SnsSubscriptionProperties {
     #[serde(rename = "Protocol")]
-    pub(crate) protocol: String,
+    pub(super) protocol: String,
     #[serde(rename = "Endpoint")]
-    pub(crate) endpoint: Value,
+    pub(super) endpoint: Value,
     #[serde(rename = "TopicArn")]
-    pub(crate) topic_arn: Value
+    pub(super) topic_arn: Value
 }

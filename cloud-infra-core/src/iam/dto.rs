@@ -4,6 +4,8 @@ use crate::intrinsic_functions::get_ref;
 use crate::ref_struct;
 use crate::shared::Id;
 
+// try to limit visibility to super 
+
 ref_struct!(RoleRef);
 
 #[derive(Debug, Serialize)]
