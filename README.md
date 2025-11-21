@@ -113,12 +113,12 @@ Next up:
 
 ## FAQ
 
-- _"I can't find field X of resource Y"_
-  - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative. 
-  - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful.
 - _"Where can I find examples of how to use this project?"_
   - Examples can be found in the `examples` dir
   - The snapshot tests in the `cloud-infra` dir also provide some usage examples
+- _"I can't find field X of resource Y"_
+  - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative. 
+  - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful.
 - _"How do I add tags to resources?"
   - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.

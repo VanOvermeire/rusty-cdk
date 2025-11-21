@@ -378,7 +378,7 @@ impl FunctionBuilder<EventSourceMappingState> {
 
 pub struct PermissionBuilder {
     id: Id,
-    action: String, // TODO should start with 'lambda:' => macro
+    action: String,
     function_name: Value,
     principal: String,
     source_arn: Option<Value>,
