@@ -2,7 +2,7 @@
 
 ***This is not an official AWS project.***
 
-Rather, it is an experiment in making Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
+Rather, it is an attempt to make Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
 Think of it as a safe wrapper around `unsafe` CloudFormation.
 
 ## Usage
@@ -10,6 +10,43 @@ Think of it as a safe wrapper around `unsafe` CloudFormation.
 Install using cargo:
 
 `cargo add rusty-cdk`
+
+Now create a stack, and add infrastructure to it by using builders. 
+
+```rust
+use rusty_cdk::stack::StackBuilder;
+use rusty_cdk_core::sqs::QueueBuilder;
+use rusty_cdk_core::wrappers::*;
+use rusty_cdk_macros::{delay_seconds,message_retention_period};
+
+fn main() {
+  // prepare a stack builder
+  let mut stack_builder = StackBuilder::new();
+  // create a queue by calling its Builder
+  // the queue_ref can be used to reference the queue when other resources need it
+  let queue_ref = QueueBuilder::new("queue")
+          .fifo_queue()
+          .content_based_deduplication(true)
+          .delay_seconds(delay_seconds!(30))
+          .message_retention_period(message_retention_period!(600))
+          .build(&mut stack_builder); // ... and add it to the stack builder
+  let stack = stack_builder.build().expect("this stack to build"); // the stack has been created
+}
+```
+
+See a list of all available builders below.
+
+Once you've done that, you can either synthesize the stack and use any AWS tool (CLI, SDK, console) to deploy it:
+
+```rust,compile_fail
+let synthesized = stack.synth().unwrap();
+```
+
+Or you can use the built-in `deploy` function:
+
+```rust,compile_fail
+rusty_cdk::deploy("MyStackName", stack).await;
+```
 
 ## Motivation
 
@@ -58,7 +95,7 @@ fn iac() {
   let mut stack_builder = StackBuilder::new();
   
   let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
-  let table = TableBuilder::new("table", Key::new(dynamo_key, AttributeType::String))
+  let table_ref = TableBuilder::new("table", Key::new(dynamo_key, AttributeType::String))
             .provisioned_billing()
             .read_capacity(non_zero_number!(5))
             .write_capacity(non_zero_number!(1))
@@ -105,10 +142,54 @@ Currently only a limited number of AWS services are (largely) supported, though 
 - DynamoDB
 - IAM
 - Lambda
+- S3
 - SNS
 - SQS
 
 In other words, you can definitely create serverless applications with this library.
+
+### Available builders
+
+Based on rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
+
+- ApiGatewayV2Builder
+- ApplicationBuilder
+- AssumeRolePolicyDocumentBuilder
+- BucketBuilder
+- BucketPolicyBuilder
+- CachePolicyBuilder
+- ConfigurationProfileBuilder
+- CorsConfigurationBuilder
+- CorsRuleBuilder
+- DefaultCacheBehaviorBuilder
+- DeploymentStrategyBuilder
+- DistributionBuilder
+- EnvironmentBuilder
+- FunctionBuilder
+- GenerateSecretStringBuilder
+- LifecycleConfigurationBuilder
+- LifecycleRuleBuilder
+- LifecycleRuleTransitionBuilder
+- LogGroupBuilder
+- NonCurrentVersionTransitionBuilder
+- OriginAccessControlBuilder
+- OriginBuilder
+- ParametersInCacheKeyAndForwardedToOriginBuilder
+- PermissionBuilder
+- PolicyBuilder
+- PolicyDocumentBuilder
+- PrincipalBuilder
+- PublicAccessBlockConfigurationBuilder
+- QueueBuilder
+- RoleBuilder
+- RolePropertiesBuilder
+- SecretBuilder
+- StackBuilder
+- StatementBuilder
+- TableBuilder
+- TopicBuilder
+- ValidatorBuilder
+- ViewerCertificateBuilder
 
 ## FAQ
 
@@ -118,7 +199,7 @@ In other words, you can definitely create serverless applications with this libr
 - _"I can't find field X of resource Y. And I would like to use resource Z, which is currently not supported"_
   - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative.
   - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
-  - Same goes for unsupported resources: open an issue or PR!
+  - The same goes for unsupported resources: open an issue or PR!
 - _"How do I add tags to resources?"
   - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
