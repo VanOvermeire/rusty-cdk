@@ -1,0 +1,39 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "bucket": "[S3Bucket]"
+  },
+  "Resources": {
+    "[S3Bucket]": {
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Prefix": "/prefix",
+              "Status": "Enabled",
+              "Transitions": [
+                {
+                  "StorageClass": "GLACIER",
+                  "TransitionInDays": 30
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Type": "AWS::S3::Bucket"
+    }
+  }
+}

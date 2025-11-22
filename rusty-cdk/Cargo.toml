@@ -1,0 +1,18 @@
+[package]
+name = "rusty-cdk"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rusty-cdk-core = { version = "0.1.0", path = "../rusty-cdk-core" }
+rusty-cdk-macros = { version = "0.1.0", path = "../rusty-cdk-macros" }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
+serde_json = "1.0.142"
+aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
+aws-sdk-cloudformation = "1.90.0"
+aws-sdk-s3 = "1.103.0"
+
+[dev-dependencies]
+insta = {  version = "1.43.1", features = ["json", "filters"] }
+serde_json = "1.0.142"

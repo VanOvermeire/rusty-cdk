@@ -1,0 +1,20 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "topic": "[SnsTopic]"
+  },
+  "Resources": {
+    "[SnsTopic]": {
+      "Properties": {
+        "ContentBasedDeduplication": true,
+        "FifoThroughputScope": "Topic",
+        "FifoTopic": true,
+        "TopicName": "some-name.fifo"
+      },
+      "Type": "AWS::SNS::Topic"
+    }
+  }
+}

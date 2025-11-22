@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-cloud-infra = { version = "0.1.0", path = "../cloud-infra" }
+rusty-cdk = { version = "0.1.0", path = "../rusty-cdk" }
 tokio = "1.47.1"

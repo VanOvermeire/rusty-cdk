@@ -1,12 +1,12 @@
-use cloud_infra::apigateway::builder::ApiGatewayV2Builder;
-use cloud_infra::dynamodb::{AttributeType, Key, TableBuilder};
-use cloud_infra::iam::Permission;
-use cloud_infra::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
-use cloud_infra::shared::http::HttpMethod;
-use cloud_infra::sqs::QueueBuilder;
-use cloud_infra::stack::StackBuilder;
-use cloud_infra::wrappers::*;
-use cloud_infra::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zip_file};
+use rusty_cdk::apigateway::builder::ApiGatewayV2Builder;
+use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
+use rusty_cdk::iam::Permission;
+use rusty_cdk::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use rusty_cdk::shared::http::HttpMethod;
+use rusty_cdk::sqs::QueueBuilder;
+use rusty_cdk::stack::StackBuilder;
+use rusty_cdk::wrappers::*;
+use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zip_file};
 
 #[tokio::main]
 async fn main() {
@@ -54,6 +54,6 @@ async fn main() {
     } else {
         let synthesized = stack.unwrap().synth().unwrap();
         println!("{}", synthesized);
-        // cloud_infra::deploy("ExampleRemove", stack.unwrap()).await;
+        // rusty_cdk::deploy("ExampleRemove", stack.unwrap()).await;
     }
 }

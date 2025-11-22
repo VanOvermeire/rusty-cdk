@@ -1,0 +1,19 @@
+error[E0599]: no method named `max_read_capacity` found for struct `TableBuilder<ProvisionedStateStart>` in the current scope
+  --> tests/fails/no_max_read_capacity_for_provisioned.rs:12:10
+   |
+10 |       TableBuilder::new("myTable", Key::new(key, AttributeType::String))
+   |       ------------------------------------------------------------------
+   |       |
+   |  _____method `max_read_capacity` is available on `TableBuilder<rusty_cdk_core::dynamodb::StartState>`
+   | |
+11 | |         .provisioned_billing()
+12 | |         .max_read_capacity(max_read)
+   | |         -^^^^^^^^^^^^^^^^^ private field, not a method
+   | |_________|
+   |
+   |
+help: there is a method `read_capacity` with a similar name
+   |
+12 -         .max_read_capacity(max_read)
+12 +         .read_capacity(max_read)
+   |

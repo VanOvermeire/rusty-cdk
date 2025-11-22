@@ -49,10 +49,10 @@ That leads to a slow feedback loop, where you're constantly fixing issues and go
 Compare the above with the following:
 
 ```rust
-use cloud_infra::wrappers::*; // importing all wrappers simplifies larger projects
-use cloud_infra::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
-use cloud_infra::dynamodb::{AttributeType, Key, TableBuilder};
-use cloud_infra::stack::{Resource, Stack, StackBuilder};
+use rusty_cdk::wrappers::*; // importing all wrappers simplifies larger projects
+use rusty_cdk::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
+use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
+use rusty_cdk::stack::{Resource, Stack, StackBuilder};
 
 fn iac() {
   let mut stack_builder = StackBuilder::new();
@@ -114,7 +114,7 @@ In other words, you can definitely create serverless applications with this libr
 
 - _"Where can I find examples of how to use this project?"_
   - Examples can be found in the `examples` dir
-  - The snapshot tests in the `cloud-infra` dir also provide some usage examples
+  - The snapshot tests in the `rusty-cdk` dir also provide some usage examples
 - _"I can't find field X of resource Y. And I would like to use resource Z, which is currently not supported"_
   - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative.
   - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
@@ -126,8 +126,8 @@ In other words, you can definitely create serverless applications with this libr
   - If you think that failure could have been avoided at compile time (or before synthesizing), please open an issue
 
 ```rust
-use cloud_infra::stack::StackBuilder;
-use cloud_infra::sqs::QueueBuilder;
+use rusty_cdk::stack::StackBuilder;
+use rusty_cdk::sqs::QueueBuilder;
 
 async fn tagging() {
 let mut stack_builder = StackBuilder::new();
