@@ -50,7 +50,7 @@ fn bucket() {
             .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
                 .prefix("/prefix")
                 .add_transition(LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
-                    .transition_in_days(30)
+                    .transition_in_days(lifecycle_transition_in_days!(30,Glacier))
                     .build()
                 )
                 .build())

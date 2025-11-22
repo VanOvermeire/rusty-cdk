@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use cloud_infra_macros::{iam_action, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action};
+use cloud_infra_macros::{iam_action, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -20,6 +20,7 @@ struct RetentionInDays(u16);
 struct LogGroupName(String);
 struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 struct LambdaPermissionAction(pub String);
+struct LifecycleTransitionInDays(pub u16);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -128,4 +129,14 @@ fn create_object_sizes_second_size() {
 #[test]
 fn lambda_permission_action_with_right_prefix() {
     lambda_permission_action!("lambda:InvokeFunction");
+}
+
+#[test]
+fn lifecycle_transition_in_days_more_than_30_days() {
+    lifecycle_transition_in_days!(31,StandardIA);
+}
+
+#[test]
+fn lifecycle_transition_in_days() {
+    lifecycle_transition_in_days!(3,Glacier);
 }

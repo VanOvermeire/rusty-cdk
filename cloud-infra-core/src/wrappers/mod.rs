@@ -331,3 +331,6 @@ pub struct DeploymentDurationInMinutes(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct GrowthFactor(pub u16);
+
+#[derive(Debug, Clone)]
+pub struct LifecycleTransitionInDays(pub u16);

@@ -117,7 +117,7 @@ pub struct LifecycleRuleTransition {
     #[serde(rename = "StorageClass")]
     pub(super) storage_class: String,
     #[serde(rename = "TransitionInDays")]
-    pub(super) transition_in_days: u32, // will become optional once `TransitionDate` is added
+    pub(super) transition_in_days: u16, // will become optional once `TransitionDate` is added!
     // #[serde(rename = "TransitionDate")]
     // pub(super transition_date: String => add and check the regex
 }

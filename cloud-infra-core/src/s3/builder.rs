@@ -9,7 +9,7 @@ use crate::s3::dto::{
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{BucketName, IamAction, S3LifecycleObjectSizes};
+use crate::wrappers::{BucketName, IamAction, LifecycleTransitionInDays, S3LifecycleObjectSizes};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -17,7 +17,7 @@ use crate::type_state;
 
 // TODO notifications will require custom work to avoid circular dependencies
 //  CDK approach with custom resources is one way
-//  other way would be for the deploy to do extra work... but then the cloudformation template can only work correctly with our deploy method
+//  other way would be for the deploy to do extra work, but then the cloudformation template can only work correctly with our deploy method...
 
 pub struct BucketPolicyBuilder {
     id: Id,
@@ -395,7 +395,7 @@ impl From<LifecycleStorageClass> for String {
 
 pub struct LifecycleRuleTransitionBuilder {
     storage_class: LifecycleStorageClass,
-    transition_in_days: Option<u32>, // TODO should validate that it's >30 for standard and onezone => macro that combines both...
+    transition_in_days: Option<u16>,
 }
 
 impl LifecycleRuleTransitionBuilder {
@@ -406,9 +406,9 @@ impl LifecycleRuleTransitionBuilder {
         }
     }
 
-    pub fn transition_in_days(self, days: u32) -> Self {
+    pub fn transition_in_days(self, days: LifecycleTransitionInDays) -> Self {
         Self {
-            transition_in_days: Some(days),
+            transition_in_days: Some(days.0),
             ..self
         }
     }
@@ -471,7 +471,7 @@ impl From<LifecycleRuleStatus> for String {
 pub struct LifecycleRuleBuilder {
     id: Option<String>,
     status: LifecycleRuleStatus,
-    expiration_in_days: Option<u16>, // TODO expiration must be > than expiration in transition (ow boy...)
+    expiration_in_days: Option<u16>, // expiration must be > than expiration in transition (ow boy...)
     prefix: Option<String>,
     object_size_greater_than: Option<u32>,
     object_size_less_than: Option<u32>,

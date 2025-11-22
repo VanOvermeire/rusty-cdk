@@ -58,21 +58,23 @@ mod bucket;
 mod bucket_name;
 mod file_util;
 mod iam_validation;
-mod strings;
 mod object_sizes;
+mod strings;
 mod timeouts;
+mod transition_in_days;
 
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
 use crate::object_sizes::ObjectSizes;
 use crate::strings::{check_string_requirements, StringRequirements};
+use crate::timeouts::Timeouts;
+use crate::transition_in_days::TransitionInfo;
 use proc_macro::TokenStream;
 use quote::__private::Span;
 use quote::quote;
 use std::env;
 use std::path::{absolute, Path};
-use syn::{parse_macro_input, Error, LitInt, LitStr};
 use syn::spanned::Spanned;
-use crate::timeouts::Timeouts;
+use syn::{parse_macro_input, Error, LitInt, LitStr};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -363,8 +365,8 @@ const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
 ///
 /// This macro caches validation results to improve compile times. The first compilation will
 /// query AWS to verify the bucket exists. Later compilations will use the cached result unless `CLOUD_INFRA_RECHECK` is set to true.
-/// 
-/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so. 
+///
+/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -445,7 +447,7 @@ const ADDITIONAL_ALLOWED_FOR_BUCKET_NAME: [char; 2] = ['.', '-'];
 /// This macro caches validation results to improve compile times. The first compilation will
 /// query AWS to verify the bucket name is available. Later compilations will use the cached
 /// result unless `CLOUD_INFRA_RECHECK` is set to true.
-/// 
+///
 /// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket_name(input: TokenStream) -> TokenStream {
@@ -641,15 +643,22 @@ pub fn iam_action(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
-    let ObjectSizes {  first, second } = parse_macro_input!(input);
+    let ObjectSizes { first, second } = parse_macro_input!(input);
 
     // replace with if let Some
     if first.is_some() && second.is_some() && first.unwrap() > second.unwrap() {
-        return Error::new(Span::call_site(), format!("first number ({}) in `lifecycle_object_sizes` should be smaller than second ({})", first.unwrap(), second.unwrap()))
-            .into_compile_error()
-            .into();
+        return Error::new(
+            Span::call_site(),
+            format!(
+                "first number ({}) in `lifecycle_object_sizes` should be smaller than second ({})",
+                first.unwrap(),
+                second.unwrap()
+            ),
+        )
+        .into_compile_error()
+        .into();
     }
-    
+
     let first_output = if let Some(first) = first {
         quote! {
             Some(#first)
@@ -657,7 +666,7 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
     } else {
         quote! { None }
     };
-    
+
     let second_output = if let Some(second) = second {
         quote! {
             Some(#second)
@@ -668,55 +677,70 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
 
     quote! {
         S3LifecycleObjectSizes(#first_output, #second_output)
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro]
 pub fn origin_path(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-    
+
     if !value.starts_with("/") || value.ends_with("/") {
-        return Error::new(value.span(), format!("origin path should start with a / and should not end with / (but got {})", value))
-            .into_compile_error()
-            .into();
+        return Error::new(
+            value.span(),
+            format!("origin path should start with a / and should not end with / (but got {})", value),
+        )
+        .into_compile_error()
+        .into();
     }
-    
+
     quote! {
         OriginPath(#value)
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro]
 pub fn default_root_object(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-    
+
     if value.starts_with("/") || value.ends_with("/") {
         return Error::new(value.span(), "default root object should not start with /".to_string())
             .into_compile_error()
             .into();
     }
-    
+
     quote! {
         DefaultRootObject(#value)
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro]
 pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
-    let Timeouts {  first, second } = parse_macro_input!(input);
+    let Timeouts { first, second } = parse_macro_input!(input);
 
     if let Some(first) = first {
         if first > 10 {
-            return Error::new(Span::call_site(), format!("connection timeout was {} but should be between 1 and 10", first))
-                .into_compile_error()
-                .into();
+            return Error::new(
+                Span::call_site(),
+                format!("connection timeout was {} but should be between 1 and 10", first),
+            )
+            .into_compile_error()
+            .into();
         } else if let Some(second) = second {
             if second < first {
-                return Error::new(Span::call_site(), format!("response completion timeout was {} but should be larger than connection timeout ({})", second, first))
-                    .into_compile_error()
-                    .into();
+                return Error::new(
+                    Span::call_site(),
+                    format!(
+                        "response completion timeout was {} but should be larger than connection timeout ({})",
+                        second, first
+                    ),
+                )
+                .into_compile_error()
+                .into();
             }
         }
     }
@@ -736,10 +760,11 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
     } else {
         quote! { None }
     };
-    
+
     quote! {
         S3LifecycleObjectSizes(#first_output, #second_output)
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro]
@@ -752,7 +777,8 @@ pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
             LambdaPermissionAction(#value.to_string())
-        ).into(),
+        )
+        .into(),
         Some(e) => e.into_compile_error().into(),
     }
 }
@@ -763,12 +789,50 @@ pub fn app_config_name(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if value.is_empty() || value.len() > 64 {
-        return Error::new(Span::call_site(), "app config name should be between 1 and 64 chars in length".to_string())
+        return Error::new(
+            Span::call_site(),
+            "app config name should be between 1 and 64 chars in length".to_string(),
+        )
+        .into_compile_error()
+        .into();
+    }
+
+    quote! {
+        AppConfigName(#value.to_string())
+    }
+    .into()
+}
+
+const LIFECYCLE_STORAGE_TYPES: [&str; 6] = [
+    "IntelligentTiering",
+    "OneZoneIA",
+    "StandardIA",
+    "GlacierDeepArchive",
+    "Glacier",
+    "GlacierInstantRetrieval",
+];
+const LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS: [&str; 2] = [
+    "OneZoneIA",
+    "StandardIA",
+];
+
+#[proc_macro]
+pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
+    let TransitionInfo { days, service } = parse_macro_input!(input);
+    let service = service.trim();
+
+    if !LIFECYCLE_STORAGE_TYPES.contains(&service) {
+        return Error::new(Span::call_site(), format!("service should be one of {} (was {})", LIFECYCLE_STORAGE_TYPES.join(","), service))
+            .into_compile_error()
+            .into();
+    } else if LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.contains(&service) && days <= 30 {
+        return Error::new(Span::call_site(), format!("service of type {} cannot have transition under 30 days", LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.join(" or ")))
             .into_compile_error()
             .into();
     }
 
     quote! {
-        AppConfigName(#value.to_string())
-    }.into()
+        LifecycleTransitionInDays(#days)
+    }
+    .into()
 }
