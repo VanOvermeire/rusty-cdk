@@ -10,8 +10,9 @@ pub mod s3;
 pub mod secretsmanager;
 pub mod apigateway;
 pub mod cloudfront;
+pub mod appconfig;
 pub mod shared;
 
 mod intrinsic_functions;
-mod appconfig;
+
 

@@ -328,3 +328,6 @@ pub struct AppConfigName(pub String);
 
 #[derive(Debug, Clone)]
 pub struct DeploymentDurationInMinutes(pub u16);
+
+#[derive(Debug, Clone)]
+pub struct GrowthFactor(pub u16);

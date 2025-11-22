@@ -338,6 +338,7 @@ number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcur
 number_check!(connection_attempts, 1, 3, ConnectionAttempts, u16);
 number_check!(s3_origin_read_timeout, 1, 120, ConnectionAttempts, u16);
 number_check!(deployment_duration_in_minutes, 0, 1440, DeploymentDurationInMinutes, u16);
+number_check!(growth_factor, 0, 100, GrowthFactor, u16);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "CLOUD_INFRA_NO_REMOTE";
 const CLOUD_INFRA_RECHECK_ENV_VAR_NAME: &str = "CLOUD_INFRA_RECHECK";
@@ -768,6 +769,6 @@ pub fn app_config_name(input: TokenStream) -> TokenStream {
     }
 
     quote! {
-        AppConfigName(#value)
+        AppConfigName(#value.to_string())
     }.into()
 }

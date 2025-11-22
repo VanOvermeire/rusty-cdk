@@ -2,7 +2,7 @@ use serde_json::Value;
 use crate::appconfig::dto::{Application, ApplicationProperties, ApplicationRef, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, Environment, EnvironmentProperties, EnvironmentRef, Validator};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes};
+use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor};
 
 pub struct ApplicationBuilder {
     id: Id,
@@ -200,22 +200,38 @@ impl From<GrowthType> for String {
     }
 }
 
+pub enum ReplicateTo {
+    None,
+    SsmDocument,
+}
+
+impl From<ReplicateTo> for String {
+    fn from(value: ReplicateTo) -> Self {
+        match value {
+            ReplicateTo::None => "NONE".to_string(),
+            ReplicateTo::SsmDocument => "SSM_DOCUMENT".to_string(),
+        }
+    }
+}
+
 pub struct DeploymentStrategyBuilder {
     id: Id,
     name: String,
     deployment_duration_in_minutes: u16,
     growth_factor: u16, // 0 - 100 ?
     growth_type: Option<String>,
+    replicate_to: String,
 }
 
 impl DeploymentStrategyBuilder {
-    pub fn new(id: &str, name: AppConfigName, deployment_duration_in_minutes: DeploymentDurationInMinutes, growth_factor: u16) -> Self {
+    pub fn new(id: &str, name: AppConfigName, deployment_duration_in_minutes: DeploymentDurationInMinutes, growth_factor: GrowthFactor, replicate_to: ReplicateTo) -> Self {
         Self {
             id: Id(id.to_string()),
             name: name.0,
             deployment_duration_in_minutes: deployment_duration_in_minutes.0,
-            growth_factor,
+            growth_factor: growth_factor.0,
             growth_type: None,
+            replicate_to: replicate_to.into(),
         }
     }
     
@@ -237,6 +253,7 @@ impl DeploymentStrategyBuilder {
                 name: self.name,
                 deployment_duration_in_minutes: self.deployment_duration_in_minutes,
                 growth_factor: self.growth_factor,
+                replicate_to: self.replicate_to,
                 growth_type: self.growth_type,
             },
         });

@@ -1,6 +1,7 @@
 # Rusty CDK
 
 ***This is not an official AWS project.***
+
 Rather, it is an experiment in making Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
 Think of it as a safe wrapper around `unsafe` CloudFormation.
 
@@ -69,7 +70,7 @@ fn iac() {
 }
 ```
 
-It's about the same amount of code. But partition keys can now only contain alphanumeric characters and underscores, so we create them through a macro that validates this at compile time. And max read capacity cannot be set when you choose `provisioned_billing`.
+It's about the same amount of code. But partition keys can now only contain alphanumeric characters and underscores, so we create them through a macro that validates this at compile time. And max read capacity cannot be set when you choose `provisioned_billing`. Also, adding the resources is less magical (you have to pass in the stack builder), but equally safe (you can't build a resource without passing it in).
 
 With this kind of tooling, making mistakes becomes much harder, as some mistakes are caught at compile time and others become impossible.
 
@@ -96,29 +97,28 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are largely supported, though the safety varies:
-- DynamoDB
-- Lambda
-- SQS
-- SNS
-- Cloudwatch
-- IAM
+Currently only a limited number of AWS services are (largely) supported, though the safety varies:
 - API Gateway
+- AppConfig
 - CloudFront
+- Cloudwatch
+- DynamoDB
+- IAM
+- Lambda
+- SNS
+- SQS
 
 In other words, you can definitely create serverless applications with this library.
-
-Next up:
-- AppConfig
 
 ## FAQ
 
 - _"Where can I find examples of how to use this project?"_
   - Examples can be found in the `examples` dir
   - The snapshot tests in the `cloud-infra` dir also provide some usage examples
-- _"I can't find field X of resource Y"_
-  - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative. 
-  - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful.
+- _"I can't find field X of resource Y. And I would like to use resource Z, which is currently not supported"_
+  - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative.
+  - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
+  - Same goes for unsupported resources: open an issue or PR!
 - _"How do I add tags to resources?"
   - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.

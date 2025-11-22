@@ -88,11 +88,12 @@ pub struct DeploymentStrategyProperties {
     pub(super) deployment_duration_in_minutes: u16,
     #[serde(rename = "GrowthFactor")]
     pub(super) growth_factor: u16,
+    #[serde(rename = "ReplicateTo")]
+    pub(super) replicate_to: String,
     #[serde(rename = "GrowthType", skip_serializing_if = "Option::is_none")]
     pub(super) growth_type: Option<String>,
     // #[serde(rename = "FinalBakeTimeInMinutes", skip_serializing_if = "Option::is_none")]
     // pub(super) final_bake_time_in_minutes: u16, // 0 - 1440; requires additional permissions
-    // #[serde(rename = "ReplicateTo")]
 }
 
 ref_struct!(EnvironmentRef);

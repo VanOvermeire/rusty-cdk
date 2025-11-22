@@ -12,6 +12,7 @@ use cloud_infra_core::stack::{StackBuilder};
 use cloud_infra_core::wrappers::*;
 use cloud_infra_macros::*;
 use serde_json::{Map, Value};
+use cloud_infra_core::appconfig::builder::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, LocationUri, ReplicateTo};
 use cloud_infra_core::cloudfront::{CachePolicyBuilder, DistributionBuilder, OriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
 use cloud_infra_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
 
@@ -395,6 +396,28 @@ fn cloudfront_with_s3_origin() {
             (r"OAC[0-9]+", "[OAC]"),
             (r"CloudFrontDistribution[0-9]+", "[CloudFrontDistribution]"),
             (r"CachePolicy[0-9]+", "[CachePolicy]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn appconfig() {
+    let mut stack_builder = StackBuilder::new();
+    let app_config = ApplicationBuilder::new("app", app_config_name!("my-application")).build(&mut stack_builder);
+    EnvironmentBuilder::new("env", app_config_name!("prod"), &app_config).build(&mut stack_builder);
+    ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, LocationUri::Hosted).build(&mut stack_builder);
+    DeploymentStrategyBuilder::new("ds", app_config_name!("instant"), deployment_duration_in_minutes!(0), growth_factor!(100), ReplicateTo::None).build(&mut stack_builder);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"AppConfigApp[0-9]+", "[AppConfigApp]"),
+            (r"ConfigurationProfile[0-9]+", "[ConfigurationProfile]"),
+            (r"DeploymentStrategy[0-9]+", "[DeploymentStrategy]"),
+            (r"Environment[0-9]+", "[Environment]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
