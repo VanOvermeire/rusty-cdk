@@ -1,6 +1,6 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(QueueRef);
@@ -16,16 +16,7 @@ pub struct Queue {
     #[serde(rename = "Properties")]
     pub(super) properties: QueueProperties,
 }
-
-impl Queue {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-    
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Queue);
 
 #[derive(Debug, Serialize)]
 pub struct QueueProperties {

@@ -1,20 +1,71 @@
+use serde_json::Value;
 use serde::Serialize;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
+ref_struct!(ApplicationRef);
+
 #[derive(Debug, Serialize)]
-pub enum GrowthType {
-    Linear,
-    Exponential,
+pub struct Application {
+    #[serde(skip)]
+    pub(super) id: Id,
+    #[serde(skip)]
+    pub(super) resource_id: String,
+    #[serde(rename = "Type")]
+    pub(super) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(super) properties: ApplicationProperties
+}
+dto_methods!(Application);
+
+#[derive(Debug, Serialize)]
+pub struct ApplicationProperties {
+    #[serde(rename = "Name")]
+    pub(super) name: String,
 }
 
-impl From<GrowthType> for String {
-    fn from(value: GrowthType) -> Self {
-        match value {
-            GrowthType::Linear => "LINEAR".to_string(),
-            GrowthType::Exponential => "EXPONENTIAL".to_string()
-        }
-    }
+ref_struct!(ConfigurationProfileRef);
+
+#[derive(Debug, Serialize)]
+pub struct ConfigurationProfile {
+    #[serde(skip)]
+    pub(super) id: Id,
+    #[serde(skip)]
+    pub(super) resource_id: String,
+    #[serde(rename = "Type")]
+    pub(super) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(super) properties: ConfigurationProfileProperties
 }
+dto_methods!(ConfigurationProfile);
+
+#[derive(Debug, Serialize)]
+pub struct ConfigurationProfileProperties {
+    #[serde(rename = "Name")]
+    pub(super) name: String,
+    #[serde(rename = "ApplicationId")]
+    pub(super) application_id: Value,
+    #[serde(rename = "DeletionProtectionCheck", skip_serializing_if = "Option::is_none")]
+    pub(super) deletion_protection_check: Option<String>,
+    #[serde(rename = "LocationUri")]
+    pub(super) location_uri: String,
+    #[serde(rename = "Type", skip_serializing_if = "Option::is_none")]
+    pub(super) config_type: Option<String>,
+    #[serde(rename = "Validators", skip_serializing_if = "Option::is_none")]
+    pub(super) validators: Option<Vec<Validator>>
+    // "KmsKeyIdentifier" : String,
+    // "RetrievalRoleArn" : String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Validator {
+    #[serde(rename = "Content")]
+    pub(super) content: String,
+    #[serde(rename = "Type")]
+    pub(super) validator_type: String,
+}
+
+ref_struct!(DeploymentStrategyRef);
 
 #[derive(Debug, Serialize)]
 pub struct DeploymentStrategy {
@@ -27,38 +78,24 @@ pub struct DeploymentStrategy {
     #[serde(rename = "Properties")]
     pub(super) properties: DeploymentStrategyProperties
 }
+dto_methods!(DeploymentStrategy);
 
 #[derive(Debug, Serialize)]
 pub struct DeploymentStrategyProperties {
     #[serde(rename = "Name")]
-    pub(super) name: String, // 1 - 64 chars
+    pub(super) name: String,
     #[serde(rename = "DeploymentDurationInMinutes")]
-    pub(super) deployment_duration_in_minutes: u16, // 0 - 1440
-    #[serde(rename = "FinalBakeTimeInMinutes")]
-    pub(super) final_bake_time_in_minutes: u16, // 0 - 1440
+    pub(super) deployment_duration_in_minutes: u16,
     #[serde(rename = "GrowthFactor")]
-    pub(super) growth_factor: u16, // 0 - 100 ?
+    pub(super) growth_factor: u16,
     #[serde(rename = "GrowthType", skip_serializing_if = "Option::is_none")]
-    pub(super) growth_type: Option<GrowthType>,
+    pub(super) growth_type: Option<String>,
+    // #[serde(rename = "FinalBakeTimeInMinutes", skip_serializing_if = "Option::is_none")]
+    // pub(super) final_bake_time_in_minutes: u16, // 0 - 1440; requires additional permissions
     // #[serde(rename = "ReplicateTo")]
 }
 
-#[derive(Debug, Serialize)]
-pub enum DeletionProtectionCheck {
-    AccountDefault,
-    Apply,
-    Bypass,
-}
-
-impl From<DeletionProtectionCheck> for String {
-    fn from(value: DeletionProtectionCheck) -> Self {
-        match value {
-            DeletionProtectionCheck::AccountDefault => "ACCOUNT_DEFAULT".to_string(),
-            DeletionProtectionCheck::Apply => "APPLY".to_string(),
-            DeletionProtectionCheck::Bypass => "BYPASS".to_string(),
-        }
-    }
-}
+ref_struct!(EnvironmentRef);
 
 #[derive(Debug, Serialize)]
 pub struct Environment {
@@ -71,14 +108,15 @@ pub struct Environment {
     #[serde(rename = "Properties")]
     pub(super) properties: EnvironmentProperties,
 }
+dto_methods!(Environment);
 
 #[derive(Debug, Serialize)]
 pub struct EnvironmentProperties {
     #[serde(rename = "Name")]
-    pub(super) name: String, // 1 - 64 chars
+    pub(super) name: String,
     #[serde(rename = "ApplicationId")]
-    pub(super) application_id: String,
+    pub(super) application_id: Value,
     #[serde(rename = "DeletionProtectionCheck", skip_serializing_if = "Option::is_none")]
-    pub(super) deletion_protection_check: Option<DeletionProtectionCheck>
+    pub(super) deletion_protection_check: Option<String>
     // "Monitors" : [ Monitor, ... ],
 }

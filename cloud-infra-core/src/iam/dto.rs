@@ -1,7 +1,6 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::intrinsic_functions::get_ref;
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 // try to limit visibility to super 
@@ -21,20 +20,7 @@ pub struct Role {
     #[serde(rename = "Properties")]
     pub(crate) properties: IamRoleProperties,
 }
-
-impl Role {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-    
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
-}
+dto_methods!(Role);
 
 #[derive(Debug, Serialize)]
 pub struct IamRoleProperties {

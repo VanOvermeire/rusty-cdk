@@ -1,8 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::iam::PolicyDocument;
-use crate::intrinsic_functions::{get_ref};
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(BucketPolicyRef);
@@ -18,20 +17,7 @@ pub struct BucketPolicy {
     #[serde(rename = "Properties")]
     pub(crate) properties: S3BucketPolicyProperties,
 }
-
-impl BucketPolicy {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
-}
+dto_methods!(BucketPolicy);
 
 #[derive(Debug, Serialize)]
 pub struct S3BucketPolicyProperties {
@@ -54,16 +40,7 @@ pub struct Bucket {
     #[serde(rename = "Properties")]
     pub(super) properties: BucketProperties,
 }
-
-impl Bucket {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-    
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Bucket);
 
 #[derive(Debug, Serialize)]
 pub struct BucketProperties {

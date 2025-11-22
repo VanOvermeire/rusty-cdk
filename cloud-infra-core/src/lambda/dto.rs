@@ -1,4 +1,4 @@
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 use crate::stack::Asset;
 use serde::Serialize;
@@ -84,8 +84,9 @@ pub struct LambdaFunctionProperties {
     #[serde(rename = "ReservedConcurrentExecutions", skip_serializing_if = "Option::is_none")]
     pub(super) reserved_concurrent_executions: Option<u32>,
     #[serde(rename = "LoggingConfig")]
-    pub(super) logging_info: LoggingInfo, // package_type: Option<String>,
-                                          // "VpcConfig": VpcConfig
+    pub(super) logging_info: LoggingInfo, 
+    // package_type: Option<String>,
+    // "VpcConfig": VpcConfig
 }
 
 #[derive(Debug, Serialize)]
@@ -125,16 +126,7 @@ pub struct EventSourceMapping {
     #[serde(rename = "Properties")]
     pub(super) properties: EventSourceProperties,
 }
-
-impl EventSourceMapping {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(EventSourceMapping);
 
 #[derive(Debug, Serialize)]
 pub struct EventSourceProperties {
@@ -165,16 +157,7 @@ pub struct Permission {
     #[serde(rename = "Properties")]
     pub(super) properties: LambdaPermissionProperties,
 }
-
-impl Permission {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Permission);
 
 #[derive(Debug, Serialize)]
 pub struct LambdaPermissionProperties {

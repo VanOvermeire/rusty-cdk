@@ -2,7 +2,7 @@ use crate::s3::dto::BucketPolicy;
 use crate::shared::Id;
 use serde::Serialize;
 use serde_json::Value;
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 
 ref_struct!(OriginAccessControlRef);
 
@@ -17,16 +17,7 @@ pub struct OriginAccessControl {
     #[serde(rename = "Properties")]
     pub(super) properties: OriginControlProperties,
 }
-
-impl OriginAccessControl {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(OriginAccessControl);
 
 #[derive(Debug, Serialize)]
 pub struct OriginControlProperties {
@@ -59,16 +50,7 @@ pub struct CachePolicy {
     #[serde(rename = "Properties")]
     pub(super) properties: CachePolicyProperties,
 }
-
-impl CachePolicy {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(CachePolicy);
 
 #[derive(Debug, Serialize)]
 pub struct CachePolicyProperties {
@@ -141,16 +123,7 @@ pub struct Distribution {
     #[serde(rename = "Properties")]
     pub(super) properties: DistributionProperties,
 }
-
-impl Distribution {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Distribution);
 
 #[derive(Debug, Serialize)]
 pub struct DistributionProperties {

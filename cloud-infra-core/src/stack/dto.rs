@@ -11,6 +11,7 @@ use crate::sqs::Queue;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
+use crate::appconfig::dto::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 
 #[derive(Debug, Clone)]
@@ -42,24 +43,7 @@ impl Stack {
             .values()
             .flat_map(|r| match r {
                 Resource::Function(l) => vec![l.asset.clone()], // see if we can avoid the clone
-                Resource::Table(_) => vec![],
-                Resource::Role(_) => vec![],
-                Resource::Queue(_) => vec![],
-                Resource::EventSourceMapping(_) => vec![],
-                Resource::LogGroup(_) => vec![],
-                Resource::Topic(_) => vec![],
-                Resource::Subscription(_) => vec![],
-                Resource::Permission(_) => vec![],
-                Resource::ApiGatewayV2Api(_) => vec![],
-                Resource::ApiGatewayV2Stage(_) => vec![],
-                Resource::ApiGatewayV2Route(_) => vec![],
-                Resource::ApiGatewayV2Integration(_) => vec![],
-                Resource::Bucket(_) => vec![],
-                Resource::BucketPolicy(_) => vec![],
-                Resource::Secret(_) => vec![],
-                Resource::Distribution(_) => vec![],
-                Resource::CachePolicy(_) => vec![],
-                Resource::OriginAccessControl(_) => vec![],
+                _ => vec![],
             })
             .collect()
     }
@@ -100,8 +84,12 @@ impl Stack {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
+    Application(Application),
     Bucket(Bucket),
     BucketPolicy(BucketPolicy),
+    ConfigurationProfile(ConfigurationProfile),
+    DeploymentStrategy(DeploymentStrategy),
+    Environment(Environment),
     Table(Table),
     Function(Function),
     LogGroup(LogGroup),
@@ -143,6 +131,10 @@ impl Resource {
             Resource::Distribution(r) => r.get_id(),
             Resource::CachePolicy(r) => r.get_id(),
             Resource::OriginAccessControl(r) => r.get_id(),
+            Resource::Application(r) => r.get_id(),
+            Resource::ConfigurationProfile(r) => r.get_id(),
+            Resource::DeploymentStrategy(r) => r.get_id(),
+            Resource::Environment(r) => r.get_id(),
         };
         id.clone()
     }
@@ -168,6 +160,10 @@ impl Resource {
             Resource::Distribution(r) => r.get_resource_id(),
             Resource::CachePolicy(r) => r.get_resource_id(),
             Resource::OriginAccessControl(r) => r.get_resource_id(),
+            Resource::Application(r) => r.get_resource_id(),
+            Resource::ConfigurationProfile(r) => r.get_resource_id(),
+            Resource::DeploymentStrategy(r) => r.get_resource_id(),
+            Resource::Environment(r) => r.get_resource_id(),
         }
     }
 
@@ -188,8 +184,12 @@ macro_rules! from_resource {
     };
 }
 
+from_resource!(Application);
 from_resource!(Bucket);
 from_resource!(BucketPolicy);
+from_resource!(ConfigurationProfile);
+from_resource!(DeploymentStrategy);
+from_resource!(Environment);
 from_resource!(Table);
 from_resource!(Function);
 from_resource!(Role);

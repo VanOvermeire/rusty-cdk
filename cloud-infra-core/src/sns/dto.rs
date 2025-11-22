@@ -1,6 +1,6 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::ref_struct;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(TopicRef);
@@ -16,16 +16,7 @@ pub struct Topic {
     #[serde(rename = "Properties")]
     pub(super) properties: TopicProperties,
 }
-
-impl Topic {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-    
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Topic);
 
 #[derive(Debug, Serialize)]
 pub struct TopicProperties {
@@ -50,16 +41,7 @@ pub struct Subscription {
     #[serde(rename = "Properties")]
     pub(super) properties: SnsSubscriptionProperties,
 }
-
-impl Subscription {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-    
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Subscription);
 
 #[derive(Debug, Serialize)]
 pub struct SnsSubscriptionProperties {

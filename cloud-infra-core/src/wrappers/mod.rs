@@ -322,3 +322,9 @@ pub struct S3OriginReadTimeout(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct LambdaPermissionAction(pub String);
+
+#[derive(Debug, Clone)]
+pub struct AppConfigName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DeploymentDurationInMinutes(pub u16);
