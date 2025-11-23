@@ -1,4 +1,4 @@
-error: zip should end with `.zip`, instead found `package.tar.gz`
+error: zip should end with `.zip` (found `package.tar.gz`)
  --> tests/fails/zipfile_wrong_extension.rs:4:26
   |
 4 |     let file = zip_file!("package.tar.gz");

@@ -129,7 +129,6 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
     ///
     /// Parses the Cargo.toml to find AWS SDK dependencies and verifies that IAM permissions
     /// have been granted for those services.
-    // TODO macro
     pub fn check_permissions_against_dependencies(self, cargo_toml: TomlFile) -> Self {
         let services = map_toml_dependencies_to_services(cargo_toml.0.as_ref());
         

@@ -330,7 +330,7 @@ pub struct VisibilityTimeout(pub u32);
 /// use rusty_cdk_core::wrappers::ReceiveMessageWaitTime;
 /// use rusty_cdk_macros::receive_message_wait_time;
 /// 
-/// let wait_time = receive_message_wait_time!(10);   // Compile-time validated
+/// let wait_time = receive_message_wait_time!(10);
 /// ```
 #[derive(Debug, Copy, Clone)]
 pub struct ReceiveMessageWaitTime(pub u16);
@@ -367,7 +367,7 @@ pub struct SqsEventSourceMaxConcurrency(pub u16);
 /// - Bucket must exist in your AWS account (verified at compile time by the macro)
 ///
 /// # Recommended Usage
-/// Use the `bucket!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `bucket!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 /// # Note
 /// The `bucket!` macro queries AWS at compile time to verify the bucket exists and caches
@@ -430,7 +430,7 @@ pub struct LogGroupName(pub String);
 /// - Must be between 3 and 63 characters long
 ///
 /// # Recommended Usage
-/// Use the `bucket_name!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `bucket_name!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 /// # Note
 /// The `bucket_name!` macro queries AWS at compile time to verify the bucket name is globally
@@ -495,8 +495,11 @@ pub struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 ///
 /// This wrapper ensures type safety when specifying paths to TOML configuration files
 /// used in infrastructure definitions.
+/// 
+/// # Recommended Usage
+/// Use the `toml_file!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
-pub struct TomlFile(pub String); // TODO add docs for macro
+pub struct TomlFile(pub String);
 
 /// Number of connection attempts for CloudFront origin connections.
 ///
@@ -509,7 +512,7 @@ pub struct TomlFile(pub String); // TODO add docs for macro
 /// - Determines retry behavior for origin connection failures
 ///
 /// # Recommended Usage
-/// Use the `connection_attempts!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `connection_attempts!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct ConnectionAttempts(pub u16);
 
@@ -543,7 +546,7 @@ pub struct CfConnectionTimeout(pub Option<u16>, pub Option<u16>);
 /// to the origin. Useful when the origin content is located in a subdirectory.
 ///
 /// # Recommended Usage
-/// Use the `origin_path!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `origin_path!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct OriginPath(pub String);
 
@@ -553,7 +556,7 @@ pub struct OriginPath(pub String);
 /// the root URL of your distribution (e.g., http://example.com/ instead of
 /// http://example.com/index.html).
 /// # Recommended Usage
-/// Use the `default_root_object!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `default_root_object!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct DefaultRootObject(pub String);
 
@@ -568,7 +571,7 @@ pub struct DefaultRootObject(pub String);
 /// - Determines maximum wait time for S3 to respond
 ///
 /// # Recommended Usage
-/// Use the `s3_origin_read_timeout!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `s3_origin_read_timeout!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct S3OriginReadTimeout(pub u16);
 
@@ -578,7 +581,7 @@ pub struct S3OriginReadTimeout(pub u16);
 /// which control what AWS services and accounts can invoke your Lambda functions.
 ///
 /// # Recommended Usage
-/// Use the `lambda_permission_action!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `lambda_permission_action!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct LambdaPermissionAction(pub String);
 
@@ -588,7 +591,7 @@ pub struct LambdaPermissionAction(pub String);
 /// following AWS AppConfig naming conventions and length restrictions.
 ///
 /// # Recommended Usage
-/// Use the `app_config_name!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `app_config_name!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct AppConfigName(pub String);
 
@@ -599,7 +602,7 @@ pub struct AppConfigName(pub String);
 /// the impact of potential issues.
 ///
 /// # Recommended Usage
-/// Use the `deployment_duration_in_minutes!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `deployment_duration_in_minutes!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 #[derive(Debug, Clone)]
 pub struct DeploymentDurationInMinutes(pub u16);
@@ -610,7 +613,7 @@ pub struct DeploymentDurationInMinutes(pub u16);
 /// during each deployment interval. AppConfig uses this to gradually roll out changes.
 ///
 /// # Recommended Usage
-/// Use the `growth_factor!` macro from `rusty-cdk-macros` for compile-time validation:
+/// Use the `growth_factor!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 #[derive(Debug, Clone)]
 pub struct GrowthFactor(pub u16);

@@ -72,9 +72,9 @@ use proc_macro::TokenStream;
 use quote::__private::Span;
 use quote::quote;
 use std::env;
-use std::path::{absolute, Path};
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
+use crate::file_util::get_absolute_file_path;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -238,7 +238,7 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
     let output = match output {
         Ok(output) => output,
         Err(_) => {
-            return Error::new(Span::call_site(), "zip should contain value".to_string())
+            return Error::new(Span::call_site(), "zip_file macro should contain value".to_string())
                 .into_compile_error()
                 .into();
         }
@@ -247,30 +247,62 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
     let value = output.value();
 
     if !value.ends_with(".zip") {
-        return Error::new(output.span(), format!("zip should end with `.zip`, instead found `{value}`"))
+        return Error::new(output.span(), format!("zip should end with `.zip` (found `{value}`)"))
             .into_compile_error()
             .into();
     }
 
-    let path = Path::new(&value);
-
-    if !path.exists() {
-        return Error::new(output.span(), format!("did not find file `{value}`"))
-            .into_compile_error()
-            .into();
-    }
-
-    let value = if path.is_relative() {
-        match absolute(path) {
-            Ok(absolute_path) => absolute_path.to_str().expect("zip path to be valid unicode").to_string(),
-            Err(e) => {
-                return Error::new(output.span(), format!("failed to convert zip file path to absolute path: {e}"))
-                    .into_compile_error()
-                    .into();
-            }
+    let value = match get_absolute_file_path(&value) {
+        Ok(v) => v,
+        Err(e) => {
+            return Error::new(output.span(), e)
+                .into_compile_error()
+                .into();
         }
-    } else {
-        path.to_str().expect("zip file path to be valid unicode").to_string()
+    };
+
+    quote!(
+        ZipFile(#value.to_string())
+    )
+    .into()
+}
+
+/// Creates a validated `TomlFile` wrapper.
+///
+/// # Validation Rules
+///
+/// - Path must end with `.toml` extension
+/// - File must exist at compile time
+/// - Path must be valid Unicode
+/// - Both relative and absolute paths are allowed
+#[proc_macro]
+pub fn toml_file(input: TokenStream) -> TokenStream {
+    let output: syn::Result<LitStr> = syn::parse(input);
+
+    let output = match output {
+        Ok(output) => output,
+        Err(_) => {
+            return Error::new(Span::call_site(), "toml_file macro should contain value".to_string())
+                .into_compile_error()
+                .into();
+        }
+    };
+
+    let value = output.value();
+
+    if !value.ends_with(".toml") {
+        return Error::new(output.span(), format!("toml file should end with `.toml` (found `{value}`)"))
+            .into_compile_error()
+            .into();
+    }
+
+    let value = match get_absolute_file_path(&value) {
+        Ok(v) => v,
+        Err(e) => {
+            return Error::new(output.span(), e)
+                .into_compile_error()
+                .into();
+        }
     };
 
     quote!(
