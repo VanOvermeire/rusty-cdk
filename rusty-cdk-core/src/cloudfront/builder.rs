@@ -189,8 +189,7 @@ pub enum Headers {
 
 /// Builder for cache key and forwarding parameters.
 ///
-/// Configures which request parameters (cookies, headers, query strings) are included
-/// in the cache key and forwarded to the origin.
+/// Configures which request parameters (cookies, headers, query strings) are included in the cache key and forwarded to the origin.
 pub struct ParametersInCacheKeyAndForwardedToOriginBuilder {
     cookies_config: CookiesConfig,
     headers_config: HeadersConfig,

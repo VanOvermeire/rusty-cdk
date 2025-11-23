@@ -98,8 +98,7 @@ type_state!(
 
 /// Builder for S3 buckets.
 ///
-/// Provides configuration for S3 buckets including versioning, lifecycle rules,
-/// encryption, CORS, and static website hosting.
+/// Provides configuration for S3 buckets including versioning, lifecycle rules, encryption, CORS, and static website hosting.
 pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,

@@ -7,6 +7,7 @@ use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
 use std::time::Duration;
 use crate::wrappers::LambdaPermissionAction;
+
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
 // auth also still to do
 
@@ -19,8 +20,7 @@ struct RouteInfo {
 
 /// Builder for API Gateway V2 HTTP APIs.
 ///
-/// Creates an HTTP API with routes to Lambda functions. Automatically creates
-/// integrations and permissions for each route.
+/// Creates an HTTP API with routes to Lambda functions. Automatically creates integrations and permissions for each route.
 pub struct ApiGatewayV2Builder {
     id: Id,
     name: Option<String>,
@@ -207,7 +207,6 @@ impl ApiGatewayV2Builder {
     }
 }
 
-/// Builder for API Gateway CORS configuration.
 pub struct CorsConfigurationBuilder {
     allow_credentials: Option<bool>,
     allow_headers: Option<Vec<String>>,

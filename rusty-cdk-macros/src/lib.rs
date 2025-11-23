@@ -6,17 +6,12 @@
 //! ## Overview
 //!
 //! All macros perform validation at compile time and generate wrapper types that encapsulate
-//! validated values. This approach provides:
-//!
-//! - **Compile-time safety**: Invalid values are caught during compilation
-//! - **Zero runtime cost**: No performance overhead for validation
-//! - **Type safety**: Wrapper types prevent mixing incompatible values
-//! - **IDE support**: Better code completion and error messages
-//!
+//! validated values.
+//! 
 //! The macros always return a newtype 'wrapper'.
-//! You should import those from the rusty_cdk::wrappers directory, as seen in the below examples.
+//! You should import those from the rusty_cdk::wrappers directory, as seen in the below example.
 //!
-//! ## Usage Examples
+//! ## Usage Example
 //!
 //! ```rust,compile_fail
 //! use rusty_cdk::wrappers::Memory; // import the wrapper
@@ -25,34 +20,6 @@
 //! // Lambda memory configuration with validated limit
 //! let mem = memory!(512);        // 512 MB (128-10240 range)
 //! ```
-//!
-//! ## Available Macros
-//!
-//! ### String and Identifier Macros
-//!
-//! - [`string_with_only_alphanumerics_and_underscores!`] - AWS resource identifiers
-//! - [`env_var_key!`] - Lambda environment variable keys
-//!
-//! ### File Path Macros
-//!
-//! - [`zip!`] - ZIP file paths for Lambda deployment packages
-//!
-//! ### Numeric Validation Macros
-//!
-//! - [`non_zero_number!`] - Positive integers (> 0)
-//!
-//! ### AWS Lambda Configuration Macros
-//!
-//! - [`memory!`] - Memory allocation (128-10,240 MB)
-//! - [`timeout!`] - Function timeout (1-900 seconds)
-//!
-//! ### AWS SQS Configuration Macros
-//!
-//! - [`delay_seconds!`] - Message delay (0-900 seconds)
-//! - [`maximum_message_size!`] - Max message size (1,024-1,048,576 bytes)
-//! - [`message_retention_period!`] - Retention period (60-1,209,600 seconds)
-//! - [`visibility_timeout!`] - Visibility timeout (0-43,200 seconds)
-//! - [`receive_message_wait_time!`] - Long polling wait time (0-20 seconds)
 
 mod bucket;
 mod bucket_name;
@@ -82,7 +49,6 @@ use crate::file_util::get_absolute_file_path;
 ///
 /// - String must not be empty
 /// - Only alphanumeric characters, and underscores are allowed
-/// - Underscores can appear in any position (beginning, middle, or end)
 #[proc_macro]
 pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -174,9 +140,6 @@ pub fn string_for_secret(input: TokenStream) -> TokenStream {
 
 /// Creates a validated `EnvVarKey` wrapper for AWS Lambda environment variable keys at compile time.
 ///
-/// This macro ensures that the input string is a valid environment variable key for AWS Lambda
-/// functions, following AWS naming conventions and restrictions.
-///
 /// # Validation Rules
 ///
 /// - Key must be at least 2 characters long
@@ -216,8 +179,7 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 
 /// Creates a validated `ZipFile` wrapper for AWS Lambda deployment packages at compile time.
 ///
-/// This macro ensures that the input string refers to a valid ZIP file that exists on the
-/// filesystem at compile time.
+/// This macro ensures that the input string refers to a valid ZIP file that exists on the filesystem at compile time.
 /// 
 /// See the `examples` dir of this library for some usage examples
 ///
@@ -227,12 +189,6 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 /// - File must exist at compile time
 /// - Path must be valid Unicode
 /// - Both relative and absolute paths are allowed
-///
-/// # Note
-///
-/// This macro performs filesystem checks at compile time, so the ZIP file must exist
-/// when the code is compiled. This ensures deployment packages are available before
-/// attempting to deploy infrastructure.
 #[proc_macro]
 pub fn zip_file(input: TokenStream) -> TokenStream {
     let output: syn::Result<LitStr> = syn::parse(input);
@@ -316,10 +272,6 @@ pub fn toml_file(input: TokenStream) -> TokenStream {
 }
 
 /// Creates a validated `NonZeroNumber` wrapper for positive integers at compile time.
-///
-/// This macro ensures that the input number is greater than zero, preventing common
-/// configuration errors where zero values would cause AWS resource creation to fail
-/// or behave unexpectedly.
 #[proc_macro]
 pub fn non_zero_number(input: TokenStream) -> TokenStream {
     let output = match syn::parse::<LitInt>(input) {
@@ -420,7 +372,9 @@ const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";
 /// This macro caches validation results to improve compile times. The first compilation will
 /// query AWS to verify the bucket exists. Later compilations will use the cached result unless `rusty_cdk_RECHECK` is set to true.
 ///
-/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
+/// # Override
+/// 
+/// You can avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -502,7 +456,9 @@ const ADDITIONAL_ALLOWED_FOR_BUCKET_NAME: [char; 2] = ['.', '-'];
 /// query AWS to verify the bucket name is available. Later compilations will use the cached
 /// result unless `RUSTY_CDK_RECHECK` is set to true.
 ///
-/// As usual, you can also avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
+/// # Override
+///
+/// You can avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket_name(input: TokenStream) -> TokenStream {
     let input: LitStr = syn::parse(input).unwrap();
@@ -570,9 +526,6 @@ const POSSIBLE_LOG_RETENTION_VALUES: [u16; 22] = [
 
 /// Creates a validated `RetentionInDays` wrapper for AWS CloudWatch Logs retention periods at compile time.
 ///
-/// This macro ensures that the input number is one of the valid retention periods allowed by AWS
-/// CloudWatch Logs. AWS only allows specific discrete values for log retention periods.
-///
 /// # Validation Rules
 ///
 /// - Value must be a number, and of the AWS-approved retention periods (in days)
@@ -610,9 +563,6 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
 const ADDITIONAL_ALLOWED_FOR_LOG_GROUP: [char; 6] = ['.', '-', '_', '#', '/', '\\'];
 
 /// Creates a validated `LogGroupName` wrapper for AWS CloudWatch Logs log group names at compile time.
-///
-/// This macro ensures that the input string is a valid CloudWatch Logs log group name following
-/// AWS naming conventions and length restrictions.
 ///
 /// # Validation Rules
 ///
@@ -670,10 +620,6 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
 /// - Action is validated against AWS's official permission list
 /// - Wildcards are supported
 ///
-/// # Note
-///
-/// This macro helps prevent runtime IAM policy errors by validating permissions at compile time.
-/// Invalid or misspelled actions will cause compilation to fail with a helpful error message.
 #[proc_macro]
 pub fn iam_action(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -747,8 +693,7 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
 
 /// Creates a validated `OriginPath` wrapper for CloudFront origin path prefixes at compile time.
 ///
-/// This macro ensures that the path string follows CloudFront's requirements for origin paths,
-/// which are appended to requests forwarded to the origin.
+/// This macro ensures that the path string follows CloudFront's requirements for origin paths, which are appended to requests forwarded to the origin.
 ///
 /// # Validation Rules
 ///
@@ -777,8 +722,7 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
 
 /// Creates a validated `DefaultRootObject` wrapper for CloudFront default root objects at compile time.
 ///
-/// This macro ensures that the object name follows CloudFront's requirements for default root
-/// objects, which are returned when viewers request the root URL of a distribution.
+/// This macro ensures that the object name follows CloudFront's requirements for default root objects, which are returned when viewers request the root URL of a distribution.
 ///
 /// # Validation Rules
 ///
@@ -803,8 +747,6 @@ pub fn default_root_object(input: TokenStream) -> TokenStream {
 }
 
 /// Creates a validated `CfConnectionTimeout` wrapper for CloudFront origin connection timeouts at compile time.
-///
-/// This macro configures timeout settings for CloudFront when connecting to origins, allowing specification of both connection timeout and response completion timeout.
 ///
 /// # Validation Rules
 ///
@@ -931,14 +873,11 @@ const LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS: [&str; 2] = [
 
 /// Creates a validated `LifecycleTransitionInDays` wrapper for S3 lifecycle transition rules at compile time.
 ///
-/// This macro configures S3 lifecycle rules to automatically transition objects to different
-/// storage classes after a specified number of days, with validation based on the target storage class.
-///
 /// # Validation Rules
 ///
 /// - Days must be a positive number
 /// - Storage class must be one of: IntelligentTiering, OneZoneIA, StandardIA, GlacierDeepArchive, Glacier, GlacierInstantRetrieval
-/// - OneZoneIA and StandardIA storage classes require at least 30 days (cannot transition sooner)
+/// - OneZoneIA and StandardIA storage classes require at least 30 days (not allowed to transition sooner)
 #[proc_macro]
 pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
     let TransitionInfo { days, service } = parse_macro_input!(input);

@@ -59,8 +59,7 @@ type_state!(
 
 /// Builder for DynamoDB tables.
 ///
-/// Supports both pay-per-request and provisioned billing modes. The builder enforces
-/// correct configuration based on the chosen billing mode.
+/// Supports both pay-per-request and provisioned billing modes. The builder enforces the correct configuration based on the chosen billing mode.
 pub struct TableBuilder<T: TableBuilderState> {
     state: PhantomData<T>,
     id: Id,

@@ -154,7 +154,7 @@ impl ConfigurationProfileBuilder {
 
 /// Builder for configuration profile validators.
 pub struct ValidatorBuilder {
-    content: String, // 0-32768
+    content: String, // 0-32768 // TODO
     validator_type: String, // either ARN or JSON Schema
 }
 
@@ -222,7 +222,7 @@ pub struct DeploymentStrategyBuilder {
     id: Id,
     name: String,
     deployment_duration_in_minutes: u16,
-    growth_factor: u16, // 0 - 100 ?
+    growth_factor: u16,
     growth_type: Option<String>,
     replicate_to: String,
 }

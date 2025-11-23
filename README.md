@@ -134,7 +134,7 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are (largely) supported, though the safety varies:
+Currently only a limited number of AWS services are (largely/partly) supported, though the safety varies:
 - API Gateway
 - AppConfig
 - CloudFront
@@ -146,12 +146,12 @@ Currently only a limited number of AWS services are (largely) supported, though 
 - SNS
 - SQS
 
-In other words, you can definitely create serverless applications with this library.
+In other words, you can create serverless applications with this library.
 
 To be added at some point:
 - Appsync
 - Athena
-- Cloudwatch (besides logs)
+- Cloudwatch (-logs)
 - CodeBuild
 - CodePipeline
 - DocumentDB
@@ -163,7 +163,7 @@ To be added at some point:
 
 ### Available builders
 
-Based on rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
+Based on rg `^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
 
 - ApiGatewayV2Builder
 - ApplicationBuilder

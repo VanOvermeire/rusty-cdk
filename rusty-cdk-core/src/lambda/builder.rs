@@ -91,8 +91,7 @@ struct EventSourceMappingInfo {
 
 /// Builder for creating AWS Lambda functions.
 ///
-/// This builder provides a fluent API for configuring Lambda functions with their associated
-/// IAM roles, environment variables, permissions, and event sources.
+/// This builder provides a fluent API for configuring Lambda functions with their associated IAM roles, environment variables, permissions, and event sources.
 pub struct FunctionBuilder<T: FunctionBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -394,8 +393,8 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
 impl FunctionBuilder<EventSourceMappingState> {
     /// Builds the Lambda function and adds it to the stack.
     ///
-    /// Creates the function along with its IAM execution role, CloudWatch log group,
-    /// and event source mapping. Returns references to the function, role, and log group.
+    /// Creates the function along with its IAM execution role, CloudWatch log group, and event source mapping.
+    /// Returns references to the function, role, and log group.
     pub fn build(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         self.build_internal(stack_builder)
     }

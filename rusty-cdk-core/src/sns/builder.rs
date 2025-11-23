@@ -202,7 +202,7 @@ impl TopicBuilder<FifoState> {
 
     /// Builds the FIFO topic and adds it to the stack.
     ///
-    /// Automatically appends ".fifo" suffix to the topic name if not already present.
+    /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {
             if !name.ends_with(FIFO_SUFFIX) {
@@ -240,10 +240,10 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
-
+    
     /// Builds the FIFO topic with subscriptions and adds it to the stack.
     ///
-    /// Automatically appends ".fifo" suffix to the topic name if not already present.
+    /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     /// Creates Lambda permissions for all subscriptions.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {

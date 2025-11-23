@@ -22,8 +22,8 @@ impl Error for StackBuilderError {}
 
 /// Builder for CloudFormation stacks.
 ///
-/// Collects resources and manages their relationships. Validates that IAM roles
-/// have appropriate permissions for the AWS services they access.
+/// Collects resources and manages their relationships. 
+/// Might validate whether IAM roles are missing permissions for AWS services they need to access, based on Cargo.toml dependencies.
 pub struct StackBuilder {
     resources: Vec<Resource>,
     tags: Vec<(String, String)>,
@@ -52,8 +52,7 @@ impl StackBuilder {
 
     /// Builds the stack and validates all resources.
     ///
-    /// Returns an error if any IAM roles are missing permissions for AWS services
-    /// they need to access based on Cargo.toml dependencies.
+    /// Might return an error if any IAM roles are missing permissions for AWS services they need to access, based on Cargo.toml dependencies.
     pub fn build(self) -> Result<Stack, StackBuilderError> {
         let metadata = self
             .resources
