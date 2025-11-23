@@ -21,6 +21,45 @@ pub struct Asset {
     pub path: String,
 }
 
+/// Represents a CloudFormation stack containing AWS resources and their configurations.
+///
+/// A `Stack` is the core abstraction for defining and managing AWS infrastructure.
+/// It contains a collection of AWS resources (such as Lambda functions, S3 buckets, DynamoDB tables, etc.) 
+/// that are deployed together as a single unit in AWS CloudFormation.
+///
+/// # Usage
+///
+/// Stacks are created using the [`StackBuilder`](crate::stack::StackBuilder), which provides a fluent interface for adding resources. 
+/// Once built, a stack can be:
+/// - Synthesized into a CloudFormation template JSON using [`synth()`](Stack::synth)
+/// - Deployed to AWS using the deployment utilities (`deploy`)
+///
+/// # Example
+///
+/// ```
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::sqs::QueueBuilder;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Add resources to the stack
+/// QueueBuilder::new("my-queue")
+///     .standard_queue()
+///     .build(&mut stack_builder);
+///
+/// // Build the stack
+/// let stack = stack_builder.build().unwrap();
+///
+/// // Synthesize to CloudFormation template
+/// let template_json = stack.synth().unwrap();
+/// ```
+///
+/// # Serialization
+///
+/// The stack is serialized to CloudFormation-compatible JSON format, with:
+/// - `Resources`: The AWS resources map
+/// - `Metadata`: Additional metadata for resource management
+/// - Tags are *not* serialized directly
 #[derive(Debug, Serialize)]
 pub struct Stack {
     #[serde(skip)]
@@ -48,9 +87,46 @@ impl Stack {
             .collect()
     }
 
+    /// Synthesizes the stack into a CloudFormation template JSON string.
+    ///
+    /// This method converts the stack and all its resources into a JSON-formatted
+    /// CloudFormation template that can be deployed to AWS using the AWS CLI, SDKs,
+    /// or the AWS Console.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - A JSON-formatted CloudFormation template string
+    /// * `Err(String)` - An error message if serialization fails
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rusty_cdk_core::stack::StackBuilder;
+    /// use rusty_cdk_core::sqs::QueueBuilder;
+    ///
+    /// let mut stack_builder = StackBuilder::new();
+    ///
+    /// // Add resources to the stack
+    /// QueueBuilder::new("my-queue")
+    ///     .standard_queue()
+    ///     .build(&mut stack_builder);
+    ///
+    /// // Build the stack
+    /// let stack = stack_builder.build().unwrap();
+    ///
+    /// // Synthesize to CloudFormation template
+    /// let template_json = stack.synth().unwrap();
+    /// ```
+    ///
+    /// # Usage with AWS Tools
+    ///
+    /// The synthesized template can be used with:
+    /// - AWS CLI: `aws cloudformation create-stack --template-body file://template.json`
+    /// - AWS SDKs: Pass the template string to the CloudFormation client
+    /// - AWS Console: Upload the template file directly
     pub fn synth(&self) -> Result<String, String> {
         let mut naive_synth = serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))?;
-        // nicer way to do this? for examples, a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
+        // nicer way to do this? for example, a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
         self.to_replace.iter().for_each(|(current, new)| {
             naive_synth = naive_synth.replace(current, new);
         });

@@ -30,6 +30,59 @@ async fn get_existing_template(client: &aws_sdk_cloudformation::Client, stack_na
     }
 }
 
+/// Deploys a stack to AWS using CloudFormation.
+///
+/// This function handles the complete deployment lifecycle:
+/// - Uploading Lambda function assets to S3
+/// - Creating or updating the CloudFormation stack
+/// - Monitoring deployment progress with real-time status updates
+/// 
+/// It exits with code 0 on success, 1 on failure
+///
+/// # Parameters
+///
+/// * `name` - The CloudFormation stack name (alphanumeric characters and hyphens only)
+/// * `stack` - The stack to deploy, created using `StackBuilder`
+///
+/// # Tags
+///
+/// If tags were added to the stack using `StackBuilder::add_tag()`, they will be
+/// applied to the CloudFormation stack and propagated to resources where supported.
+///
+/// # Example
+///
+/// ```no_run
+/// use rusty_cdk::deploy;
+/// use rusty_cdk::stack::StackBuilder;
+/// use rusty_cdk::sqs::QueueBuilder;
+/// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let mut stack_builder = StackBuilder::new();
+///     QueueBuilder::new("my-queue")
+///         .standard_queue()
+///         .build(&mut stack_builder);
+///
+///     let stack = stack_builder.build().expect("Stack to build successfully");
+///
+///     deploy(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack).await;
+/// }
+/// ```
+///
+/// # AWS Credentials
+///
+/// This function requires valid AWS credentials configured through:
+/// - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+/// - AWS credentials file (`~/.aws/credentials`)
+/// - IAM role (when running on EC2, ECS, Lambda, etc.)
+/// - ...
+///
+/// The AWS credentials must have permissions for:
+/// - `cloudformation:CreateStack`, `cloudformation:UpdateStack`, `cloudformation:DescribeStacks`, `cloudformation:GetTemplate`
+/// - `s3:PutObject` (for Lambda asset uploads)
+/// - IAM permissions if creating roles (`iam:CreateRole`, `iam:PutRolePolicy`, etc.)
+/// - Service-specific permissions for resources being created
 pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) {
     let name = name.0;
     let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
