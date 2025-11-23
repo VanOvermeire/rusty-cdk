@@ -29,6 +29,7 @@ async fn get_existing_template(client: &aws_sdk_cloudformation::Client, stack_na
     }
 }
 
+// TODO name should also be validated at cmpile time
 pub async fn deploy(name: &str, mut stack: Stack) {
     let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
         // https://github.com/awslabs/aws-sdk-rust/issues/1146
