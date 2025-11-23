@@ -641,6 +641,16 @@ pub fn iam_action(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Creates a validated `S3LifecycleObjectSizes` wrapper for S3 lifecycle rule object size constraints at compile time.
+///
+/// This macro defines minimum and maximum object sizes for S3 lifecycle transitions, allowing
+/// lifecycle rules to apply only to objects within a specific size range.
+///
+/// # Validation Rules
+///
+/// - Both minimum and maximum sizes are optional
+/// - If both are provided, the minimum must be smaller than the maximum
+/// - Values are specified in bytes
 #[proc_macro]
 pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
     let ObjectSizes { first, second } = parse_macro_input!(input);
@@ -681,6 +691,16 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates a validated `OriginPath` wrapper for CloudFront origin path prefixes at compile time.
+///
+/// This macro ensures that the path string follows CloudFront's requirements for origin paths,
+/// which are appended to requests forwarded to the origin.
+///
+/// # Validation Rules
+///
+/// - Must start with a forward slash (/)
+/// - Must NOT end with a forward slash (/)
+/// - Example: "/production" is valid, but "/production/" and "production" are not
 #[proc_macro]
 pub fn origin_path(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -701,6 +721,16 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates a validated `DefaultRootObject` wrapper for CloudFront default root objects at compile time.
+///
+/// This macro ensures that the object name follows CloudFront's requirements for default root
+/// objects, which are returned when viewers request the root URL of a distribution.
+///
+/// # Validation Rules
+///
+/// - Must NOT start with a forward slash (/)
+/// - Must NOT end with a forward slash (/)
+/// - Example: "index.html" is valid, but "/index.html" and "index.html/" are not
 #[proc_macro]
 pub fn default_root_object(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -718,6 +748,15 @@ pub fn default_root_object(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates a validated `CfConnectionTimeout` wrapper for CloudFront origin connection timeouts at compile time.
+///
+/// This macro configures timeout settings for CloudFront when connecting to origins, allowing specification of both connection timeout and response completion timeout.
+///
+/// # Validation Rules
+///
+/// - Connection timeout (first value) must be between 1 and 10 seconds (if provided)
+/// - Response completion timeout (second value) must be greater than or equal to connection timeout (if both provided)
+/// - Both values are optional
 #[proc_macro]
 pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
     let Timeouts { first, second } = parse_macro_input!(input);
@@ -762,11 +801,21 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
     };
 
     quote! {
-        S3LifecycleObjectSizes(#first_output, #second_output)
+        CfConnectionTimeout(#first_output, #second_output)
     }
     .into()
 }
 
+/// Creates a validated `LambdaPermissionAction` wrapper for Lambda resource-based policy actions at compile time.
+///
+/// This macro ensures that the action string is properly formatted for Lambda resource-based
+/// policies, which control what AWS services and accounts can invoke Lambda functions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Must start with "lambda:" prefix
+/// - Common values include "lambda:InvokeFunction" and "lambda:GetFunction"
 #[proc_macro]
 pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -783,6 +832,16 @@ pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Creates a validated `AppConfigName` wrapper for AWS AppConfig resource names at compile time.
+///
+/// This macro ensures that the name string follows AWS AppConfig naming conventions and
+/// length restrictions for applications, environments, and configuration profiles.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Maximum length of 64 characters
+/// - Used for AppConfig application names, environment names, and configuration profile names
 #[proc_macro]
 pub fn app_config_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
@@ -816,6 +875,16 @@ const LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS: [&str; 2] = [
     "StandardIA",
 ];
 
+/// Creates a validated `LifecycleTransitionInDays` wrapper for S3 lifecycle transition rules at compile time.
+///
+/// This macro configures S3 lifecycle rules to automatically transition objects to different
+/// storage classes after a specified number of days, with validation based on the target storage class.
+///
+/// # Validation Rules
+///
+/// - Days must be a positive number
+/// - Storage class must be one of: IntelligentTiering, OneZoneIA, StandardIA, GlacierDeepArchive, Glacier, GlacierInstantRetrieval
+/// - OneZoneIA and StandardIA storage classes require at least 30 days (cannot transition sooner)
 #[proc_macro]
 pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
     let TransitionInfo { days, service } = parse_macro_input!(input);
