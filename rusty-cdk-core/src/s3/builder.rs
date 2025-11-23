@@ -19,6 +19,9 @@ use crate::type_state;
 //  CDK approach with custom resources is one way
 //  other way would be for the deploy to do extra work, but then the cloudformation template can only work correctly with our deploy method...
 
+/// Builder for S3 bucket policies.
+///
+/// Creates a policy document that controls access to an S3 bucket.
 pub struct BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
@@ -93,6 +96,10 @@ type_state!(
     WebsiteState,
 );
 
+/// Builder for S3 buckets.
+///
+/// Provides configuration for S3 buckets including versioning, lifecycle rules,
+/// encryption, CORS, and static website hosting.
 pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
@@ -166,6 +173,10 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures the bucket for static website hosting.
+    ///
+    /// Automatically disables public access blocks and creates a bucket policy
+    /// allowing public GetObject access.
     pub fn website<I: Into<String>>(self, index_document: I) -> BucketBuilder<WebsiteState> {
         BucketBuilder {
             phantom_data: Default::default(),
@@ -291,20 +302,27 @@ impl BucketBuilder<WebsiteState> {
         }
     }
 
+    /// Builds the website bucket and adds it to the stack.
+    ///
+    /// Returns both the bucket and the automatically created bucket policy
+    /// that allows public read access.
     pub fn build(self, stack_builder: &mut StackBuilder) -> (BucketRef, BucketPolicyRef) {
         let (bucket, policy) = self.build_internal(true, stack_builder);
         (bucket, policy.expect("for website, bucket policy should always be present"))
     }
 }
 
+/// Builder for S3 CORS configuration.
 pub struct CorsConfigurationBuilder {}
 
 impl CorsConfigurationBuilder {
+    /// Creates a CORS configuration from a list of CORS rules.
     pub fn new(cors_rules: Vec<CorsRule>) -> CorsConfiguration {
         CorsConfiguration { cors_rules }
     }
 }
 
+/// Builder for individual CORS rules.
 pub struct CorsRuleBuilder {
     allow_origins: Vec<String>,
     allow_methods: Vec<HttpMethod>,
@@ -393,6 +411,9 @@ impl From<LifecycleStorageClass> for String {
     }
 }
 
+/// Builder for S3 lifecycle rule transitions.
+///
+/// Configures automatic transitions of objects to different storage classes.
 pub struct LifecycleRuleTransitionBuilder {
     storage_class: LifecycleStorageClass,
     transition_in_days: Option<u16>,
@@ -422,6 +443,9 @@ impl LifecycleRuleTransitionBuilder {
     }
 }
 
+/// Builder for non-current version transitions in versioned buckets.
+///
+/// Configures automatic transitions for previous versions of objects.
 pub struct NonCurrentVersionTransitionBuilder {
     storage_class: LifecycleStorageClass,
     transition_in_days: u32,
@@ -468,6 +492,9 @@ impl From<LifecycleRuleStatus> for String {
     }
 }
 
+/// Builder for S3 lifecycle rules.
+///
+/// Defines rules for automatic object expiration and transitions between storage classes.
 pub struct LifecycleRuleBuilder {
     id: Option<String>,
     status: LifecycleRuleStatus,
@@ -578,6 +605,9 @@ impl LifecycleRuleBuilder {
     }
 }
 
+/// Builder for S3 lifecycle configuration.
+///
+/// Combines multiple lifecycle rules into a configuration for a bucket.
 pub struct LifecycleConfigurationBuilder {
     rules: Vec<LifecycleRule>,
     transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>,
@@ -612,6 +642,9 @@ impl LifecycleConfigurationBuilder {
     }
 }
 
+/// Builder for S3 public access block configuration.
+///
+/// Controls public access to the bucket at the bucket level.
 pub struct PublicAccessBlockConfigurationBuilder {
     block_public_acls: Option<bool>,
     block_public_policy: Option<bool>,

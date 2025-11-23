@@ -57,6 +57,10 @@ type_state!(
     PayPerRequestState,
 );
 
+/// Builder for DynamoDB tables.
+///
+/// Supports both pay-per-request and provisioned billing modes. The builder enforces
+/// correct configuration based on the chosen billing mode.
 pub struct TableBuilder<T: TableBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -102,6 +106,9 @@ impl<T: TableBuilderState> TableBuilder<T> {
         }
     }
 
+    /// Configures the table to use pay-per-request billing.
+    ///
+    /// With this mode, you pay per request and can optionally set max throughput limits.
     pub fn pay_per_request_billing(self) -> TableBuilder<PayPerRequestState> {
         TableBuilder {
             billing_mode: Some(BillingMode::PayPerRequest),
@@ -117,6 +124,9 @@ impl<T: TableBuilderState> TableBuilder<T> {
         }
     }
 
+    /// Configures the table to use provisioned billing.
+    ///
+    /// With this mode, you must specify read and write capacity units.
     pub fn provisioned_billing(self) -> TableBuilder<ProvisionedStateStart> {
         TableBuilder {
             billing_mode: Some(BillingMode::Provisioned),

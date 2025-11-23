@@ -12,6 +12,9 @@ type_state!(
     SelectedSecretTypeState,
 );
 
+/// Builder for AWS Secrets Manager secrets.
+///
+/// Supports both static secret strings and automatically generated secrets.
 pub struct SecretBuilder<T: SecretBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
@@ -97,6 +100,9 @@ type_state!(
     SecretStringTemplateState,
 );
 
+/// Builder for generated secret string configuration.
+///
+/// Configures how AWS Secrets Manager should automatically generate a secret value.
 pub struct GenerateSecretStringBuilder<T: GenerateSecretStringBuilderState> {
     phantom_data: PhantomData<T>,
     generate_string_key: Option<String>,

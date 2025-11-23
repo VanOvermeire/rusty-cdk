@@ -89,6 +89,10 @@ struct EventSourceMappingInfo {
     max_concurrency: Option<u16>,
 }
 
+/// Builder for creating AWS Lambda functions.
+///
+/// This builder provides a fluent API for configuring Lambda functions with their associated
+/// IAM roles, environment variables, permissions, and event sources.
 pub struct FunctionBuilder<T: FunctionBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -121,6 +125,10 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
 
+    /// Checks that the function has permissions for AWS services listed in Cargo.toml dependencies.
+    ///
+    /// Parses the Cargo.toml to find AWS SDK dependencies and verifies that IAM permissions
+    /// have been granted for those services.
     // TODO macro
     pub fn check_permissions_against_dependencies(self, cargo_toml: TomlFile) -> Self {
         let services = map_toml_dependencies_to_services(cargo_toml.0.as_ref());
@@ -257,6 +265,13 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
 }
 
 impl FunctionBuilder<StartState> {
+    /// Creates a new Lambda function builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the function
+    /// * `architecture` - CPU architecture (x86_64 or ARM64)
+    /// * `memory` - Memory allocation in MB
+    /// * `timeout` - Maximum execution time
     pub fn new(id: &str, architecture: Architecture, memory: Memory, timeout: Timeout) -> FunctionBuilder<StartState> {
         FunctionBuilder {
             state: Default::default(),
@@ -339,6 +354,9 @@ impl FunctionBuilder<ZipStateWithHandler> {
 }
 
 impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
+    /// Configures the function to be triggered by an SQS queue.
+    ///
+    /// Automatically adds the necessary IAM permissions for reading from the queue.
     pub fn sqs_event_source_mapping(mut self, sqs_queue: &QueueRef, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
         self.additional_policies.push(IamPermission::SqsRead(sqs_queue).into_policy());
         
@@ -365,17 +383,28 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
         }
     }
 
+    /// Builds the Lambda function and adds it to the stack.
+    ///
+    /// Creates the function along with its IAM execution role and CloudWatch log group.
+    /// Returns references to all three resources.
     pub fn build(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         self.build_internal(stack_builder)
     }
 }
 
 impl FunctionBuilder<EventSourceMappingState> {
+    /// Builds the Lambda function and adds it to the stack.
+    ///
+    /// Creates the function along with its IAM execution role, CloudWatch log group,
+    /// and event source mapping. Returns references to the function, role, and log group.
     pub fn build(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         self.build_internal(stack_builder)
     }
 }
 
+/// Builder for Lambda function permissions.
+///
+/// Creates permission resources that allow other AWS services to invoke a Lambda function.
 pub struct PermissionBuilder {
     id: Id,
     action: String,
@@ -385,6 +414,13 @@ pub struct PermissionBuilder {
 }
 
 impl PermissionBuilder {
+    /// Creates a new permission builder for a Lambda function.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the permission resource
+    /// * `action` - Lambda action to allow (e.g., "lambda:InvokeFunction")
+    /// * `function_name` - Reference to the Lambda function
+    /// * `principal` - AWS service or account that will be granted permission
     pub fn new<R: Into<String>>(id: &str, action: LambdaPermissionAction, function_name: Value, principal: R) -> Self {
         Self {
             id: Id(id.to_string()),

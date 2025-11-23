@@ -17,6 +17,10 @@ struct RouteInfo {
     resource_id: String,
 }
 
+/// Builder for API Gateway V2 HTTP APIs.
+///
+/// Creates an HTTP API with routes to Lambda functions. Automatically creates
+/// integrations and permissions for each route.
 pub struct ApiGatewayV2Builder {
     id: Id,
     name: Option<String>,
@@ -57,6 +61,9 @@ impl ApiGatewayV2Builder {
         }
     }
 
+    /// Adds a default route that catches all requests not matching other routes.
+    ///
+    /// Automatically creates the integration and Lambda permission.
     pub fn add_default_route_lambda(mut self, lambda: &FunctionRef) -> Self {
         self.route_info.push(RouteInfo {
             lambda_id: lambda.get_id().clone(),
@@ -67,6 +74,9 @@ impl ApiGatewayV2Builder {
         Self { ..self }
     }
 
+    /// Adds a route for a specific HTTP method and path.
+    ///
+    /// Automatically creates the integration and Lambda permission.
     pub fn add_route_lambda<T: Into<String>>(mut self, path: T, method: HttpMethod, lambda: &FunctionRef) -> Self {
         let path = path.into();
         let path = if path.starts_with("/") { path } else { format!("/{}", path) };
@@ -197,6 +207,7 @@ impl ApiGatewayV2Builder {
     }
 }
 
+/// Builder for API Gateway CORS configuration.
 pub struct CorsConfigurationBuilder {
     allow_credentials: Option<bool>,
     allow_headers: Option<Vec<String>>,

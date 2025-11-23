@@ -47,6 +47,10 @@ type_state!(
     FifoState,
 );
 
+/// Builder for SQS queues.
+///
+/// Supports both standard and FIFO queues. FIFO queues have additional configuration
+/// options for deduplication and throughput.
 pub struct QueueBuilder<T: QueueBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -233,6 +237,9 @@ impl QueueBuilder<FifoState> {
         }
     }
 
+    /// Enables high throughput mode for FIFO queues.
+    ///
+    /// Sets deduplication scope to MessageGroup and throughput limit to PerMessageGroupId.
     pub fn high_throughput_fifo(self) -> Self {
         Self {
             deduplication_scope: Some(DeduplicationScope::MessageGroup.into()),
@@ -255,6 +262,9 @@ impl QueueBuilder<FifoState> {
         }
     }
 
+    /// Builds the FIFO queue and adds it to the stack.
+    ///
+    /// Automatically appends ".fifo" suffix to the queue name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> QueueRef {
         if let Some(ref name) = self.queue_name {
             if !name.ends_with(FIFO_SUFFIX) {

@@ -66,6 +66,7 @@ type_state!(
     ViewerCertificateStateEndState,
 );
 
+/// Builder for CloudFront viewer certificates.
 pub struct ViewerCertificateBuilder<T: ViewerCertificateState> {
     phantom_data: PhantomData<T>,
     cloudfront_default_cert: Option<bool>,
@@ -186,6 +187,10 @@ pub enum Headers {
     Whitelist(Vec<String>),
 }
 
+/// Builder for cache key and forwarding parameters.
+///
+/// Configures which request parameters (cookies, headers, query strings) are included
+/// in the cache key and forwarded to the origin.
 pub struct ParametersInCacheKeyAndForwardedToOriginBuilder {
     cookies_config: CookiesConfig,
     headers_config: HeadersConfig,
@@ -271,6 +276,7 @@ impl ParametersInCacheKeyAndForwardedToOriginBuilder {
     }
 }
 
+/// Builder for CloudFront cache policies.
 pub struct CachePolicyBuilder {
     id: Id,
     name: String,
@@ -361,6 +367,9 @@ type_state!(
     OriginS3OriginState,
 );
 
+/// Builder for CloudFront distribution origins.
+///
+/// Currently supports S3 origins with Origin Access Control.
 // TODO other origins
 pub struct OriginBuilder<'a, T: OriginState> {
     phantom_data: PhantomData<T>,
@@ -396,6 +405,9 @@ impl OriginBuilder<'_, OriginStartState> {
         }
     }
 
+    /// Configures an S3 bucket as the origin.
+    ///
+    /// Automatically creates a bucket policy allowing CloudFront access via Origin Access Control.
     pub fn s3_origin<'a>(
         self,
         bucket: &'a BucketRef,
@@ -541,6 +553,7 @@ impl From<ViewerProtocolPolicy> for String {
     }
 }
 
+/// Builder for CloudFront default cache behavior.
 pub struct DefaultCacheBehaviorBuilder {
     target_origin_id: String,
     cache_policy_id: Value,
@@ -659,6 +672,9 @@ impl From<OriginAccessControlType> for String {
     }
 }
 
+/// Builder for CloudFront Origin Access Control.
+///
+/// Controls access from CloudFront to origins like S3 buckets.
 pub struct OriginAccessControlBuilder {
     id: Id,
     name: String,
@@ -703,6 +719,9 @@ impl OriginAccessControlBuilder {
     }
 }
 
+/// Builder for CloudFront distributions.
+///
+/// Creates a CloudFront distribution with origins, cache behaviors, and other configuration.
 pub struct DistributionBuilder<T: DistributionState> {
     phantom_data: PhantomData<T>,
     id: Id,

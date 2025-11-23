@@ -35,6 +35,10 @@ type_state!(
     FifoStateWithSubscriptions,
 );
 
+/// Builder for SNS topics.
+///
+/// Supports both standard and FIFO topics with Lambda subscriptions.
+/// FIFO topics have additional configuration for deduplication and throughput.
 pub struct TopicBuilder<T: TopicBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -56,6 +60,9 @@ impl TopicBuilder<StartState> {
         }
     }
 
+    /// Adds a subscription to the topic.
+    ///
+    /// For Lambda subscriptions, automatically creates the necessary permission.
     pub fn add_subscription(mut self, subscription: SubscriptionType) -> TopicBuilder<StandardStateWithSubscriptions> {
         self.add_subscription_internal(subscription);
 
@@ -193,6 +200,9 @@ impl TopicBuilder<FifoState> {
         }
     }
 
+    /// Builds the FIFO topic and adds it to the stack.
+    ///
+    /// Automatically appends ".fifo" suffix to the topic name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {
             if !name.ends_with(FIFO_SUFFIX) {
@@ -231,6 +241,10 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
         }
     }
 
+    /// Builds the FIFO topic with subscriptions and adds it to the stack.
+    ///
+    /// Automatically appends ".fifo" suffix to the topic name if not already present.
+    /// Creates Lambda permissions for all subscriptions.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name {
             if !name.ends_with(FIFO_SUFFIX) {

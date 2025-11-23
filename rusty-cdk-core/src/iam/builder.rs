@@ -17,6 +17,7 @@ type_state!(
     ChosenState,
 );
 
+/// Builder for IAM principals (service, AWS, or custom).
 pub struct PrincipalBuilder<T: PrincipalState> {
     phantom_data: PhantomData<T>,
     service: Option<String>,
@@ -80,6 +81,7 @@ impl PrincipalBuilder<ChosenState> {
     }
 }
 
+/// Builder for IAM roles.
 pub struct RoleBuilder {
     id: Id,
     resource_id: String,
@@ -113,6 +115,7 @@ impl RoleBuilder {
     }
 }
 
+/// Builder for IAM role properties.
 pub struct RolePropertiesBuilder {
     assumed_role_policy_document: AssumeRolePolicyDocument,
     managed_policy_arns: Vec<Value>,
@@ -155,6 +158,7 @@ impl RolePropertiesBuilder {
     }
 }
 
+/// Builder for IAM policies.
 pub struct PolicyBuilder {
     policy_name: String,
     policy_document: PolicyDocument,
@@ -177,6 +181,7 @@ impl PolicyBuilder {
     }
 }
 
+/// Builder for IAM policy documents.
 pub struct PolicyDocumentBuilder {
     statements: Vec<Statement>
 }
@@ -225,6 +230,7 @@ pub trait StatementState {}
 pub struct StatementStartState {}
 impl StatementState for StatementStartState {}
 
+/// Builder for IAM policy statements.
 pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,

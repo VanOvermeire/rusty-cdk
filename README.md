@@ -138,7 +138,7 @@ Currently only a limited number of AWS services are (largely) supported, though 
 - API Gateway
 - AppConfig
 - CloudFront
-- Cloudwatch
+- Cloudwatch logs
 - DynamoDB
 - IAM
 - Lambda
@@ -147,6 +147,19 @@ Currently only a limited number of AWS services are (largely) supported, though 
 - SQS
 
 In other words, you can definitely create serverless applications with this library.
+
+To be added at some point:
+- Appsync
+- Athena
+- Cloudwatch (besides logs)
+- CodeBuild
+- CodePipeline
+- DocumentDB
+- ECS
+- EventBridge
+- Kinesis
+- RDS
+- Step Functions
 
 ### Available builders
 

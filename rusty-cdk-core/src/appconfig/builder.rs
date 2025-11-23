@@ -4,6 +4,7 @@ use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor};
 
+/// Builder for AWS AppConfig applications.
 pub struct ApplicationBuilder {
     id: Id,
     name: String,
@@ -81,6 +82,7 @@ impl From<DeletionProtectionCheck> for String {
     }
 }
 
+/// Builder for AWS AppConfig configuration profiles.
 pub struct ConfigurationProfileBuilder {
     id: Id,
     name: String,
@@ -150,6 +152,7 @@ impl ConfigurationProfileBuilder {
     }
 }
 
+/// Builder for configuration profile validators.
 pub struct ValidatorBuilder {
     content: String, // 0-32768
     validator_type: String, // either ARN or JSON Schema
@@ -214,6 +217,7 @@ impl From<ReplicateTo> for String {
     }
 }
 
+/// Builder for AWS AppConfig deployment strategies.
 pub struct DeploymentStrategyBuilder {
     id: Id,
     name: String,
@@ -262,6 +266,7 @@ impl DeploymentStrategyBuilder {
     }
 }
 
+/// Builder for AWS AppConfig environments.
 pub struct EnvironmentBuilder {
     id: Id,
     name: String,

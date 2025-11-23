@@ -18,6 +18,7 @@ impl From<LogGroupClass> for String {
     }
 }
 
+/// Builder for CloudWatch log groups.
 pub struct LogGroupBuilder {
     id: Id,
     log_group_name: Option<Value>,
