@@ -30,6 +30,10 @@ pub struct ApiGatewayV2Builder {
 }
 
 impl ApiGatewayV2Builder {
+    /// Creates a new API Gateway V2 HTTP API builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the API Gateway
     pub fn new(id: &str) -> Self {
         Self {
             id: Id(id.to_string()),

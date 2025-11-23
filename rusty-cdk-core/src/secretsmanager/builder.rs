@@ -25,6 +25,10 @@ pub struct SecretBuilder<T: SecretBuilderState> {
 }
 
 impl SecretBuilder<StartState> {
+    /// Creates a new Secrets Manager secret builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the secret
     pub fn new(id: &str) -> Self {
         SecretBuilder {
             phantom_data: Default::default(),

@@ -90,6 +90,12 @@ pub struct RoleBuilder {
 }
 
 impl RoleBuilder {
+    /// Creates a new IAM role builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the role
+    /// * `resource_id` - CloudFormation resource ID for the role
+    /// * `properties` - IAM role properties including policies and trust relationships
     pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> RoleBuilder {
         Self::new_with_missing_info(id, resource_id, properties, vec![])
     }
@@ -300,6 +306,11 @@ pub struct CustomPermission {
 }
 
 impl CustomPermission {
+    /// Creates a new custom IAM permission.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the permission
+    /// * `statement` - IAM policy statement defining the permission
     pub fn new(id: &str, statement: Statement) -> Self {
         Self {
             id: id.to_string(),

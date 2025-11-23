@@ -29,6 +29,12 @@ pub struct BucketPolicyBuilder {
 }
 
 impl BucketPolicyBuilder {
+    /// Creates a new S3 bucket policy builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the bucket policy
+    /// * `bucket` - Reference to the S3 bucket
+    /// * `policy_document` - IAM policy document controlling access
     pub fn new(id: &str, bucket: &BucketRef, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -114,6 +120,10 @@ pub struct BucketBuilder<T: BucketBuilderState> {
 }
 
 impl BucketBuilder<StartState> {
+    /// Creates a new S3 bucket builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the bucket
     pub fn new(id: &str) -> Self {
         Self {
             id: Id(id.to_string()),

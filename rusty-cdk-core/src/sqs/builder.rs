@@ -69,6 +69,10 @@ pub struct QueueBuilder<T: QueueBuilderState> {
 }
 
 impl QueueBuilder<StartState> {
+    /// Creates a new SQS queue builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the queue
     pub fn new(id: &str) -> Self {
         Self {
             state: Default::default(),

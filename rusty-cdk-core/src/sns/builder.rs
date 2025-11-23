@@ -49,6 +49,10 @@ pub struct TopicBuilder<T: TopicBuilderState> {
 }
 
 impl TopicBuilder<StartState> {
+    /// Creates a new SNS topic builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the topic
     pub fn new(id: &str) -> Self {
         Self {
             state: Default::default(),

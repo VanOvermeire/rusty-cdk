@@ -286,6 +286,15 @@ pub struct CachePolicyBuilder {
 }
 
 impl CachePolicyBuilder {
+    /// Creates a new CloudFront cache policy builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the cache policy
+    /// * `unique_name` - Name for the cache policy (must be unique)
+    /// * `default_ttl` - Default time to live in seconds
+    /// * `min_ttl` - Minimum time to live in seconds
+    /// * `max_ttl` - Maximum time to live in seconds
+    /// * `cache_params` - Parameters for cache key and origin forwarding
     pub fn new(
         id: &str,
         unique_name: &str,
@@ -683,6 +692,14 @@ pub struct OriginAccessControlBuilder {
 }
 
 impl OriginAccessControlBuilder {
+    /// Creates a new CloudFront Origin Access Control builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the origin access control
+    /// * `name` - Name of the origin access control
+    /// * `origin_access_control_type` - Type of origin (S3, MediaStore, Lambda, etc.)
+    /// * `signing_behavior` - When to sign requests (Never, NoOverride, Always)
+    /// * `signing_protocol` - Protocol for signing requests
     pub fn new(
         id: &str,
         name: &str,
@@ -740,6 +757,11 @@ pub struct DistributionBuilder<T: DistributionState> {
 }
 
 impl DistributionBuilder<DistributionStartState> {
+    /// Creates a new CloudFront distribution builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the distribution
+    /// * `default_cache_behavior` - Default cache behavior for all requests
     pub fn new(id: &str, default_cache_behavior: DefaultCacheBehavior) -> Self {
         Self {
             phantom_data: Default::default(),

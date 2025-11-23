@@ -11,6 +11,11 @@ pub struct ApplicationBuilder {
 }
 
 impl ApplicationBuilder {
+    /// Creates a new AppConfig application builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the application
+    /// * `name` - Name of the AppConfig application
     pub fn new(id: &str, name: AppConfigName) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -94,6 +99,13 @@ pub struct ConfigurationProfileBuilder {
 }
 
 impl ConfigurationProfileBuilder {
+    /// Creates a new AppConfig configuration profile builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the configuration profile
+    /// * `name` - Name of the configuration profile
+    /// * `application` - Reference to the parent AppConfig application
+    /// * `location_uri` - Location where the configuration is stored
     pub fn new(id: &str, name: AppConfigName, application: &ApplicationRef, location_uri: LocationUri) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -228,6 +240,14 @@ pub struct DeploymentStrategyBuilder {
 }
 
 impl DeploymentStrategyBuilder {
+    /// Creates a new AppConfig deployment strategy builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the deployment strategy
+    /// * `name` - Name of the deployment strategy
+    /// * `deployment_duration_in_minutes` - Time to deploy the configuration
+    /// * `growth_factor` - Percentage of targets to receive the deployment during each interval
+    /// * `replicate_to` - Where to replicate the configuration
     pub fn new(id: &str, name: AppConfigName, deployment_duration_in_minutes: DeploymentDurationInMinutes, growth_factor: GrowthFactor, replicate_to: ReplicateTo) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -275,6 +295,12 @@ pub struct EnvironmentBuilder {
 }
 
 impl EnvironmentBuilder {
+    /// Creates a new AppConfig environment builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the environment
+    /// * `name` - Name of the environment
+    /// * `application` - Reference to the parent AppConfig application
     pub fn new(id: &str, name: AppConfigName, application: &ApplicationRef) -> Self {
         Self {
             id: Id(id.to_string()),

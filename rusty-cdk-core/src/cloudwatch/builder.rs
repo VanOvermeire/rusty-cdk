@@ -27,6 +27,10 @@ pub struct LogGroupBuilder {
 }
 
 impl LogGroupBuilder {
+    /// Creates a new CloudWatch log group builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the log group
     pub fn new(id: &str) -> Self {
         Self {
             id: Id(id.to_string()),

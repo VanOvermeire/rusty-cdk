@@ -74,6 +74,11 @@ pub struct TableBuilder<T: TableBuilderState> {
 }
 
 impl TableBuilder<StartState> {
+    /// Creates a new DynamoDB table builder.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the table
+    /// * `key` - Partition key definition for the table
     pub fn new(id: &str, key: Key) -> Self {
         TableBuilder {
             state: Default::default(),
