@@ -57,7 +57,7 @@ pub struct BucketProperties {
     #[serde(rename = "PublicAccessBlockConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) public_access_block_configuration: Option<PublicAccessBlockConfiguration>,
     #[serde(rename = "VersioningConfiguration", skip_serializing_if = "Option::is_none")]
-    pub(super) versioning_configuration: Option<VersioningConfiguration>,
+    pub(super) versioning_configuration: Option<VersioningConfig>,
     #[serde(rename = "WebsiteConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) website_configuration: Option<WebsiteConfiguration>,
 }
@@ -232,7 +232,7 @@ pub struct PublicAccessBlockConfiguration {
 }
 
 #[derive(Debug, Serialize)]
-pub struct VersioningConfiguration {
+pub struct VersioningConfig {
     #[serde(rename = "Status")]
     pub(super) status: String,
 }

@@ -1,17 +1,17 @@
-use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
+use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
 use crate::cloudwatch::LogGroup;
 use crate::dynamodb::Table;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
-use crate::s3::dto::{Bucket, BucketPolicy};
-use crate::secretsmanager::dto::Secret;
+use crate::s3::{Bucket, BucketPolicy};
+use crate::secretsmanager::Secret;
 use crate::shared::Id;
-use crate::sns::dto::{Subscription, Topic};
+use crate::sns::{Subscription, Topic};
 use crate::sqs::Queue;
 use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
-use crate::appconfig::dto::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
+use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 
 #[derive(Debug, Clone)]
@@ -286,7 +286,7 @@ from_resource!(OriginAccessControl);
 
 #[cfg(test)]
 mod tests {
-    use crate::sns::builder::TopicBuilder;
+    use crate::sns::TopicBuilder;
     use crate::sqs::QueueBuilder;
     use crate::stack::StackBuilder;
     use std::collections::HashMap;

@@ -7,8 +7,8 @@ use crate::cloudfront::{
 use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
-use crate::s3::builder::BucketPolicyBuilder;
-use crate::s3::dto::BucketRef;
+use crate::s3::BucketPolicyBuilder;
+use crate::s3::BucketRef;
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
@@ -738,6 +738,29 @@ impl OriginAccessControlBuilder {
 /// Builder for CloudFront distributions.
 ///
 /// Creates a CloudFront distribution with origins, cache behaviors, and other configuration.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::cloudfront::{DistributionBuilder, OriginBuilder, DefaultCacheBehaviorBuilder};
+/// use rusty_cdk_core::s3::BucketBuilder;
+/// use rusty_cdk_core::wrappers::*;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let bucket = unimplemented!("create a bucket");
+/// let oac = unimplemented!("create an origin access control");
+/// let policy = unimplemented!("create an origin");
+/// let viewer_protocol_policy = unimplemented!("create a viewer protocol");
+///
+/// let origin = OriginBuilder::new("my-origin").s3_origin(&bucket, &oac, None).build();
+/// let cache_behavior = DefaultCacheBehaviorBuilder::new(&origin, &policy, viewer_protocol_policy).build();
+///
+/// let distribution = DistributionBuilder::new("my-distribution", cache_behavior)
+///     .origins(vec![origin])
+///     .build(&mut stack_builder);
+/// ```
 pub struct DistributionBuilder<T: DistributionState> {
     phantom_data: PhantomData<T>,
     id: Id,

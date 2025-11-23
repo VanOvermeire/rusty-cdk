@@ -22,8 +22,31 @@ impl Error for StackBuilderError {}
 
 /// Builder for CloudFormation stacks.
 ///
-/// Collects resources and manages their relationships. 
+/// Collects resources and manages their relationships.
 /// Might validate whether IAM roles are missing permissions for AWS services they need to access, based on Cargo.toml dependencies.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::sqs::QueueBuilder;
+/// use rusty_cdk_core::wrappers::*;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Add resources to the stack
+/// let queue = QueueBuilder::new("my-queue")
+///     .standard_queue()
+///     .build(&mut stack_builder);
+///
+/// // Add tags to the stack
+/// stack_builder = stack_builder
+///     .add_tag("Environment", "Production")
+///     .add_tag("Owner", "Team");
+///
+/// // Build the stack
+/// let stack = stack_builder.build().expect("Stack to build successfully");
+/// ```
 pub struct StackBuilder {
     resources: Vec<Resource>,
     tags: Vec<(String, String)>,

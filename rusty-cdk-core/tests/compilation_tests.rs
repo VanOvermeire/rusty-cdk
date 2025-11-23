@@ -4,7 +4,7 @@ use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{
     AssumeRolePolicyDocumentBuilder, Effect, PrincipalBuilder, RoleBuilder, RolePropertiesBuilder, StatementBuilder,
 };
-use rusty_cdk_core::s3::builder::BucketBuilder;
+use rusty_cdk_core::s3::BucketBuilder;
 use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::IamAction;
@@ -91,7 +91,7 @@ fn stack_with_bucket_website_should_compile() {
 
 #[test]
 fn sns_standard_topic_builder_should_compile() {
-    use rusty_cdk_core::sns::builder::TopicBuilder;
+    use rusty_cdk_core::sns::TopicBuilder;
     use rusty_cdk_macros::string_with_only_alphanumerics_underscores_and_hyphens;
 
     let mut stack_builder = StackBuilder::new();
@@ -102,7 +102,7 @@ fn sns_standard_topic_builder_should_compile() {
 
 #[test]
 fn sns_fifo_topic_builder_should_compile() {
-    use rusty_cdk_core::sns::builder::{FifoThroughputScope, TopicBuilder};
+    use rusty_cdk_core::sns::{FifoThroughputScope, TopicBuilder};
     use rusty_cdk_macros::string_with_only_alphanumerics_underscores_and_hyphens;
 
     let mut stack_builder = StackBuilder::new();

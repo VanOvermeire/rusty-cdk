@@ -1,7 +1,7 @@
 use crate::dynamodb::TableRef;
 use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, ServicePrincipal, Statement};
 use crate::intrinsic_functions::{get_arn, join};
-use crate::s3::dto::BucketRef;
+use crate::s3::BucketRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;
 use crate::stack::StackBuilder;
@@ -18,6 +18,22 @@ type_state!(
 );
 
 /// Builder for IAM principals (service, AWS, or custom).
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::iam::PrincipalBuilder;
+///
+/// // Service principal
+/// let service_principal = PrincipalBuilder::new()
+///     .service("lambda.amazonaws.com")
+///     .build();
+///
+/// // Custom principal
+/// let custom_principal = PrincipalBuilder::new()
+///     .normal("*")
+///     .build();
+/// ```
 pub struct PrincipalBuilder<T: PrincipalState> {
     phantom_data: PhantomData<T>,
     service: Option<String>,
@@ -82,6 +98,33 @@ impl PrincipalBuilder<ChosenState> {
 }
 
 /// Builder for IAM roles.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::iam::{RoleBuilder, RolePropertiesBuilder, AssumeRolePolicyDocumentBuilder, StatementBuilder, PrincipalBuilder, Effect};
+/// use rusty_cdk_core::stack::Resource;
+/// use rusty_cdk_macros::iam_action;
+/// use rusty_cdk_core::wrappers::IamAction;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let assume_role_statement = StatementBuilder::new(
+///     vec![iam_action!("sts:AssumeRole")],
+///     Effect::Allow
+/// )
+/// .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
+/// .build();
+///
+/// let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
+///
+/// let properties = RolePropertiesBuilder::new(assume_role_policy, vec![])
+///     .build();
+///
+/// let role = RoleBuilder::new("my-role", "remove", properties)
+///     .build(&mut stack_builder);
+/// ```
 pub struct RoleBuilder {
     id: Id,
     resource_id: String,
@@ -90,6 +133,7 @@ pub struct RoleBuilder {
 }
 
 impl RoleBuilder {
+    // TODO should not expose resource_id in public new => change docs above and below
     /// Creates a new IAM role builder.
     ///
     /// # Arguments
@@ -165,6 +209,24 @@ impl RolePropertiesBuilder {
 }
 
 /// Builder for IAM policies.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::iam::{PolicyBuilder, PolicyDocumentBuilder, StatementBuilder, Effect};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::iam_action;
+///
+/// let statement = StatementBuilder::new(
+///     vec![iam_action!("s3:GetObject")],
+///     Effect::Allow
+/// )
+/// .all_resources()
+/// .build();
+///
+/// let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
+/// let policy = PolicyBuilder::new("MyPolicy", policy_doc).build();
+/// ```
 pub struct PolicyBuilder {
     policy_name: String,
     policy_document: PolicyDocument,
@@ -188,6 +250,23 @@ impl PolicyBuilder {
 }
 
 /// Builder for IAM policy documents.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::iam::{PolicyDocumentBuilder, StatementBuilder, Effect};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::iam_action;
+///
+/// let statement = StatementBuilder::new(
+///     vec![iam_action!("dynamodb:GetItem"), iam_action!("dynamodb:Query")],
+///     Effect::Allow
+/// )
+/// .all_resources()
+/// .build();
+///
+/// let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
+/// ```
 pub struct PolicyDocumentBuilder {
     statements: Vec<Statement>
 }
@@ -237,6 +316,23 @@ pub struct StatementStartState {}
 impl StatementState for StatementStartState {}
 
 /// Builder for IAM policy statements.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::iam::{StatementBuilder, Effect, PrincipalBuilder};
+/// use rusty_cdk_core::wrappers::*;
+/// use serde_json::Value;
+/// use rusty_cdk_macros::iam_action;
+///
+/// let statement = StatementBuilder::new(
+///     vec![iam_action!("s3:GetObject"), iam_action!("s3:PutObject")],
+///     Effect::Allow
+/// )
+/// .resources(vec![Value::String("arn:aws:s3:::my-bucket/*".to_string())])
+/// .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
+/// .build();
+/// ```
 pub struct StatementBuilder {
     action: Vec<String>,
     effect: Effect,

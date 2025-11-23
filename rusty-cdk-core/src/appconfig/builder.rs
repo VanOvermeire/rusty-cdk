@@ -1,10 +1,24 @@
 use serde_json::Value;
-use crate::appconfig::dto::{Application, ApplicationProperties, ApplicationRef, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, Environment, EnvironmentProperties, EnvironmentRef, Validator};
+use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, Environment, EnvironmentProperties, EnvironmentRef, Validator};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor};
 
 /// Builder for AWS AppConfig applications.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::appconfig::ApplicationBuilder;
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::app_config_name;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let app = ApplicationBuilder::new("my-app", app_config_name!("MyApplication"))
+///     .build(&mut stack_builder);
+/// ```
 pub struct ApplicationBuilder {
     id: Id,
     name: String,
@@ -88,6 +102,27 @@ impl From<DeletionProtectionCheck> for String {
 }
 
 /// Builder for AWS AppConfig configuration profiles.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, LocationUri};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::app_config_name;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let app = unimplemented!("create an application");
+///
+/// let profile = ConfigurationProfileBuilder::new(
+///     "my-profile",
+///     app_config_name!("MyProfile"),
+///     &app,
+///     LocationUri::Hosted
+/// )
+/// .build(&mut stack_builder);
+/// ```
 pub struct ConfigurationProfileBuilder {
     id: Id,
     name: String,

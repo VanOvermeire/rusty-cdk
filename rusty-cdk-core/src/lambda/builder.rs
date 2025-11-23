@@ -92,6 +92,31 @@ struct EventSourceMappingInfo {
 /// Builder for creating AWS Lambda functions.
 ///
 /// This builder provides a fluent API for configuring Lambda functions with their associated IAM roles, environment variables, permissions, and event sources.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::lambda::{FunctionBuilder, Architecture, Runtime, Zip};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::{memory, timeout, env_var_key, zip_file};
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let zip = unimplemented!("create a zip");
+///
+/// let (function, role, log_group) = FunctionBuilder::new(
+///         "my-function",
+///         Architecture::ARM64,
+///         memory!(512),
+///         timeout!(30)
+///     )
+///     .zip(zip)
+///     .handler("index.handler")
+///     .runtime(Runtime::NodeJs22)
+///     .env_var_string(env_var_key!("TABLE_NAME"), "my-table")
+///     .build(&mut stack_builder);
+/// ```
 pub struct FunctionBuilder<T: FunctionBuilderState> {
     state: PhantomData<T>,
     id: Id,

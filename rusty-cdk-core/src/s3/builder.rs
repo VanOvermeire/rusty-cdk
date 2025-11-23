@@ -1,7 +1,7 @@
 use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use crate::intrinsic_functions::join;
 use crate::s3::dto;
-use crate::s3::dto::{
+use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
@@ -22,6 +22,34 @@ use crate::type_state;
 /// Builder for S3 bucket policies.
 ///
 /// Creates a policy document that controls access to an S3 bucket.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use serde_json::Value;
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::s3::BucketPolicyBuilder;
+/// use rusty_cdk_core::iam::{PolicyDocumentBuilder, StatementBuilder, Effect, PrincipalBuilder};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_core::s3::BucketBuilder;
+/// use rusty_cdk_macros::iam_action;
+///
+/// let mut stack_builder = StackBuilder::new();
+/// let bucket = unimplemented!("create a bucket");
+///
+/// let resources = vec![Value::String("*".to_string())];
+/// let statement = StatementBuilder::new(
+///         vec![iam_action!("s3:GetObject")],
+///         Effect::Allow
+///     )
+///     .principal(PrincipalBuilder::new().normal("*").build())
+///     .resources(resources)
+///     .build();
+///
+/// let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
+/// let policy = BucketPolicyBuilder::new("bucket-policy", &bucket, policy_doc)
+///     .build(&mut stack_builder);
+/// ```
 pub struct BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
@@ -105,6 +133,30 @@ type_state!(
 /// Builder for S3 buckets.
 ///
 /// Provides configuration for S3 buckets including versioning, lifecycle rules, encryption, CORS, and static website hosting.
+///
+/// # Example
+///
+/// ```rust,compile_fail
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::s3::{BucketBuilder, VersioningConfig, Encryption, VersioningConfiguration};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::bucket_name;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Create a simple bucket
+/// let bucket = BucketBuilder::new("my-bucket")
+///     .name(bucket_name!("my-unique-bucket"))
+///     .versioning_configuration(VersioningConfiguration::Enabled)
+///     .encryption(Encryption::S3Managed)
+///     .build(&mut stack_builder);
+///
+/// // Create a website bucket
+/// let (website_bucket, policy) = BucketBuilder::new("website-bucket")
+///     .website("index.html")
+///     .error_document("error.html")
+///     .build(&mut stack_builder);
+/// ```
 pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
@@ -207,7 +259,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
         let versioning_configuration = self
             .versioning_configuration
-            .map(|c| dto::VersioningConfiguration { status: c.into() });
+            .map(|c| dto::VersioningConfig { status: c.into() });
 
         let website_configuration = if website {
             let redirect_all_requests_to = self.redirect_all_requests_to.map(|r| RedirectAllRequestsTo {

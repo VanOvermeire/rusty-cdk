@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use crate::intrinsic_functions::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
-use crate::sns::dto::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
+use crate::sns::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens};
@@ -39,6 +39,30 @@ type_state!(
 ///
 /// Supports both standard and FIFO topics with Lambda subscriptions.
 /// FIFO topics have additional configuration for deduplication and throughput.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::sns::{TopicBuilder, SubscriptionType};
+/// # use rusty_cdk_core::lambda::{FunctionBuilder, Architecture, Runtime, Zip};
+/// # use rusty_cdk_core::wrappers::*;
+/// # use rusty_cdk_macros::{memory, timeout, zip_file};
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Create a simple topic without subscriptions
+/// let simple_topic = TopicBuilder::new("simple-topic")
+///     .build(&mut stack_builder);
+/// 
+/// let function = unimplemented!("create a function");
+///
+/// // Create a topic with a Lambda subscription
+/// let topic = TopicBuilder::new("my-topic")
+///     .add_subscription(SubscriptionType::Lambda(&function))
+///     .build(&mut stack_builder);
+///
+/// ```
 pub struct TopicBuilder<T: TopicBuilderState> {
     state: PhantomData<T>,
     id: Id,

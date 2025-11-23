@@ -1,4 +1,4 @@
-use rusty_cdk::apigateway::builder::ApiGatewayV2Builder;
+use rusty_cdk::apigateway::ApiGatewayV2Builder;
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
 use rusty_cdk::lambda::{Architecture, FunctionBuilder, Runtime, Zip};

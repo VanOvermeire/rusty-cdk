@@ -1,20 +1,20 @@
-use rusty_cdk_core::apigateway::builder::ApiGatewayV2Builder;
+use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::secretsmanager::builder::{GenerateSecretStringBuilder, SecretBuilder};
+use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
-use rusty_cdk_core::sns::builder::{FifoThroughputScope, TopicBuilder, SubscriptionType};
+use rusty_cdk_core::sns::{FifoThroughputScope, TopicBuilder, SubscriptionType};
 use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::stack::{StackBuilder};
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
-use rusty_cdk_core::appconfig::builder::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, LocationUri, ReplicateTo};
+use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, LocationUri, ReplicateTo};
 use rusty_cdk_core::cloudfront::{CachePolicyBuilder, DistributionBuilder, OriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
-use rusty_cdk_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
+use rusty_cdk_core::s3::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
 
 #[test]
 fn dynamodb() {

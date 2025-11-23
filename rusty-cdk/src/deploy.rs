@@ -56,10 +56,12 @@ async fn get_existing_template(client: &aws_sdk_cloudformation::Client, stack_na
 /// use rusty_cdk::stack::StackBuilder;
 /// use rusty_cdk::sqs::QueueBuilder;
 /// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
+/// use rusty_cdk::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut stack_builder = StackBuilder::new();
+///
+/// let mut stack_builder = StackBuilder::new();
 ///     QueueBuilder::new("my-queue")
 ///         .standard_queue()
 ///         .build(&mut stack_builder);

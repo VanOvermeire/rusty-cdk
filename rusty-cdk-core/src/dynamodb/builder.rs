@@ -1,4 +1,4 @@
-use crate::dynamodb::dto::{AttributeDefinition, KeySchema, Table, TableProperties};
+use crate::dynamodb::{AttributeDefinition, KeySchema, Table, TableProperties};
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput, TableRef};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
@@ -60,6 +60,31 @@ type_state!(
 /// Builder for DynamoDB tables.
 ///
 /// Supports both pay-per-request and provisioned billing modes. The builder enforces the correct configuration based on the chosen billing mode.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::dynamodb::{TableBuilder, Key, AttributeType};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::{string_with_only_alphanumerics_and_underscores, non_zero_number};
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let partition_key = Key::new(
+///     string_with_only_alphanumerics_and_underscores!("id"),
+///     AttributeType::String
+/// );
+/// let sort_key = Key::new(
+///     string_with_only_alphanumerics_and_underscores!("timestamp"),
+///     AttributeType::Number
+/// );
+///
+/// let on_demand_table = TableBuilder::new("on-demand-table", partition_key)
+///     .sort_key(sort_key)
+///     .pay_per_request_billing()
+///     .build(&mut stack_builder);
+/// ```
 pub struct TableBuilder<T: TableBuilderState> {
     state: PhantomData<T>,
     id: Id,

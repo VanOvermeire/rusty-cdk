@@ -19,6 +19,23 @@ impl From<LogGroupClass> for String {
 }
 
 /// Builder for CloudWatch log groups.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::log_group_name;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let log_group = LogGroupBuilder::new("my-log-group")
+///     .log_group_name_string(log_group_name!("/aws/lambda/my-function"))
+///     .log_group_retention(RetentionInDays(7))
+///     .log_group_class(LogGroupClass::Standard)
+///     .build(&mut stack_builder);
+/// ```
 pub struct LogGroupBuilder {
     id: Id,
     log_group_name: Option<Value>,

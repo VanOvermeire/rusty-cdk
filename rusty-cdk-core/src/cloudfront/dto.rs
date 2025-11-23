@@ -1,4 +1,4 @@
-use crate::s3::dto::BucketPolicy;
+use crate::s3::BucketPolicy;
 use crate::shared::Id;
 use serde::Serialize;
 use serde_json::Value;

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use serde_json::Value;
-use crate::secretsmanager::dto::{GenerateSecretString, Secret, SecretProperties, SecretRef};
+use crate::secretsmanager::{GenerateSecretString, Secret, SecretProperties, SecretRef};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
@@ -15,6 +15,34 @@ type_state!(
 /// Builder for AWS Secrets Manager secrets.
 ///
 /// Supports both static secret strings and automatically generated secrets.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::secretsmanager::{SecretBuilder, GenerateSecretStringBuilder};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::string_for_secret;
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Create a secret with a static value
+/// let secret = SecretBuilder::new("my-secret")
+///     .name(string_for_secret!("my-secret-name"))
+///     .description("My database password")
+///     .secret_string("my-password")
+///     .build(&mut stack_builder);
+///
+/// // Create a secret with auto-generated value
+/// let generated_secret_config = GenerateSecretStringBuilder::new()
+///     .password_length(32)
+///     .exclude_punctuation(true)
+///     .build();
+///
+/// let generated_secret = SecretBuilder::new("generated-secret")
+///     .generate_secret_string(generated_secret_config)
+///     .build(&mut stack_builder);
+/// ```
 pub struct SecretBuilder<T: SecretBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,

@@ -1,4 +1,4 @@
-use crate::apigateway::dto::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
+use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
 use crate::intrinsic_functions::{get_arn, get_ref, join};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::http::HttpMethod;
@@ -21,6 +21,27 @@ struct RouteInfo {
 /// Builder for API Gateway V2 HTTP APIs.
 ///
 /// Creates an HTTP API with routes to Lambda functions. Automatically creates integrations and permissions for each route.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
+/// use rusty_cdk_core::shared::http::HttpMethod;
+/// use rusty_cdk_core::lambda::{FunctionBuilder, Architecture, Runtime, Zip};
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::{memory, timeout, zip_file};
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// let function = unimplemented!("create a function");
+///
+/// let (api, stage) = ApiGatewayV2Builder::new("my-api")
+///     .name("MyHttpApi")
+///     .add_route_lambda("/hello", HttpMethod::Get, &function)
+///     .add_route_lambda("/world", HttpMethod::Post, &function)
+///     .build(&mut stack_builder);
+/// ```
 pub struct ApiGatewayV2Builder {
     id: Id,
     name: Option<String>,

@@ -1,5 +1,5 @@
 use crate::shared::Id;
-use crate::sqs::dto::{Queue, QueueProperties, RedrivePolicy};
+use crate::sqs::{Queue, QueueProperties, RedrivePolicy};
 use crate::sqs::QueueRef;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{
@@ -51,6 +51,31 @@ type_state!(
 ///
 /// Supports both standard and FIFO queues. FIFO queues have additional configuration
 /// options for deduplication and throughput.
+///
+/// # Example
+///
+/// ```rust
+/// use rusty_cdk_core::stack::StackBuilder;
+/// use rusty_cdk_core::sqs::QueueBuilder;
+/// use rusty_cdk_core::wrappers::*;
+/// use rusty_cdk_macros::{delay_seconds, message_retention_period, visibility_timeout};
+///
+/// let mut stack_builder = StackBuilder::new();
+///
+/// // Create a standard queue
+/// let standard_queue = QueueBuilder::new("standard-queue")
+///     .standard_queue()
+///     .visibility_timeout(visibility_timeout!(60))
+///     .build(&mut stack_builder);
+/// 
+/// // Create a FIFO queue
+/// let queue = QueueBuilder::new("my-queue")
+///     .fifo_queue()
+///     .content_based_deduplication(true)
+///     .delay_seconds(delay_seconds!(30))
+///     .message_retention_period(message_retention_period!(600))
+///     .build(&mut stack_builder);
+/// ```
 pub struct QueueBuilder<T: QueueBuilderState> {
     state: PhantomData<T>,
     id: Id,
