@@ -100,7 +100,7 @@ pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> Tok
 }
 
 /// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
-/// 
+///
 /// # Validation Rules
 ///
 /// - String must not be empty
@@ -218,6 +218,8 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 ///
 /// This macro ensures that the input string refers to a valid ZIP file that exists on the
 /// filesystem at compile time.
+/// 
+/// See the `examples` dir of this library for some usage examples
 ///
 /// # Validation Rules
 ///
@@ -268,6 +270,8 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
 }
 
 /// Creates a validated `TomlFile` wrapper.
+/// 
+/// See the `examples` dir of this library for some usage examples
 ///
 /// # Validation Rules
 ///

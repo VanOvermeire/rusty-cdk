@@ -23,7 +23,7 @@ async fn main() {
         .build(&mut stack_builder);
 
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-    let zipper = zip_file!("./examples/files/empty.zip");
+    let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
@@ -32,7 +32,7 @@ async fn main() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
-        .check_permissions_against_dependencies(toml_file!("./examples/files/Cargo.toml"))
+        .check_permissions_against_dependencies(toml_file!("./examples/apigateway_lambda_dynamodb/files/Cargo.toml"))
         .build(&mut stack_builder);
  
     ApiGatewayV2Builder::new("myAGW")
