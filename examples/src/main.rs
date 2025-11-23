@@ -6,7 +6,7 @@ use rusty_cdk::shared::http::HttpMethod;
 use rusty_cdk::sqs::QueueBuilder;
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
-use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alpha_numerics_and_underscores, timeout, zip_file};
+use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_hyphens, string_with_only_alphanumerics_and_underscores, timeout, zip_file};
 
 #[tokio::main]
 async fn main() {
@@ -14,8 +14,8 @@ async fn main() {
 
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
-    let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
+    let key = string_with_only_alphanumerics_and_underscores!("test");
+    let table_name = string_with_only_alphanumerics_and_underscores!("example_remove");
     let table = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
@@ -54,6 +54,6 @@ async fn main() {
     } else {
         let synthesized = stack.unwrap().synth().unwrap();
         println!("{}", synthesized);
-        // rusty_cdk::deploy("ExampleRemove", stack.unwrap()).await;
+        // rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("ExampleRemove"), stack.unwrap()).await;
     }
 }

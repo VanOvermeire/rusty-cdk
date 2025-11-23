@@ -19,14 +19,14 @@ use rusty_cdk_core::s3::builder::{CorsConfigurationBuilder, CorsRuleBuilder, Lif
 #[test]
 fn dynamodb() {
     let mut stack_builder = StackBuilder::new();
-    let pk = string_with_only_alpha_numerics_and_underscores!("pk");
-    let sk = string_with_only_alpha_numerics_and_underscores!("sk");
+    let pk = string_with_only_alphanumerics_and_underscores!("pk");
+    let sk = string_with_only_alphanumerics_and_underscores!("sk");
     TableBuilder::new("table", Key::new(pk, AttributeType::String))
         .sort_key(Key::new(sk, AttributeType::Number))
         .provisioned_billing()
         .read_capacity(non_zero_number!(4))
         .write_capacity(non_zero_number!(5))
-        .table_name(string_with_only_alpha_numerics_and_underscores!("table_name"))
+        .table_name(string_with_only_alphanumerics_and_underscores!("table_name"))
         .build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();
@@ -122,7 +122,7 @@ fn lambda() {
 fn sns() {
     let mut stack_builder = StackBuilder::new();
     TopicBuilder::new("topic")
-        .topic_name(string_with_only_alpha_numerics_underscores_and_hyphens!("some-name"))
+        .topic_name(string_with_only_alphanumerics_underscores_and_hyphens!("some-name"))
         .fifo()
         .fifo_throughput_scope(FifoThroughputScope::Topic)
         .content_based_deduplication(true)
@@ -282,8 +282,8 @@ fn lambda_with_dynamodb() {
     
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
-    let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
+    let key = string_with_only_alphanumerics_and_underscores!("test");
+    let table_name = string_with_only_alphanumerics_and_underscores!("example_remove");
     let table = TableBuilder::new("Dynamo", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)
@@ -324,8 +324,8 @@ fn lambda_with_dynamodb_and_sqs() {
     
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
-    let key = string_with_only_alpha_numerics_and_underscores!("test");
-    let table_name = string_with_only_alpha_numerics_and_underscores!("example_remove");
+    let key = string_with_only_alphanumerics_and_underscores!("test");
+    let table_name = string_with_only_alphanumerics_and_underscores!("example_remove");
     let table = TableBuilder::new("table", Key::new(key, AttributeType::String))
         .provisioned_billing()
         .table_name(table_name)

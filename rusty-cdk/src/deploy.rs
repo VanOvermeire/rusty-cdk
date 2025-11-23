@@ -7,6 +7,7 @@ use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
+use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 
 #[derive(Deserialize)]
 struct StackOnlyMetadata {
@@ -29,8 +30,8 @@ async fn get_existing_template(client: &aws_sdk_cloudformation::Client, stack_na
     }
 }
 
-// TODO name should also be validated at cmpile time
-pub async fn deploy(name: &str, mut stack: Stack) {
+pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) {
+    let name = name.0;
     let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
         // https://github.com/awslabs/aws-sdk-rust/issues/1146
         .stalled_stream_protection(StalledStreamProtectionConfig::disabled())
@@ -63,7 +64,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
     }
 
     let cloudformation_client = aws_sdk_cloudformation::Client::new(&config);
-    let existing_template = get_existing_template(&cloudformation_client, name).await;
+    let existing_template = get_existing_template(&cloudformation_client, &name).await;
     let tags = stack.get_tags();
     let tags = if tags.is_empty() {
         None
@@ -81,7 +82,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
 
             match cloudformation_client
                 .update_stack()
-                .stack_name(name)
+                .stack_name(&name)
                 .template_body(body)
                 .capabilities(Capability::CapabilityNamedIam)
                 .set_tags(tags)
@@ -97,7 +98,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
 
             match cloudformation_client
                 .create_stack()
-                .stack_name(name)
+                .stack_name(&name)
                 .template_body(body)
                 .capabilities(Capability::CapabilityNamedIam)
                 .set_tags(tags)
@@ -114,7 +115,7 @@ pub async fn deploy(name: &str, mut stack: Stack) {
     }
 
     loop {
-        let status = cloudformation_client.describe_stacks().stack_name(name).send().await;
+        let status = cloudformation_client.describe_stacks().stack_name(&name).send().await;
         let mut stacks = status
             .expect("to get a describe stacks result")
             .stacks

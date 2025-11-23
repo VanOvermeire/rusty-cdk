@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alpha_numerics_and_underscores, string_with_only_alpha_numerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days};
+use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -38,13 +38,13 @@ fn create_iam_action_with_specific_action() {
 }
 
 #[test]
-fn create_string_with_only_alpha_numerics_and_underscores() {
-    string_with_only_alpha_numerics_and_underscores!("valid_identifier_123");
+fn create_string_with_only_alphanumerics_and_underscores() {
+    string_with_only_alphanumerics_and_underscores!("valid_identifier_123");
 }
 
 #[test]
-fn create_string_with_only_alpha_numerics_underscores_and_hyphens() {
-    string_with_only_alpha_numerics_underscores_and_hyphens!("valid-identifier_123");
+fn create_string_with_only_alphanumerics_underscores_and_hyphens() {
+    string_with_only_alphanumerics_underscores_and_hyphens!("valid-identifier_123");
 }
 
 #[test]

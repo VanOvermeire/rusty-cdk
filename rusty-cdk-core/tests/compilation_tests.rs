@@ -12,14 +12,14 @@ use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::{
     delay_seconds, iam_action, maximum_message_size, message_retention_period, non_zero_number, receive_message_wait_time,
-    string_with_only_alpha_numerics_and_underscores, visibility_timeout,
+    string_with_only_alphanumerics_and_underscores, visibility_timeout,
 };
 use rusty_cdk_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
 
 #[test]
 fn dynamodb_pay_per_request_billing_should_compile() {
     let mut stack_builder = StackBuilder::new();
-    let key = string_with_only_alpha_numerics_and_underscores!("test");
+    let key = string_with_only_alphanumerics_and_underscores!("test");
     let _ = TableBuilder::new("myTable", Key::new(key, AttributeType::String))
         .pay_per_request_billing()
         .build(&mut stack_builder);
@@ -28,7 +28,7 @@ fn dynamodb_pay_per_request_billing_should_compile() {
 #[test]
 fn dynamodb_provisioned_billing_should_compile() {
     let mut stack_builder = StackBuilder::new();
-    let key = string_with_only_alpha_numerics_and_underscores!("id");
+    let key = string_with_only_alphanumerics_and_underscores!("id");
     let read_cap = non_zero_number!(5);
     let write_cap = non_zero_number!(5);
 
@@ -42,7 +42,7 @@ fn dynamodb_provisioned_billing_should_compile() {
 #[test]
 fn sqs_standard_queue_builder_should_compile() {
     let mut stack_builder = StackBuilder::new();
-    let queue_name = string_with_only_alpha_numerics_and_underscores!("test_queue");
+    let queue_name = string_with_only_alphanumerics_and_underscores!("test_queue");
     let delay = delay_seconds!(300);
     let max_size = maximum_message_size!(262144);
     let retention = message_retention_period!(345600);
@@ -66,7 +66,7 @@ fn sqs_standard_queue_builder_should_compile() {
 #[test]
 fn sqs_fifo_queue_builder_should_compile() {
     let mut stack_builder = StackBuilder::new();
-    let queue_name = string_with_only_alpha_numerics_and_underscores!("test_fifo_queue");
+    let queue_name = string_with_only_alphanumerics_and_underscores!("test_fifo_queue");
     let delay = delay_seconds!(60);
     let timeout = visibility_timeout!(120);
 
@@ -92,10 +92,10 @@ fn stack_with_bucket_website_should_compile() {
 #[test]
 fn sns_standard_topic_builder_should_compile() {
     use rusty_cdk_core::sns::builder::TopicBuilder;
-    use rusty_cdk_macros::string_with_only_alpha_numerics_underscores_and_hyphens;
+    use rusty_cdk_macros::string_with_only_alphanumerics_underscores_and_hyphens;
 
     let mut stack_builder = StackBuilder::new();
-    let topic_name = string_with_only_alpha_numerics_underscores_and_hyphens!("test_topic");
+    let topic_name = string_with_only_alphanumerics_underscores_and_hyphens!("test_topic");
 
     TopicBuilder::new("myTopic").topic_name(topic_name).build(&mut stack_builder);
 }
@@ -103,10 +103,10 @@ fn sns_standard_topic_builder_should_compile() {
 #[test]
 fn sns_fifo_topic_builder_should_compile() {
     use rusty_cdk_core::sns::builder::{FifoThroughputScope, TopicBuilder};
-    use rusty_cdk_macros::string_with_only_alpha_numerics_underscores_and_hyphens;
+    use rusty_cdk_macros::string_with_only_alphanumerics_underscores_and_hyphens;
 
     let mut stack_builder = StackBuilder::new();
-    let topic_name = string_with_only_alpha_numerics_underscores_and_hyphens!("test_fifo_topic");
+    let topic_name = string_with_only_alphanumerics_underscores_and_hyphens!("test_fifo_topic");
 
     TopicBuilder::new("myTopic")
         .fifo()

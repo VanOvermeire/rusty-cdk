@@ -87,14 +87,14 @@ Compare the above with the following:
 
 ```rust
 use rusty_cdk::wrappers::*; // importing all wrappers simplifies larger projects
-use rusty_cdk::{non_zero_number, string_with_only_alpha_numerics_and_underscores};
+use rusty_cdk::{non_zero_number, string_with_only_alphanumerics_and_underscores};
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::stack::{Resource, Stack, StackBuilder};
 
 fn iac() {
   let mut stack_builder = StackBuilder::new();
   
-  let dynamo_key = string_with_only_alpha_numerics_and_underscores!("test");
+  let dynamo_key = string_with_only_alphanumerics_and_underscores!("test");
   let table_ref = TableBuilder::new("table", Key::new(dynamo_key, AttributeType::String))
             .provisioned_billing()
             .read_capacity(non_zero_number!(5))
@@ -233,11 +233,10 @@ stack_builder.add_tag("OWNER", "me").build();
 
 ## TODO
 
-- rename of dirs to `rusty-cdk`
 - docs
   - add docs with example code to all builders
 - more help with IAM permissions
-  - when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found, error?
+  - when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found → error?
   - similar for secret
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
@@ -245,5 +244,6 @@ stack_builder.add_tag("OWNER", "me").build();
 - try to replace `syn` and `serde` with more something more lightweight (at compile time) - `facet`?
   - note that `Value` is exposed in some cases...
 - switch to uploading template to s3? helps avoid the 51 kb limit
+  - or at least offer that option
 - borrow all the things? see borrowing-example branch for an example
   - the gain in performance was not that impressive

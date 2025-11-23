@@ -17,12 +17,12 @@
 //! # Example
 //! ```rust
 //! use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
-//! use rusty_cdk_macros::string_with_only_alpha_numerics_and_underscores;
+//! use rusty_cdk_macros::string_with_only_alphanumerics_and_underscores;
 //! use rusty_cdk_core::wrappers::{Memory};
-//! 
+//!
 //! // Preferred: Use the macro for compile-time validation
-//! let function_name = string_with_only_alpha_numerics_and_underscores!("my_lambda_function");
-//! 
+//! let function_name = string_with_only_alphanumerics_and_underscores!("my_lambda_function");
+//!
 //! // Direct creation (use _sparingly_, as an override)
 //! let memory = Memory(512);  // 512 MB
 //! ```
@@ -37,19 +37,37 @@
 /// - Underscores can appear in any position (beginning, middle, or end)
 ///
 /// # Recommended Usage
-/// Use the `string_with_only_alpha_numerics_and_underscores!` macro from `rusty-cdk-macros`
+/// Use the `string_with_only_alphanumerics_and_underscores!` macro from `rusty-cdk-macros`
 /// for compile-time validation:
 ///
 /// ```rust
 /// use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndUnderscores;
-/// use rusty_cdk_macros::string_with_only_alpha_numerics_and_underscores;
-/// 
-/// let function_name = string_with_only_alpha_numerics_and_underscores!("my_lambda_function");
+/// use rusty_cdk_macros::string_with_only_alphanumerics_and_underscores;
+///
+/// let function_name = string_with_only_alphanumerics_and_underscores!("my_lambda_function");
 /// ```
 #[derive(Debug, Clone)]
 pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 
 /// A string wrapper that ensures the content contains only letters, numbers, underscores, and hyphens.
+///
+/// # Validation Rules
+/// - Only alphanumeric characters (a-z, A-Z, 0-9), underscores (_), and hyphens (-) are allowed
+///
+/// # Recommended Usage
+/// Use the `string_with_only_alphanumerics_underscores_and_hyphens!` macro from `rusty-cdk-macros`
+/// for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
+/// use rusty_cdk_macros::string_with_only_alphanumerics_underscores_and_hyphens;
+///
+/// let stack_name = string_with_only_alphanumerics_underscores_and_hyphens!("my-function-name");
+/// ```
+#[derive(Debug, Clone)]
+pub struct StringWithOnlyAlphaNumericsUnderscoresAndHyphens(pub String);
+
+/// A string wrapper that ensures the content contains only letters, numbers, and hyphens.
 ///
 /// This wrapper is similar to `StringWithOnlyAlphaNumericsAndUnderscores` but also allows hyphens,
 /// making it suitable for AWS resources that accept hyphenated identifiers (like stack names).
@@ -58,17 +76,17 @@ pub struct StringWithOnlyAlphaNumericsAndUnderscores(pub String);
 /// - Only alphanumeric characters (a-z, A-Z, 0-9), underscores (_), and hyphens (-) are allowed
 ///
 /// # Recommended Usage
-/// Use the `string_with_only_alpha_numerics_underscores_and_hyphens!` macro from `rusty-cdk-macros`
+/// Use the `string_with_only_alphanumerics_underscores_and_hyphens!` macro from `rusty-cdk-macros`
 /// for compile-time validation:
 ///
 /// ```rust
-/// use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsUnderscoresAndHyphens;
-/// use rusty_cdk_macros::string_with_only_alpha_numerics_underscores_and_hyphens;
+/// use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
+/// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
 ///
-/// let stack_name = string_with_only_alpha_numerics_underscores_and_hyphens!("my-stack-name");
+/// let stack_name = string_with_only_alphanumerics_and_hyphens!("my-stack-name");
 /// ```
 #[derive(Debug, Clone)]
-pub struct StringWithOnlyAlphaNumericsUnderscoresAndHyphens(pub String);
+pub struct StringWithOnlyAlphaNumericsAndHyphens(pub String);
 
 /// A string wrapper for AWS Secrets Manager secret names.
 ///
@@ -350,7 +368,7 @@ pub struct SqsEventSourceMaxConcurrency(pub u16);
 ///
 /// # Recommended Usage
 /// Use the `bucket!` macro from `rusty-cdk-macros` for compile-time validation:
-/// 
+///
 /// # Note
 /// The `bucket!` macro queries AWS at compile time to verify the bucket exists and caches
 /// the result for faster subsequent compilations. Set `RUSTY_CDK_NO_REMOTE=true` to skip
@@ -465,9 +483,9 @@ pub struct IamAction(pub String);
 /// ```rust
 /// use rusty_cdk_core::wrappers::S3LifecycleObjectSizes;
 /// use rusty_cdk_macros::lifecycle_object_sizes;
-/// 
+///
 /// let sizes = lifecycle_object_sizes!(1024,10485760);
-/// 
+///
 /// let max_only = lifecycle_object_sizes!(5242880);
 /// ```
 #[derive(Debug, Clone)]
@@ -503,7 +521,7 @@ pub struct ConnectionAttempts(pub u16);
 /// # Structure
 /// - First value: Connection timeout in seconds (optional, 1-10 seconds)
 /// - Second value: Response completion timeout in seconds (optional, must be >= connection timeout)
-/// 
+///
 /// # Recommended Usage
 /// Use the `cf_connection_timeout!` macro from `rusty-cdk-macros` for compile-time validation:
 ///
@@ -513,7 +531,7 @@ pub struct ConnectionAttempts(pub u16);
 /// use rusty_cdk_macros::cf_connection_timeout;
 ///
 /// let timeouts = cf_connection_timeout!(5,30);
-/// 
+///
 /// let conn_only = cf_connection_timeout!(3);
 /// ```
 #[derive(Debug, Clone)]
@@ -568,7 +586,7 @@ pub struct LambdaPermissionAction(pub String);
 ///
 /// This wrapper ensures type safety when defining names for AppConfig resources,
 /// following AWS AppConfig naming conventions and length restrictions.
-/// 
+///
 /// # Recommended Usage
 /// Use the `app_config_name!` macro from `rusty-cdk-macros` for compile-time validation:
 #[derive(Debug, Clone)]
@@ -602,7 +620,7 @@ pub struct GrowthFactor(pub u16);
 /// This wrapper configures S3 lifecycle rules to automatically transition objects
 /// to different storage classes after a specified number of days, helping optimize
 /// storage costs.
-/// 
+///
 /// # Recommended Usage
 /// Use the `lifecycle_transition_in_days!` macro from `rusty-cdk-macros` for compile-time validation:
 ///
@@ -611,7 +629,7 @@ pub struct GrowthFactor(pub u16);
 /// use rusty_cdk_macros::lifecycle_transition_in_days;
 ///
 /// let transition = lifecycle_transition_in_days!(90,Glacier);
-/// 
+///
 /// let ia_transition = lifecycle_transition_in_days!(31,StandardIA);
 /// ```
 #[derive(Debug, Clone)]

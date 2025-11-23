@@ -30,7 +30,7 @@
 //!
 //! ### String and Identifier Macros
 //!
-//! - [`string_with_only_alpha_numerics_and_underscores!`] - AWS resource identifiers
+//! - [`string_with_only_alphanumerics_and_underscores!`] - AWS resource identifiers
 //! - [`env_var_key!`] - Lambda environment variable keys
 //!
 //! ### File Path Macros
@@ -78,17 +78,13 @@ use syn::{parse_macro_input, Error, LitInt, LitStr};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
-/// This macro ensures that the input string contains only alphanumeric characters (a-z, A-Z, 0-9)
-/// and underscores (_). It's designed for creating safe identifiers for AWS resources that have
-/// naming restrictions.
-///
 /// # Validation Rules
 ///
 /// - String must not be empty
 /// - Only alphanumeric characters, and underscores are allowed
 /// - Underscores can appear in any position (beginning, middle, or end)
 #[proc_macro]
-pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> TokenStream {
+pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
@@ -97,6 +93,28 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
             StringWithOnlyAlphaNumericsAndUnderscores(#value.to_string())
+        )
+        .into(),
+        Some(e) => e.into_compile_error().into(),
+    }
+}
+
+/// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
+/// 
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters, underscores, and hyphens are allowed
+#[proc_macro]
+pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_', '-']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
         )
         .into(),
         Some(e) => e.into_compile_error().into(),
@@ -114,15 +132,15 @@ pub fn string_with_only_alpha_numerics_and_underscores(input: TokenStream) -> To
 /// - String must not be empty
 /// - Only alphanumeric characters, underscores, and hyphens are allowed
 #[proc_macro]
-pub fn string_with_only_alpha_numerics_underscores_and_hyphens(input: TokenStream) -> TokenStream {
+pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_', '-']);
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
-            StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
+            StringWithOnlyAlphaNumericsAndHyphens(#value.to_string())
         )
         .into(),
         Some(e) => e.into_compile_error().into(),
