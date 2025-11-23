@@ -139,5 +139,5 @@ fn iam_principal_builder_should_compile() {
     let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![statement]);
     let properties = RolePropertiesBuilder::new(assume_role_policy, vec![]).build();
 
-    RoleBuilder::new("myRole", "MyRoleResource", properties).build(&mut stack_builder);
+    RoleBuilder::new("myRole", properties).build(&mut stack_builder);
 }

@@ -233,7 +233,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
-        let role = RoleBuilder::new_with_missing_info(&role_id, &role_resource_id, props, potentially_missing).build(stack_builder);
+        let role = RoleBuilder::new_with_info_on_missing(&role_id, &role_resource_id, props, potentially_missing).build(stack_builder);
 
         let environment = if self.env_vars.is_empty() {
             None

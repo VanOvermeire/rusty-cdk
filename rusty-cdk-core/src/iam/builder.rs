@@ -4,7 +4,7 @@ use crate::intrinsic_functions::{get_arn, join};
 use crate::s3::BucketRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;
-use crate::stack::StackBuilder;
+use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::marker::PhantomData;
@@ -122,46 +122,51 @@ impl PrincipalBuilder<ChosenState> {
 /// let properties = RolePropertiesBuilder::new(assume_role_policy, vec![])
 ///     .build();
 ///
-/// let role = RoleBuilder::new("my-role", "remove", properties)
+/// let role = RoleBuilder::new("my-role", properties)
 ///     .build(&mut stack_builder);
 /// ```
 pub struct RoleBuilder {
     id: Id,
-    resource_id: String,
+    resource_id: Option<String>,
     properties: IamRoleProperties,
     potentially_missing: Vec<String>
 }
 
 impl RoleBuilder {
-    // TODO should not expose resource_id in public new => change docs above and below
     /// Creates a new IAM role builder.
     ///
     /// # Arguments
     /// * `id` - Unique identifier for the role
-    /// * `resource_id` - CloudFormation resource ID for the role
     /// * `properties` - IAM role properties including policies and trust relationships
-    pub fn new(id: &str, resource_id: &str, properties: IamRoleProperties) -> RoleBuilder {
-        Self::new_with_missing_info(id, resource_id, properties, vec![])
+    pub fn new(id: &str, properties: IamRoleProperties) -> RoleBuilder {
+        RoleBuilder {
+            id: Id(id.to_string()),
+            resource_id: None,
+            properties,
+            potentially_missing: vec![],
+        }
     }
 
-    pub(crate) fn new_with_missing_info(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> RoleBuilder {
+    pub(crate) fn new_with_info_on_missing(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> RoleBuilder {
         Self {
             id: Id(id.to_string()),
-            resource_id: resource_id.to_string(),
+            resource_id: Some(resource_id.to_string()),
             properties,
             potentially_missing,
         }
     }
     
     pub fn build(self, stack_builder: &mut StackBuilder) -> RoleRef {
+        let resource_id = self.resource_id.unwrap_or_else(|| Resource::generate_id("Role"));
+        
         stack_builder.add_resource(Role {
             id: self.id,
-            resource_id: self.resource_id.clone(),
+            resource_id: resource_id.clone(),
             potentially_missing_services: self.potentially_missing,
             r#type: "AWS::IAM::Role".to_string(),
             properties: self.properties,
         });
-        RoleRef::new(self.resource_id)
+        RoleRef::new(resource_id)
     }
 }
 
