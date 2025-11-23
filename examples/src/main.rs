@@ -3,10 +3,9 @@ use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
 use rusty_cdk::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
 use rusty_cdk::shared::http::HttpMethod;
-use rusty_cdk::sqs::QueueBuilder;
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
-use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_hyphens, string_with_only_alphanumerics_and_underscores, timeout, zip_file};
+use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_underscores, timeout, toml_file, zip_file};
 
 #[tokio::main]
 async fn main() {
@@ -23,10 +22,8 @@ async fn main() {
         .write_capacity(write_capacity)
         .build(&mut stack_builder);
 
-    let queue = QueueBuilder::new("myQueue").standard_queue().build(&mut stack_builder);
-    
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-    let zipper = zip_file!("./examples/output/todo-backend.zip");
+    let zipper = zip_file!("./examples/files/empty.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
@@ -35,9 +32,7 @@ async fn main() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
-        .sqs_event_source_mapping(&queue, None)
-        // TODO remove/replace with valid TOML
-        // .check_permissions_against_dependencies(TomlFile("...Cargo.toml".to_string()))
+        .check_permissions_against_dependencies(toml_file!("./examples/files/Cargo.toml"))
         .build(&mut stack_builder);
  
     ApiGatewayV2Builder::new("myAGW")

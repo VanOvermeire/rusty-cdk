@@ -306,7 +306,7 @@ pub fn toml_file(input: TokenStream) -> TokenStream {
     };
 
     quote!(
-        ZipFile(#value.to_string())
+        TomlFile(#value.to_string())
     )
     .into()
 }
