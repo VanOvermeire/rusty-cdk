@@ -14,7 +14,7 @@ struct DelaySeconds(u16);
 struct MaximumMessageSize(u32);
 struct MessageRetentionPeriod(u32);
 struct VisibilityTimeout(u32);
-struct ReceiveMessageWaitTime(u16);
+struct ReceiveMessageWaitTime(u8);
 struct SqsEventSourceMaxConcurrency(u16);
 struct RetentionInDays(u16);
 struct LogGroupName(String);

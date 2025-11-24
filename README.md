@@ -233,12 +233,13 @@ stack_builder.add_tag("OWNER", "me").build();
 
 ## TODO
 
+- UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
 - more help with IAM permissions
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
-- UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
 - try to replace `syn` with more something more compile-time lightweight - `facet`?
 - switch to uploading template to s3? helps avoid the 51 kb limit
   - or at least offer that option
 - borrow all the things? see borrowing-example branch for an example
   - the gain in performance was not that impressive
+  - so probably not worth the added complexity

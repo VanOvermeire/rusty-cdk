@@ -279,7 +279,7 @@ pub struct VisibilityTimeout(pub u32);
 /// let wait_time = receive_message_wait_time!(10);
 /// ```
 #[derive(Debug, Copy, Clone)]
-pub struct ReceiveMessageWaitTime(pub u16);
+pub struct ReceiveMessageWaitTime(pub u8);
 
 /// Maximum concurrency configuration for SQS event sources in AWS Lambda.
 ///
@@ -443,7 +443,7 @@ pub struct TomlFile(pub String);
 /// # Recommended Usage
 /// Use the `connection_attempts!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
-pub struct ConnectionAttempts(pub u16);
+pub struct ConnectionAttempts(pub u8);
 
 /// Connection timeout configuration for CloudFront origins, specified in seconds.
 ///
@@ -493,7 +493,7 @@ pub struct DefaultRootObject(pub String);
 /// # Recommended Usage
 /// Use the `s3_origin_read_timeout!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
-pub struct S3OriginReadTimeout(pub u16);
+pub struct S3OriginReadTimeout(pub u8);
 
 /// Action specification for AWS Lambda resource-based policy permissions.
 ///
@@ -526,7 +526,7 @@ pub struct DeploymentDurationInMinutes(pub u16);
 /// Use the `growth_factor!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 #[derive(Debug, Clone)]
-pub struct GrowthFactor(pub u16);
+pub struct GrowthFactor(pub u8);
 
 /// Number of days before S3 objects transition to a different storage class.
 ///

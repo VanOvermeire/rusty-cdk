@@ -87,7 +87,7 @@ pub struct DeploymentStrategyProperties {
     #[serde(rename = "DeploymentDurationInMinutes")]
     pub(super) deployment_duration_in_minutes: u16,
     #[serde(rename = "GrowthFactor")]
-    pub(super) growth_factor: u16,
+    pub(super) growth_factor: u8,
     #[serde(rename = "ReplicateTo")]
     pub(super) replicate_to: String,
     #[serde(rename = "GrowthType", skip_serializing_if = "Option::is_none")]

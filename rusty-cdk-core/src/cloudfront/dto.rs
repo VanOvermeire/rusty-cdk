@@ -239,7 +239,7 @@ pub struct Origin {
     #[serde(rename = "DomainName")]
     pub(super) domain_name: Value,
     #[serde(rename = "ConnectionAttempts", skip_serializing_if = "Option::is_none")]
-    pub(super) connection_attempts: Option<u16>,
+    pub(super) connection_attempts: Option<u8>,
     #[serde(rename = "ConnectionTimeout", skip_serializing_if = "Option::is_none")]
     pub(super) connection_timeout: Option<u16>,
     #[serde(rename = "OriginAccessControlId", skip_serializing_if = "Option::is_none")]
@@ -307,7 +307,7 @@ pub struct CustomOriginConfig {
 #[derive(Debug, Serialize)]
 pub struct S3OriginConfig {
     #[serde(rename = "OriginReadTimeout", skip_serializing_if = "Option::is_none")]
-    pub(super) origin_read_timeout: Option<u16>,
+    pub(super) origin_read_timeout: Option<u8>,
 }
 
 #[derive(Debug, Serialize)]

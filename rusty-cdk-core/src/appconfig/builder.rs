@@ -270,7 +270,7 @@ pub struct DeploymentStrategyBuilder {
     id: Id,
     name: String,
     deployment_duration_in_minutes: u16,
-    growth_factor: u16,
+    growth_factor: u8,
     growth_type: Option<String>,
     replicate_to: String,
 }

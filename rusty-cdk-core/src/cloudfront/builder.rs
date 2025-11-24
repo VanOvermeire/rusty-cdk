@@ -412,7 +412,7 @@ pub struct OriginBuilder<T: OriginState> {
     bucket_arn: Option<Value>,
     bucket_ref: Option<Value>,
     domain_name: Option<Value>,
-    connection_attempts: Option<u16>,
+    connection_attempts: Option<u8>,
     connection_timeout: Option<u16>,
     response_completion_timeout: Option<u16>,
     origin_access_control_id: Option<Value>,

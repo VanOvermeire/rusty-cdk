@@ -333,19 +333,18 @@ macro_rules! number_check {
     }
 }
 
-// TODO some of these could be u8?
 number_check!(memory, 128, 10240, Memory, u16);
 number_check!(timeout, 1, 900, Timeout, u16);
 number_check!(delay_seconds, 0, 900, DelaySeconds, u16);
 number_check!(maximum_message_size, 1024, 1048576, MaximumMessageSize, u32);
 number_check!(message_retention_period, 60, 1209600, MessageRetentionPeriod, u32);
 number_check!(visibility_timeout, 0, 43200, VisibilityTimeout, u32);
-number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u16);
+number_check!(receive_message_wait_time, 0, 20, ReceiveMessageWaitTime, u8);
 number_check!(sqs_event_source_max_concurrency, 2, 1000, SqsEventSourceMaxConcurrency, u16);
-number_check!(connection_attempts, 1, 3, ConnectionAttempts, u16);
-number_check!(s3_origin_read_timeout, 1, 120, ConnectionAttempts, u16);
+number_check!(connection_attempts, 1, 3, ConnectionAttempts, u8);
+number_check!(s3_origin_read_timeout, 1, 120, S3OriginReadTimeout, u8);
 number_check!(deployment_duration_in_minutes, 0, 1440, DeploymentDurationInMinutes, u16);
-number_check!(growth_factor, 0, 100, GrowthFactor, u16);
+number_check!(growth_factor, 0, 100, GrowthFactor, u8);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";
