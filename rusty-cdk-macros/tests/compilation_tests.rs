@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days};
+use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -21,6 +21,7 @@ struct LogGroupName(String);
 struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 struct LambdaPermissionAction(pub String);
 struct LifecycleTransitionInDays(pub u16);
+struct LocationUri(pub String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -133,10 +134,30 @@ fn lambda_permission_action_with_right_prefix() {
 
 #[test]
 fn lifecycle_transition_in_days_more_than_30_days() {
-    lifecycle_transition_in_days!(31,StandardIA);
+    lifecycle_transition_in_days!(31,"StandardIA");
 }
 
 #[test]
 fn lifecycle_transition_in_days() {
-    lifecycle_transition_in_days!(3,Glacier);
+    lifecycle_transition_in_days!(3,"Glacier");
+}
+
+#[test]
+fn location_uri_hosted() {
+    location_uri!("hosted");
+}
+
+#[test]
+fn location_uri_s3() {
+    location_uri!("s3","s3://something");
+}
+
+#[test]
+fn location_uri_secretsmanager() {
+    location_uri!("secretsmanager","secretsmanager://something");
+}
+
+#[test]
+fn location_uri_codepipeline() {
+    location_uri!("codepipeline","codepipeline://something");
 }

@@ -1,6 +1,6 @@
 use syn::parse::{Parse, ParseStream};
 use syn::token::Comma;
-use syn::{Ident, LitInt};
+use syn::{LitInt, LitStr};
 
 pub(crate) struct TransitionInfo {
     pub(crate) days: u16,
@@ -11,11 +11,11 @@ impl Parse for TransitionInfo {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let days: LitInt = input.parse()?;
         let _: Comma = input.parse()?;
-        let service: Ident = input.parse()?;
+        let service: LitStr = input.parse()?;
 
         Ok(TransitionInfo {
             days: days.base10_parse()?,
-            service: service.to_string(),
+            service: service.value(),
         })
     }
 }

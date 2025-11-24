@@ -537,9 +537,27 @@ pub struct GrowthFactor(pub u16);
 /// use rusty_cdk_core::wrappers::LifecycleTransitionInDays;
 /// use rusty_cdk_macros::lifecycle_transition_in_days;
 ///
-/// let transition = lifecycle_transition_in_days!(90,Glacier);
+/// let transition = lifecycle_transition_in_days!(90,"Glacier");
 ///
-/// let ia_transition = lifecycle_transition_in_days!(31,StandardIA);
+/// let ia_transition = lifecycle_transition_in_days!(31,"StandardIA");
 /// ```
 #[derive(Debug, Clone)]
 pub struct LifecycleTransitionInDays(pub u16);
+
+/// LocationUri of AppConfig
+///
+/// # Recommended Usage
+/// Use the `location_uri!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::LocationUri;
+/// use rusty_cdk_macros::location_uri;
+///
+/// // hosted does not require an additional argument
+/// let hosted = location_uri!("hosted");
+///
+/// // but s3 does
+/// let s3 = location_uri!("s3","s3://some-bucket/object");
+/// ```
+#[derive(Debug, Clone)]
+pub struct LocationUri(pub String);

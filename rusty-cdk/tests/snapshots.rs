@@ -12,7 +12,7 @@ use rusty_cdk_core::stack::{StackBuilder};
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
-use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, LocationUri, ReplicateTo};
+use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo};
 use rusty_cdk_core::cloudfront::{CachePolicyBuilder, DistributionBuilder, OriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
 use rusty_cdk_core::s3::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
 
@@ -50,7 +50,7 @@ fn bucket() {
             .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
                 .prefix("/prefix")
                 .add_transition(LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
-                    .transition_in_days(lifecycle_transition_in_days!(30,Glacier))
+                    .transition_in_days(lifecycle_transition_in_days!(30,"Glacier"))
                     .build()
                 )
                 .build())
@@ -406,7 +406,7 @@ fn appconfig() {
     let mut stack_builder = StackBuilder::new();
     let app_config = ApplicationBuilder::new("app", app_config_name!("my-application")).build(&mut stack_builder);
     EnvironmentBuilder::new("env", app_config_name!("prod"), &app_config).build(&mut stack_builder);
-    ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, LocationUri::Hosted).build(&mut stack_builder);
+    ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted")).build(&mut stack_builder);
     DeploymentStrategyBuilder::new("ds", app_config_name!("instant"), deployment_duration_in_minutes!(0), growth_factor!(100), ReplicateTo::None).build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 

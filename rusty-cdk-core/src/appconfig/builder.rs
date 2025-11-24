@@ -2,7 +2,7 @@ use serde_json::Value;
 use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, Environment, EnvironmentProperties, EnvironmentRef, Validator};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor};
+use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor, LocationUri};
 
 /// Builder for AWS AppConfig applications.
 ///
@@ -51,25 +51,24 @@ impl ApplicationBuilder {
     }
 }
 
-// TODO macro
-pub enum LocationUri {
-    Hosted,
-    CodePipeline(String), // codepipeline://<pipeline name>.
-    SecretsManager(String), // secretsmanager://<secret name>
-    S3(String) // s3://<bucket>/<objectKey>
-    // SSM, AWS Systems Manager Parameter Store
-}
-
-impl From<LocationUri> for String {
-    fn from(value: LocationUri) -> Self {
-        match value {
-            LocationUri::Hosted => "hosted".to_string(),
-            LocationUri::CodePipeline(l) => l.to_string(),
-            LocationUri::SecretsManager(l) => l.to_string(),
-            LocationUri::S3(l) => l.to_string(),
-        }
-    }
-}
+// pub enum LocationUri {
+//     Hosted,
+//     CodePipeline(String), // codepipeline://<pipeline name>.
+//     SecretsManager(String), // secretsmanager://<secret name>
+//     S3(String) // s3://<bucket>/<objectKey>
+//     // SSM, AWS Systems Manager Parameter Store
+// }
+// 
+// impl From<LocationUri> for String {
+//     fn from(value: LocationUri) -> Self {
+//         match value {
+//             LocationUri::Hosted => "hosted".to_string(),
+//             LocationUri::CodePipeline(l) => l.to_string(),
+//             LocationUri::SecretsManager(l) => l.to_string(),
+//             LocationUri::S3(l) => l.to_string(),
+//         }
+//     }
+// }
 
 pub enum ConfigType {
     FeatureFlags,
@@ -107,19 +106,20 @@ impl From<DeletionProtectionCheck> for String {
 ///
 /// ```rust,no_run
 /// use rusty_cdk_core::stack::StackBuilder;
-/// use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, LocationUri};
+/// use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder};
 /// use rusty_cdk_core::wrappers::*;
-/// use rusty_cdk_macros::app_config_name;
+/// use rusty_cdk_macros::{app_config_name, location_uri};
 ///
 /// let mut stack_builder = StackBuilder::new();
 ///
 /// let app = unimplemented!("create an application");
+/// let location_uri = location_uri!("hosted");
 ///
 /// let profile = ConfigurationProfileBuilder::new(
 ///     "my-profile",
 ///     app_config_name!("MyProfile"),
 ///     &app,
-///     LocationUri::Hosted
+///     location_uri,
 /// )
 /// .build(&mut stack_builder);
 /// ```
@@ -146,7 +146,7 @@ impl ConfigurationProfileBuilder {
             id: Id(id.to_string()),
             name: name.0,
             application_id: application.get_ref(),
-            location_uri: location_uri.into(),
+            location_uri: location_uri.0,
             deletion_protection_check: None,
             config_type: None,
             validators: None,
@@ -201,11 +201,12 @@ impl ConfigurationProfileBuilder {
 
 /// Builder for configuration profile validators.
 pub struct ValidatorBuilder {
-    content: String, // 0-32768 // 
-    validator_type: String, // TODO either ARN or JSON Schema, pass them in together in macro => Json Schema check valid json? Lambda => check lambda arn
+    content: String,
+    validator_type: String,
 }
 
 impl ValidatorBuilder {
+    // could validate better with a macro, but for JSON that would require passing in the entire schema in the macro...
     pub fn new(content: String, validator_type: ValidatorType) -> Self {
         Self {
             content,

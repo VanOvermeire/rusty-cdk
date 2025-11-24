@@ -7,7 +7,7 @@
 //!
 //! All macros perform validation at compile time and generate wrapper types that encapsulate
 //! validated values.
-//! 
+//!
 //! The macros always return a newtype 'wrapper'.
 //! You should import those from the rusty_cdk::wrappers directory, as seen in the below example.
 //!
@@ -25,12 +25,15 @@ mod bucket;
 mod bucket_name;
 mod file_util;
 mod iam_validation;
+mod location_uri;
 mod object_sizes;
 mod strings;
 mod timeouts;
 mod transition_in_days;
 
+use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
+use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
 use crate::strings::{check_string_requirements, StringRequirements};
 use crate::timeouts::Timeouts;
@@ -41,7 +44,6 @@ use quote::quote;
 use std::env;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
-use crate::file_util::get_absolute_file_path;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -180,7 +182,7 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
 /// Creates a validated `ZipFile` wrapper for AWS Lambda deployment packages at compile time.
 ///
 /// This macro ensures that the input string refers to a valid ZIP file that exists on the filesystem at compile time.
-/// 
+///
 /// See the `examples` dir of this library for some usage examples
 ///
 /// # Validation Rules
@@ -213,9 +215,7 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
     let value = match get_absolute_file_path(&value) {
         Ok(v) => v,
         Err(e) => {
-            return Error::new(output.span(), e)
-                .into_compile_error()
-                .into();
+            return Error::new(output.span(), e).into_compile_error().into();
         }
     };
 
@@ -226,7 +226,7 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
 }
 
 /// Creates a validated `TomlFile` wrapper.
-/// 
+///
 /// See the `examples` dir of this library for some usage examples
 ///
 /// # Validation Rules
@@ -259,9 +259,7 @@ pub fn toml_file(input: TokenStream) -> TokenStream {
     let value = match get_absolute_file_path(&value) {
         Ok(v) => v,
         Err(e) => {
-            return Error::new(output.span(), e)
-                .into_compile_error()
-                .into();
+            return Error::new(output.span(), e).into_compile_error().into();
         }
     };
 
@@ -373,7 +371,7 @@ const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";
 /// query AWS to verify the bucket exists. Later compilations will use the cached result unless `rusty_cdk_RECHECK` is set to true.
 ///
 /// # Override
-/// 
+///
 /// You can avoid this verification by using the wrapper directly, but you lose all the above compile time guarantees by doing so.
 #[proc_macro]
 pub fn bucket(input: TokenStream) -> TokenStream {
@@ -866,10 +864,7 @@ const LIFECYCLE_STORAGE_TYPES: [&str; 6] = [
     "Glacier",
     "GlacierInstantRetrieval",
 ];
-const LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS: [&str; 2] = [
-    "OneZoneIA",
-    "StandardIA",
-];
+const LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS: [&str; 2] = ["OneZoneIA", "StandardIA"];
 
 /// Creates a validated `LifecycleTransitionInDays` wrapper for S3 lifecycle transition rules at compile time.
 ///
@@ -884,17 +879,96 @@ pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
     let service = service.trim();
 
     if !LIFECYCLE_STORAGE_TYPES.contains(&service) {
-        return Error::new(Span::call_site(), format!("service should be one of {} (was {})", LIFECYCLE_STORAGE_TYPES.join(","), service))
-            .into_compile_error()
-            .into();
+        return Error::new(
+            Span::call_site(),
+            format!("service should be one of {} (was {})", LIFECYCLE_STORAGE_TYPES.join(","), service),
+        )
+        .into_compile_error()
+        .into();
     } else if LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.contains(&service) && days <= 30 {
-        return Error::new(Span::call_site(), format!("service of type {} cannot have transition under 30 days", LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.join(" or ")))
-            .into_compile_error()
-            .into();
+        return Error::new(
+            Span::call_site(),
+            format!(
+                "service of type {} cannot have transition under 30 days",
+                LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.join(" or ")
+            ),
+        )
+        .into_compile_error()
+        .into();
     }
 
     quote! {
         LifecycleTransitionInDays(#days)
     }
+    .into()
+}
+
+const LOCATION_URI_TYPES: [&str; 4] = ["hosted", "codepipeline", "secretsmanager", "s3"];
+const LOCATION_URI_CODEPIPELINE_START: &'static str = "codepipeline://";
+const LOCATION_URI_SECRETS_MANAGER_START: &'static str = "secretsmanager://";
+const LOCATION_URI_S3_START: &'static str = "s3://";
+
+
+/// Creates a validated `LocationUri` wrapper for AppConfig
+///
+/// # Validation Rules
+///
+/// - Must be one of "hosted", "codepipeline", "secretsmanager", "s3"
+/// - Hosted does not need an additional argument
+/// - The other values require a second value, separated from the first by a comma
+#[proc_macro]
+pub fn location_uri(input: TokenStream) -> TokenStream {
+    let LocationUri {
+        location_uri_type,
+        content,
+    } = parse_macro_input!(input);
+    let location_uri_type = location_uri_type.trim();
+
+    #[allow(unused)] // bug? is used at the end for the error?
+    let mut error = None;
+
+    if !LOCATION_URI_TYPES.contains(&location_uri_type) {
+        error = Some(format!(
+            "unrecognized location uri {}, should be one of {}",
+            location_uri_type,
+            LOCATION_URI_TYPES.join(",")
+        ));
+    } else {
+        if location_uri_type == "hosted" {
+            return quote! {
+                LocationUri(#location_uri_type.to_string())
+            }
+            .into();
+        } else if content.is_none() {
+            error = Some(format!("location uri of type {}, should have content", location_uri_type));
+        } else {
+            let content = content.expect("just checked that this is present");
+
+            if location_uri_type == "codepipeline" && !content.starts_with(LOCATION_URI_CODEPIPELINE_START) {
+                error = Some(format!(
+                    "content of type codepipeline should start with {}",
+                    LOCATION_URI_CODEPIPELINE_START
+                ));
+            } else if location_uri_type == "secretsmanager" && !content.starts_with(LOCATION_URI_SECRETS_MANAGER_START) {
+                error = Some(format!(
+                    "content of type secretsmanager should start with {}",
+                    LOCATION_URI_SECRETS_MANAGER_START
+                ));
+            } else if location_uri_type == "s3" && !content.starts_with(LOCATION_URI_S3_START) {
+                error = Some(format!("content of type s3 should start with {}", LOCATION_URI_S3_START));
+            } else {
+                return quote! {
+                    LocationUri(#content.to_string())
+                }
+                .into();
+            }
+        }
+    }
+
+    Error::new(
+        Span::call_site(),
+        error.unwrap_or_else(|| "unknown error".to_string()),
+    )
+    .into_compile_error()
     .into()
 }
