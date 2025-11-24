@@ -1,9 +1,4 @@
-use crate::cloudfront::{
-    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, DefaultCacheBehavior,
-    Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl,
-    OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader,
-    ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig,
-};
+use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
 use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
 use crate::intrinsic_functions::{get_att, get_ref, join};
@@ -369,20 +364,53 @@ impl From<PriceClass> for String {
     }
 }
 
+pub enum OriginProtocolPolicy {
+    HttpOnly,
+    MatchViewer,
+    HttpsOnly,
+}
+
+impl From<OriginProtocolPolicy> for String {
+    fn from(value: OriginProtocolPolicy) -> Self {
+        match value {
+            OriginProtocolPolicy::HttpOnly => "http-only".to_string(),
+            OriginProtocolPolicy::MatchViewer => "match-viewer".to_string(),
+            OriginProtocolPolicy::HttpsOnly => "https-only".to_string(),
+        }
+    }
+}
+
+pub enum IpAddressType {
+    IPv4,
+    IPv6,
+    Dualstack,
+}
+
+impl From<IpAddressType> for String {
+    fn from(value: IpAddressType) -> Self {
+        match value {
+            IpAddressType::IPv4 => "ipv4".to_string(),
+            IpAddressType::IPv6 => "ipv6".to_string(),
+            IpAddressType::Dualstack => "dualstack".to_string(),
+        }
+    }
+}
+
 type_state!(
     OriginState,
     OriginStartState,
     OriginS3OriginState,
+    OriginCustomOriginState,
 );
 
+// TODO more origins
+
 /// Builder for CloudFront distribution origins.
-///
-/// Currently supports S3 origins with Origin Access Control.
-// TODO other origins
-pub struct OriginBuilder<'a, T: OriginState> {
+pub struct OriginBuilder<T: OriginState> {
     phantom_data: PhantomData<T>,
     id: String,
-    bucket: Option<&'a BucketRef>,
+    bucket_arn: Option<Value>,
+    bucket_ref: Option<Value>,
     domain_name: Option<Value>,
     connection_attempts: Option<u16>,
     connection_timeout: Option<u16>,
@@ -392,14 +420,16 @@ pub struct OriginBuilder<'a, T: OriginState> {
     s3origin_config: Option<S3OriginConfig>,
     origin_custom_headers: Option<Vec<OriginCustomHeader>>,
     vpc_origin_config: Option<VpcOriginConfig>,
+    custom_origin_config: Option<CustomOriginConfig>,
 }
 
-impl OriginBuilder<'_, OriginStartState> {
+impl OriginBuilder<OriginStartState> {
     pub fn new(origin_id: &str) -> Self {
         Self {
             phantom_data: Default::default(),
             id: origin_id.to_string(),
-            bucket: None,
+            bucket_arn: None,
+            bucket_ref: None,
             domain_name: None,
             connection_attempts: None,
             connection_timeout: None,
@@ -409,18 +439,19 @@ impl OriginBuilder<'_, OriginStartState> {
             s3origin_config: None,
             origin_custom_headers: None,
             vpc_origin_config: None,
+            custom_origin_config: None,
         }
     }
 
     /// Configures an S3 bucket as the origin.
     ///
     /// Automatically creates a bucket policy allowing CloudFront access via Origin Access Control.
-    pub fn s3_origin<'a>(
+    pub fn s3_origin(
         self,
-        bucket: &'a BucketRef,
+        bucket: &BucketRef,
         oac: &OriginAccessControlRef,
         origin_read_timeout: Option<S3OriginReadTimeout>,
-    ) -> OriginBuilder<'a, OriginS3OriginState> {
+    ) -> OriginBuilder<OriginS3OriginState> {
         let s3origin_config = S3OriginConfig {
             origin_read_timeout: origin_read_timeout.map(|v| v.0),
         };
@@ -430,7 +461,8 @@ impl OriginBuilder<'_, OriginStartState> {
         OriginBuilder {
             phantom_data: Default::default(),
             id: self.id.to_string(),
-            bucket: Some(bucket),
+            bucket_arn: Some(bucket.get_arn()),
+            bucket_ref: Some(bucket.get_ref()),
             domain_name: Some(domain),
             connection_attempts: self.connection_attempts,
             connection_timeout: self.connection_timeout,
@@ -440,11 +472,45 @@ impl OriginBuilder<'_, OriginStartState> {
             origin_custom_headers: self.origin_custom_headers,
             s3origin_config: Some(s3origin_config),
             vpc_origin_config: None,
+            custom_origin_config: None,
+        }
+    }
+    
+    // TODO add test
+    //  and could also add additional methods for ELB etc. that pass in the ELB, to have extra safety
+
+    /// Configures a custom origin.
+    pub fn custom_origin(self, domain: &str, policy: OriginProtocolPolicy) -> OriginBuilder<OriginCustomOriginState> {
+        let custom_origin_config = CustomOriginConfig {
+            origin_protocol_policy: policy.into(),
+            http_port: None,
+            https_port: None,
+            ip_address_type: None,
+            origin_keep_alive_timeout: None,
+            origin_read_timeout: None,
+            origin_ssl_protocols: None,
+        };
+
+        OriginBuilder {
+            phantom_data: Default::default(),
+            id: self.id.to_string(),
+            domain_name: Some(Value::String(domain.to_string())),
+            connection_attempts: self.connection_attempts,
+            connection_timeout: self.connection_timeout,
+            origin_path: self.origin_path,
+            response_completion_timeout: self.response_completion_timeout,
+            origin_custom_headers: self.origin_custom_headers,
+            custom_origin_config: Some(custom_origin_config),
+            vpc_origin_config: None,
+            origin_access_control_id: None,
+            s3origin_config: None,
+            bucket_arn: None,
+            bucket_ref: None,
         }
     }
 }
 
-impl<T: OriginState> OriginBuilder<'_, T> {
+impl<T: OriginState> OriginBuilder<T> {
     pub fn connection_attempts(self, attempts: ConnectionAttempts) -> Self {
         Self {
             connection_attempts: Some(attempts.0),
@@ -480,15 +546,90 @@ impl<T: OriginState> OriginBuilder<'_, T> {
             s3origin_config: self.s3origin_config,
             origin_custom_headers: self.origin_custom_headers,
             vpc_origin_config: self.vpc_origin_config,
+            custom_origin_config: self.custom_origin_config,
         }
     }
 }
 
-impl OriginBuilder<'_, OriginS3OriginState> {
-    pub fn build(mut self) -> Origin {
-        let bucket = self.bucket.take().expect("bucket to be present in S3 origin state");
+impl OriginBuilder<OriginCustomOriginState> {
+    pub fn ip_address_type(self, address_type: IpAddressType) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        config.ip_address_type = Some(address_type.into());
 
-        let bucket_items = vec![join("", vec![bucket.get_arn(), Value::String("/*".to_string())])];
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+    pub fn http_port(self, port: u16) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        config.http_port = Some(port);
+
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn https_port(self, port: u16) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        config.https_port = Some(port);
+
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn origin_keep_alive_timeout(self, timeout: u8) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        config.origin_keep_alive_timeout = Some(timeout);
+
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn origin_read_timeout(self, timeout: u8) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        config.origin_read_timeout = Some(timeout);
+
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn add_origin_ssl_protocol(self, protocol: String) -> Self {
+        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+
+        let protocols = if let Some(mut protocols) = config.origin_ssl_protocols {
+            protocols.push(protocol);
+            protocols
+        } else {
+            vec![protocol]
+        };
+
+        config.origin_ssl_protocols = Some(protocols);
+
+        OriginBuilder {
+            custom_origin_config: Some(config),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> Origin {
+        self.build_internal()
+    }
+}
+
+impl OriginBuilder<OriginS3OriginState> {
+    pub fn build(mut self) -> Origin {
+        let bucket_ref = self.bucket_ref.take().expect("bucket ref to be present in S3 origin state");
+        let bucket_arn = self.bucket_arn.take().expect("bucket arn to be present in S3 origin state");
+
+        let bucket_items = vec![join("", vec![bucket_arn, Value::String("/*".to_string())])];
         let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
             .resources(bucket_items)
             .principal(Service(ServicePrincipal {
@@ -497,7 +638,7 @@ impl OriginBuilder<'_, OriginS3OriginState> {
             .build();
         let doc = PolicyDocumentBuilder::new(vec![statement]).build();
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-        let (_, s3_policy) = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, doc).raw_build();
+        let (_, s3_policy) = BucketPolicyBuilder::new_with_bucket_ref(bucket_policy_id.as_str(), bucket_ref, doc).raw_build();
 
         let mut origin = self.build_internal();
         origin.s3_bucket_policy = Some(s3_policy);

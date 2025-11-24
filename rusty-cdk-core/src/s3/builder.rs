@@ -71,6 +71,14 @@ impl BucketPolicyBuilder {
         }
     }
     
+    pub(crate) fn new_with_bucket_ref(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            bucket_name,
+            policy_document,
+        }
+    }
+    
     pub(crate) fn raw_build(self) -> (String, BucketPolicy) {
         let resource_id = Resource::generate_id("S3BucketPolicy");
         let policy = BucketPolicy {

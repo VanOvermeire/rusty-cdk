@@ -333,6 +333,7 @@ macro_rules! number_check {
     }
 }
 
+// TODO some of these could be u8?
 number_check!(memory, 128, 10240, Memory, u16);
 number_check!(timeout, 1, 900, Timeout, u16);
 number_check!(delay_seconds, 0, 900, DelaySeconds, u16);

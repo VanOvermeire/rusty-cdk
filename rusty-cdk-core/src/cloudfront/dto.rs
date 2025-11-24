@@ -254,7 +254,8 @@ pub struct Origin {
     pub(super) origin_custom_headers: Option<Vec<OriginCustomHeader>>,
     #[serde(rename = "VpcOriginConfig", skip_serializing_if = "Option::is_none")]
     pub(super) vpc_origin_config: Option<VpcOriginConfig>,
-    // "CustomOriginConfig"
+    #[serde(rename = "CustomOriginConfig", skip_serializing_if = "Option::is_none")]
+    pub(super) custom_origin_config: Option<CustomOriginConfig>,
     // "OriginShield"
 }
 
@@ -282,6 +283,25 @@ pub struct VpcOriginConfig {
     pub(super) origin_read_timeout: Option<u32>, // 1-120
     #[serde(rename = "OwnerAccountId", skip_serializing_if = "Option::is_none")]
     pub(super) owner_account_id: Option<String>,
+}
+
+
+#[derive(Debug, Serialize)]
+pub struct CustomOriginConfig {
+    #[serde(rename = "OriginProtocolPolicy")]
+    pub(super) origin_protocol_policy: String, // http-only | match-viewer | https-only
+    #[serde(rename = "HTTPPort", skip_serializing_if = "Option::is_none")]
+    pub(super) http_port: Option<u16>,
+    #[serde(rename = "HTTPSPort", skip_serializing_if = "Option::is_none")]
+    pub(super) https_port: Option<u16>,
+    #[serde(rename = "IpAddressType", skip_serializing_if = "Option::is_none")]
+    pub(super) ip_address_type: Option<String>, // ipv4 | ipv6 | dualstack
+    #[serde(rename = "OriginKeepaliveTimeout", skip_serializing_if = "Option::is_none")]
+    pub(super) origin_keep_alive_timeout: Option<u8>, // 1 - 120
+    #[serde(rename = "OriginReadTimeout", skip_serializing_if = "Option::is_none")]
+    pub(super) origin_read_timeout: Option<u8>, // 1 - 120
+    #[serde(rename = "OriginSSLProtocols", skip_serializing_if = "Option::is_none")]
+    pub(super) origin_ssl_protocols: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
