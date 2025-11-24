@@ -395,7 +395,6 @@ pub struct OriginBuilder<'a, T: OriginState> {
 }
 
 impl OriginBuilder<'_, OriginStartState> {
-    // TODO make passing in the domain name easier. probably couple it to passing in the origin => GetAtt DomainName
     pub fn new(origin_id: &str) -> Self {
         Self {
             phantom_data: Default::default(),
@@ -879,7 +878,6 @@ impl<T: DistributionState> DistributionBuilder<T> {
         self
     }
 
-    // TODO probably can limit possible values this further
     pub fn aliases(self, aliases: Vec<String>) -> Self {
         Self {
             aliases: Some(aliases),
@@ -887,7 +885,7 @@ impl<T: DistributionState> DistributionBuilder<T> {
         }
     }
 
-    // TODO probably can limit possible values this further
+    // could have a regex for this?
     pub fn cnames(self, cnames: Vec<String>) -> Self {
         Self {
             cnames: Some(cnames),

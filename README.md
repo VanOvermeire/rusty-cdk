@@ -233,16 +233,11 @@ stack_builder.add_tag("OWNER", "me").build();
 
 ## TODO
 
-- docs
-  - add docs with example code to all builders
 - more help with IAM permissions
-  - when you pass in an env var for a bucket or table, we can assume you want permission to read that? so if none found → error?
-  - similar for secret
   - additional checks for structure of iam policies
     - for example resources is not required in all cases, but in most contexts it is
 - UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
-- try to replace `syn` and `serde` with more something more lightweight (at compile time) - `facet`?
-  - note that `Value` is exposed in some cases...
+- try to replace `syn` with more something more compile-time lightweight - `facet`?
 - switch to uploading template to s3? helps avoid the 51 kb limit
   - or at least offer that option
 - borrow all the things? see borrowing-example branch for an example

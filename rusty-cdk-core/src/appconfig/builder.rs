@@ -201,8 +201,8 @@ impl ConfigurationProfileBuilder {
 
 /// Builder for configuration profile validators.
 pub struct ValidatorBuilder {
-    content: String, // 0-32768 // TODO
-    validator_type: String, // either ARN or JSON Schema
+    content: String, // 0-32768 // 
+    validator_type: String, // TODO either ARN or JSON Schema, pass them in together in macro => Json Schema check valid json? Lambda => check lambda arn
 }
 
 impl ValidatorBuilder {
