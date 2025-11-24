@@ -17,7 +17,7 @@ pub(crate) fn find_missing_services(services: &[String], policies: &[Policy]) ->
     
     services.iter()
         .filter(|s| !services_in_policy_actions.contains(&s.as_str()))
-        .map(|s| s.clone())
+        .cloned()
         .collect()
 }
 

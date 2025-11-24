@@ -117,7 +117,7 @@ impl PrincipalBuilder<ChosenState> {
 /// .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
 /// .build();
 ///
-/// let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
+/// let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]).build();
 ///
 /// let properties = RolePropertiesBuilder::new(assume_role_policy, vec![])
 ///     .build();
@@ -291,13 +291,21 @@ impl PolicyDocumentBuilder {
     }
 }
 
-pub struct AssumeRolePolicyDocumentBuilder {}
+pub struct AssumeRolePolicyDocumentBuilder {
+    statements: Vec<Statement>
+}
 
 impl AssumeRolePolicyDocumentBuilder {
-    pub fn new(statements: Vec<Statement>) -> AssumeRolePolicyDocument {
+    pub fn new(statements: Vec<Statement>) -> Self {
+        Self {
+            statements,
+        }
+    }
+    
+    pub fn build(self) -> AssumeRolePolicyDocument {
         AssumeRolePolicyDocument {
             version: "2012-10-17".to_string(),
-            statements,
+            statements: self.statements,
         }
     }
 }

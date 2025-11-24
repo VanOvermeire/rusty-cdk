@@ -136,7 +136,7 @@ fn iam_principal_builder_should_compile() {
         .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
         .build();
 
-    let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![statement]);
+    let assume_role_policy = AssumeRolePolicyDocumentBuilder::new(vec![statement]).build();
     let properties = RolePropertiesBuilder::new(assume_role_policy, vec![]).build();
 
     RoleBuilder::new("myRole", properties).build(&mut stack_builder);

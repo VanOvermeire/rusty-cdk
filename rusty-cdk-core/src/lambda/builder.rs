@@ -225,7 +225,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
             .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
             .build();
-        let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]);
+        let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]).build();
         let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let potentially_missing = find_missing_services(&self.aws_services_in_dependencies, &self.additional_policies);
         let props = RolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();

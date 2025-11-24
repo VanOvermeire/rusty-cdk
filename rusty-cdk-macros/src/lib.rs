@@ -905,9 +905,9 @@ pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
 }
 
 const LOCATION_URI_TYPES: [&str; 4] = ["hosted", "codepipeline", "secretsmanager", "s3"];
-const LOCATION_URI_CODEPIPELINE_START: &'static str = "codepipeline://";
-const LOCATION_URI_SECRETS_MANAGER_START: &'static str = "secretsmanager://";
-const LOCATION_URI_S3_START: &'static str = "s3://";
+const LOCATION_URI_CODEPIPELINE_START: &str = "codepipeline://";
+const LOCATION_URI_SECRETS_MANAGER_START: &str = "secretsmanager://";
+const LOCATION_URI_S3_START: &str = "s3://";
 
 
 /// Creates a validated `LocationUri` wrapper for AppConfig
