@@ -240,8 +240,8 @@ pub struct PolicyBuilder {
 }
 
 impl PolicyBuilder {
-    // TODO policy name characters consisting of upper and lowercase alphanumeric characters with no spaces + any of the following characters: _+=,.@-
-    //  1 - 128 chars
+    // TODO policy name characters consisting of upper and lowercase alphanumeric characters with no spaces + any of the following characters: _+=,.@-; 1 - 128 chars
+    //  (but most of the time used indirectly, so not very urgent)
     pub fn new<T: Into<String>>(policy_name: T, policy_document: PolicyDocument) -> Self {
         PolicyBuilder {
             policy_name: policy_name.into(),

@@ -235,6 +235,7 @@ stack_builder.add_tag("OWNER", "me").build();
 
 ## TODO
 
+- Add to crates...
 - UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
 - more help with IAM permissions
   - additional checks for structure of iam policies
