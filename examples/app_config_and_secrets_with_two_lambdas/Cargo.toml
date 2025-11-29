@@ -1,5 +1,5 @@
 [package]
-name = "apigateway_lambda_dynamodb"
+name = "app_config_and_secrets_with_two_lambdas"
 version = "0.1.0"
 edition = "2024"
 
