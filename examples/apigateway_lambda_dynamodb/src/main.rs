@@ -23,7 +23,7 @@ async fn main() {
         .build(&mut stack_builder);
 
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-    let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip");
+    let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip"); // this is an empty zip file, won't do anything useful
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
@@ -49,6 +49,6 @@ async fn main() {
     } else {
         let synthesized = stack.unwrap().synth().unwrap();
         println!("{}", synthesized);
-        // rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("ExampleRemove"), stack.unwrap()).await;
+        // rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("ExampleWithGatewayLambdaAndDynamoDB"), stack.unwrap()).await;
     }
 }

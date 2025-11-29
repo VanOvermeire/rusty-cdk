@@ -218,6 +218,8 @@ Based on rg `^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
 - _"I create a resource and my deployment failed"_
   - If you think that failure could have been avoided at compile time (or before synthesizing), please open an issue
+- _"Wouldn't it be better if synth / another method was async?"_
+  - Maybe? But keeping everything except for `deploy` synchronous is easiest for now.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;

@@ -428,6 +428,8 @@ impl CustomPermission {
     }
 }
 
+// TODO add SecretsManager permissions
+//  add AppConfig permissions
 pub enum Permission<'a> {
     DynamoDBRead(&'a TableRef),
     DynamoDBReadWrite(&'a TableRef),

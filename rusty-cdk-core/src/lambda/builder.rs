@@ -63,6 +63,7 @@ pub struct Zip {
 }
 
 impl Zip {
+    // TODO does it make more sense to accept a ref?
     pub fn new(bucket: Bucket, file: ZipFile) -> Self {
         Zip {
             bucket: bucket.0,
