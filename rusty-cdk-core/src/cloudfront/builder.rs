@@ -1,7 +1,7 @@
 use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
 use crate::iam::Principal::Service;
 use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
-use crate::intrinsic_functions::{get_att, get_ref, join};
+use crate::intrinsic_functions::{get_att, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketPolicyBuilder;
 use crate::s3::BucketRef;
 use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
@@ -980,7 +980,7 @@ impl DistributionBuilder<DistributionOriginState> {
                     "",
                     vec![
                         Value::String("arn:aws:cloudfront::".to_string()),
-                        get_ref("AWS::AccountId"),
+                        get_ref(AWS_ACCOUNT_PSEUDO_PARAM),
                         Value::String(":distribution/".to_string()),
                         distro_id,
                     ],

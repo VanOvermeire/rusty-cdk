@@ -1,5 +1,5 @@
 use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
-use crate::intrinsic_functions::{get_arn, get_ref, join};
+use crate::intrinsic_functions::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM, AWS_PARTITION_PSEUDO_PARAM, AWS_REGION_PSEUDO_PARAM};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::http::HttpMethod;
 use crate::shared::Id;
@@ -146,11 +146,11 @@ impl ApiGatewayV2Builder {
                     "",
                     vec![
                         Value::String("arn:".to_string()),
-                        get_ref("AWS::Partition"),
+                        get_ref(AWS_PARTITION_PSEUDO_PARAM),
                         Value::String(":execute-api:".to_string()),
-                        get_ref("AWS::Region"),
+                        get_ref(AWS_REGION_PSEUDO_PARAM),
                         Value::String(":".to_string()),
-                        get_ref("AWS::AccountId"),
+                        get_ref(AWS_ACCOUNT_PSEUDO_PARAM),
                         Value::String(":".to_string()),
                         get_ref(&api_resource_id),
                         Value::String(format!("*/*{}", info.path)),

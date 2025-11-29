@@ -1,0 +1,166 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "app": "[AppConfigApp]",
+    "cp": "[ConfigurationProfile]",
+    "ds": "[DeploymentStrategy]",
+    "env": "[Environment]",
+    "fun": "[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]"
+  },
+  "Resources": {
+    "[AppConfigApp]": {
+      "Properties": {
+        "Name": "my-application"
+      },
+      "Type": "AWS::AppConfig::Application"
+    },
+    "[ConfigurationProfile]": {
+      "Properties": {
+        "ApplicationId": {
+          "Ref": "[AppConfigApp]"
+        },
+        "LocationUri": "hosted",
+        "Name": "config-profile"
+      },
+      "Type": "AWS::AppConfig::ConfigurationProfile"
+    },
+    "[DeploymentStrategy]": {
+      "Properties": {
+        "DeploymentDurationInMinutes": 0,
+        "GrowthFactor": 100,
+        "Name": "instant",
+        "ReplicateTo": "NONE"
+      },
+      "Type": "AWS::AppConfig::DeploymentStrategy"
+    },
+    "[Environment]": {
+      "Properties": {
+        "ApplicationId": {
+          "Ref": "[AppConfigApp]"
+        },
+        "Name": "prod"
+      },
+      "Type": "AWS::AppConfig::Environment"
+    },
+    "[LambdaFunction]": {
+      "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
+        "Code": {
+          "S3Bucket": "some-bucket",
+          "S3Key": "[Asset]"
+        },
+        "Environment": {
+          "Variables": {
+            "APPCONFIG_APPLICATION_ID": {
+              "Ref": "[AppConfigApp]"
+            }
+          }
+        },
+        "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "[LogGroup]"
+          }
+        },
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "[LambdaFunctionRole]",
+            "Arn"
+          ]
+        },
+        "Runtime": "provided.al2023",
+        "Timeout": 30
+      },
+      "Type": "AWS::Lambda::Function"
+    },
+    "[LambdaFunctionRole]": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "appconfig:StartConfigurationSession",
+                    "appconfig:GetLatestConfiguration"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:appconfig:*:",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":application/",
+                          {
+                            "Ref": "[AppConfigApp]"
+                          },
+                          "/environment/",
+                          {
+                            "Ref": "[Environment]"
+                          },
+                          "/configuration/",
+                          {
+                            "Ref": "[ConfigurationProfile]"
+                          }
+                        ]
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "[AppConfigApp]Read"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "[LogGroup]": {
+      "Properties": {
+        "RetentionInDays": 731
+      },
+      "Type": "AWS::Logs::LogGroup"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 use crate::dynamodb::TableRef;
 use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, ServicePrincipal, Statement};
-use crate::intrinsic_functions::{get_arn, join};
+use crate::intrinsic_functions::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;
@@ -9,6 +9,8 @@ use crate::wrappers::IamAction;
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
+use crate::appconfig::{ApplicationRef, ConfigurationProfileRef, EnvironmentRef};
+use crate::secretsmanager::SecretRef;
 use crate::type_state;
 
 type_state!(
@@ -238,6 +240,8 @@ pub struct PolicyBuilder {
 }
 
 impl PolicyBuilder {
+    // TODO policy name characters consisting of upper and lowercase alphanumeric characters with no spaces + any of the following characters: _+=,.@-
+    //  1 - 128 chars
     pub fn new<T: Into<String>>(policy_name: T, policy_document: PolicyDocument) -> Self {
         PolicyBuilder {
             policy_name: policy_name.into(),
@@ -428,11 +432,11 @@ impl CustomPermission {
     }
 }
 
-// TODO add SecretsManager permissions
-//  add AppConfig permissions
 pub enum Permission<'a> {
+    AppConfigRead(&'a ApplicationRef, &'a EnvironmentRef, &'a ConfigurationProfileRef),
     DynamoDBRead(&'a TableRef),
     DynamoDBReadWrite(&'a TableRef),
+    SecretsManagerRead(&'a SecretRef),
     SqsRead(&'a QueueRef),
     S3ReadWrite(&'a BucketRef),
     Custom(CustomPermission),
@@ -523,6 +527,39 @@ impl Permission<'_> {
 
                 let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]).build();
                 PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
+            }
+            Permission::SecretsManagerRead(secret) => {
+                let id = secret.get_resource_id();
+                let statement = StatementBuilder::internal_new(vec!["secretsmanager:GetSecretValue".to_string()], Effect::Allow)
+                    .resources(vec![secret.get_ref()])
+                    .build();
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
+                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+            }
+            Permission::AppConfigRead(app, env, profile) => {
+                let id = app.get_resource_id();
+                let resource = join(
+                    "",
+                    vec![
+                        Value::String("arn:aws:appconfig:*:".to_string()),
+                        get_ref(AWS_ACCOUNT_PSEUDO_PARAM),
+                        Value::String(":application/".to_string()),
+                        app.get_ref(),
+                        Value::String("/environment/".to_string()),
+                        env.get_ref(),
+                        Value::String("/configuration/".to_string()),
+                        profile.get_ref(),
+                    ],
+                );
+                
+                let statement = StatementBuilder::internal_new(vec![
+                    "appconfig:StartConfigurationSession".to_string(),
+                    "appconfig:GetLatestConfiguration".to_string(),
+                ], Effect::Allow)
+                    .resources(vec![resource])
+                    .build();
+                let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
+                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
             }
             Permission::Custom(CustomPermission { id, statement }) => {
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();

@@ -1,5 +1,5 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services, RoleRef};
-use crate::intrinsic_functions::{get_arn, get_ref, join};
+use crate::intrinsic_functions::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig, FunctionRef, PermissionRef};
 use crate::sqs::{QueueRef};
 use crate::stack::{Asset, Resource, StackBuilder};
@@ -63,7 +63,6 @@ pub struct Zip {
 }
 
 impl Zip {
-    // TODO does it make more sense to accept a ref?
     pub fn new(bucket: Bucket, file: ZipFile) -> Self {
         Zip {
             bucket: bucket.0,
@@ -227,7 +226,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
             .build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]).build();
-        let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref("AWS::Partition"), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
+        let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref(AWS_PARTITION_PSEUDO_PARAM), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
         let potentially_missing = find_missing_services(&self.aws_services_in_dependencies, &self.additional_policies);
         let props = RolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
         

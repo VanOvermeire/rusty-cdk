@@ -423,6 +423,46 @@ fn appconfig() {
     });
 }
 
+#[test]
+fn appconfig_with_lambda() {
+    let mut stack_builder = StackBuilder::new();
+    let app_config = ApplicationBuilder::new("app", app_config_name!("my-application")).build(&mut stack_builder);
+    let env = EnvironmentBuilder::new("env", app_config_name!("prod"), &app_config).build(&mut stack_builder);
+    let profile = ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted")).build(&mut stack_builder);
+    DeploymentStrategyBuilder::new("ds", app_config_name!("instant"), deployment_duration_in_minutes!(0), growth_factor!(100), ReplicateTo::None).build(&mut stack_builder);
+    let bucket = get_bucket();
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+        .permissions(Permission::AppConfigRead(&app_config, &env, &profile))
+        .zip(Zip::new(bucket, zip_file))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .env_var(
+            env_var_key!("APPCONFIG_APPLICATION_ID"),
+            app_config.get_ref(),
+        )
+        .build(&mut stack_builder);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"AppConfigApp[0-9]+", "[AppConfigApp]"),
+            (r"ConfigurationProfile[0-9]+", "[ConfigurationProfile]"),
+            (r"DeploymentStrategy[0-9]+", "[DeploymentStrategy]"),
+            (r"Environment[0-9]+", "[Environment]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
 fn get_bucket() -> Bucket {
     // not interested in testing the bucket macro here, so use the wrapper directly
     // if you want safety, you should use the bucket macro instead
