@@ -1,6 +1,6 @@
 use crate::dynamodb::TableRef;
 use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, ServicePrincipal, Statement};
-use crate::intrinsic_functions::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
+use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;

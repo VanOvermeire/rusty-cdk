@@ -1,5 +1,5 @@
 use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services, RoleRef};
-use crate::intrinsic_functions::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
+use crate::intrinsic::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
 use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig, FunctionRef, PermissionRef};
 use crate::sqs::{QueueRef};
 use crate::stack::{Asset, Resource, StackBuilder};

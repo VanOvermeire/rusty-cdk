@@ -37,17 +37,17 @@ macro_rules! ref_struct {
         
             #[allow(dead_code)]
             pub fn get_ref(&self) -> Value {
-                $crate::intrinsic_functions::get_ref(self.get_resource_id())
+                $crate::intrinsic::get_ref(self.get_resource_id())
             }
             
             #[allow(dead_code)]
             pub fn get_arn(&self) -> Value {
-                $crate::intrinsic_functions::get_arn(self.get_resource_id())
+                $crate::intrinsic::get_arn(self.get_resource_id())
             }
             
             #[allow(dead_code)]
             pub fn get_att(&self, id: &str) -> Value {
-                $crate::intrinsic_functions::get_att(self.get_resource_id(), id)
+                $crate::intrinsic::get_att(self.get_resource_id(), id)
             }
         }
     };

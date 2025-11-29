@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use crate::intrinsic_functions::{get_arn, get_ref};
+use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
 use crate::sns::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};

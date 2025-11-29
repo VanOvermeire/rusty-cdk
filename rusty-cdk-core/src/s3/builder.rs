@@ -1,5 +1,5 @@
 use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
-use crate::intrinsic_functions::join;
+use crate::intrinsic::join;
 use crate::s3::dto;
 use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,

@@ -13,6 +13,6 @@ pub mod cloudfront;
 pub mod appconfig;
 pub mod shared;
 
-mod intrinsic_functions;
+mod intrinsic;
 
 
