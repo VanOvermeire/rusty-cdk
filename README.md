@@ -220,6 +220,8 @@ Based on rg `^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /
   - If you think that failure could have been avoided at compile time (or before synthesizing), please open an issue
 - _"Wouldn't it be better if synth / another method was async?"_
   - Maybe? But keeping everything except for `deploy` synchronous is easiest for now.
+- _"Won't this library always be behind on the latest additions/changes to AWS?"_
+  - Sadly, yes. But for a long time that was the case with CloudFormation as well. And sometimes you have to wait for months or a few years before L2-3 constructs arrive in the AWS CDK.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;

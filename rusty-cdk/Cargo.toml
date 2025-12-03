@@ -3,6 +3,12 @@ name = "rusty-cdk"
 version = "0.1.0"
 edition = "2024"
 
+description = "A safer alternative to the AWS CDK"
+license = "MIT"
+homepage = "https://github.com/VanOvermeire/rusty-cdk"
+repository = "https://github.com/VanOvermeire/rusty-cdk"
+keywords = ["AWS", "CDK", "CloudFormation", "IAC"]
+
 [dependencies]
 rusty-cdk-core = { version = "0.1.0", path = "../rusty-cdk-core" }
 rusty-cdk-macros = { version = "0.1.0", path = "../rusty-cdk-macros" }
