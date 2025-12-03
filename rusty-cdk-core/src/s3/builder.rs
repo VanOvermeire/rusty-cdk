@@ -689,6 +689,12 @@ pub struct LifecycleConfigurationBuilder {
     transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>,
 }
 
+impl Default for LifecycleConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LifecycleConfigurationBuilder {
     pub fn new() -> Self {
         Self {

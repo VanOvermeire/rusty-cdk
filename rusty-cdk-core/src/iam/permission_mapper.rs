@@ -37,8 +37,8 @@ fn map_string_of_tom_dependencies_to_aws_services(file_content: &str) -> Vec<Str
         .filter(|v| v.contains("aws-sdk"))
         .map(|v| {
             let dependency_and_version: Vec<_> = v.split("=").collect();
-            let dependency_without_aws_sdk_prefix = dependency_and_version[0].trim().replace("aws-sdk-", "");
-            dependency_without_aws_sdk_prefix
+            
+            dependency_and_version[0].trim().replace("aws-sdk-", "")
         })
         .filter(|v| services.contains(&v.as_str()))
         .collect()

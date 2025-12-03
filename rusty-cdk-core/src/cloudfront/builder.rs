@@ -71,6 +71,12 @@ pub struct ViewerCertificateBuilder<T: ViewerCertificateState> {
     ssl_support_method: Option<String>,
 }
 
+impl Default for ViewerCertificateBuilder<ViewerCertificateStateStartState> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ViewerCertificateBuilder<ViewerCertificateStateStartState> {
     pub fn new() -> ViewerCertificateBuilder<ViewerCertificateStateStartState> {
         ViewerCertificateBuilder {

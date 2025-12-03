@@ -295,11 +295,10 @@ impl QueueBuilder<FifoState> {
     ///
     /// Automatically appends the required ".fifo" suffix to the queue name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> QueueRef {
-        if let Some(ref name) = self.queue_name {
-            if !name.ends_with(FIFO_SUFFIX) {
+        if let Some(ref name) = self.queue_name
+            && !name.ends_with(FIFO_SUFFIX) {
                 self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
-        }
         self.build_internal(true, stack_builder)
     }
 }

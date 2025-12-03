@@ -232,11 +232,10 @@ impl TopicBuilder<FifoState> {
     ///
     /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
-        if let Some(ref name) = self.topic_name {
-            if !name.ends_with(FIFO_SUFFIX) {
+        if let Some(ref name) = self.topic_name
+            && !name.ends_with(FIFO_SUFFIX) {
                 self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
-        }
         self.build_internal(true, stack_builder)
     }
 }
@@ -274,11 +273,10 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
     /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     /// Creates Lambda permissions for all subscriptions.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
-        if let Some(ref name) = self.topic_name {
-            if !name.ends_with(FIFO_SUFFIX) {
+        if let Some(ref name) = self.topic_name
+            && !name.ends_with(FIFO_SUFFIX) {
                 self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
-        }
         self.build_internal(true, stack_builder)
     }
 }

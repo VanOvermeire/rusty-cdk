@@ -43,6 +43,12 @@ pub struct PrincipalBuilder<T: PrincipalState> {
     normal: Option<String>
 }
 
+impl Default for PrincipalBuilder<StartState> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrincipalBuilder<StartState> {
     pub fn new() -> PrincipalBuilder<StartState> {
         PrincipalBuilder {
