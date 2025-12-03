@@ -1,16 +1,12 @@
-use std::marker::PhantomData;
-use serde_json::Value;
 use crate::secretsmanager::{GenerateSecretString, Secret, SecretProperties, SecretRef};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::StringForSecret;
+use serde_json::Value;
+use std::marker::PhantomData;
 
-type_state!(
-    SecretBuilderState,
-    StartState,
-    SelectedSecretTypeState,
-);
+type_state!(SecretBuilderState, StartState, SelectedSecretTypeState,);
 
 /// Builder for AWS Secrets Manager secrets.
 ///
@@ -108,7 +104,7 @@ impl SecretBuilder<StartState> {
 impl SecretBuilder<SelectedSecretTypeState> {
     pub fn build(self, stack_builder: &mut StackBuilder) -> SecretRef {
         let resource_id = Resource::generate_id("SecretsManagerSecret");
-        
+
         stack_builder.add_resource(Secret {
             id: self.id,
             resource_id: resource_id.to_string(),
@@ -120,7 +116,7 @@ impl SecretBuilder<SelectedSecretTypeState> {
                 secret_string: self.secret_string,
             },
         });
-        
+
         SecretRef::new(resource_id)
     }
 }
@@ -166,6 +162,12 @@ impl<T: GenerateSecretStringBuilderState> GenerateSecretStringBuilder<T> {
     }
 }
 
+impl Default for GenerateSecretStringBuilder<GenerateStringStartState> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GenerateSecretStringBuilder<GenerateStringStartState> {
     pub fn new() -> Self {
         Self {
@@ -182,7 +184,7 @@ impl GenerateSecretStringBuilder<GenerateStringStartState> {
             secret_string_template: None,
         }
     }
-    
+
     pub fn exclude_characters(self, exclude_characters: Vec<char>) -> Self {
         Self {
             exclude_characters: Some(exclude_characters),
@@ -209,28 +211,28 @@ impl GenerateSecretStringBuilder<GenerateStringStartState> {
             ..self
         }
     }
-    
+
     pub fn exclude_uppercase(self, exclude_uppercase: bool) -> Self {
         Self {
             exclude_uppercase: Some(exclude_uppercase),
             ..self
         }
     }
-    
+
     pub fn include_space(self, include_space: bool) -> Self {
         Self {
             include_space: Some(include_space),
             ..self
         }
     }
-    
+
     pub fn password_length(self, password_length: u32) -> Self {
         Self {
             password_length: Some(password_length),
             ..self
         }
     }
-    
+
     pub fn require_each_included_type(self, require_each_included_type: bool) -> Self {
         Self {
             require_each_included_type: Some(require_each_included_type),

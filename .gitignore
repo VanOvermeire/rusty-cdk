@@ -1,5 +1,6 @@
 /target
 .idea
+time
 cdk
 output
 Cargo.lock

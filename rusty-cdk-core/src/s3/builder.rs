@@ -382,12 +382,19 @@ impl BucketBuilder<WebsiteState> {
 }
 
 /// Builder for S3 CORS configuration.
-pub struct CorsConfigurationBuilder {}
+pub struct CorsConfigurationBuilder {
+    rules: Vec<CorsRule>
+}
 
 impl CorsConfigurationBuilder {
-    /// Creates a CORS configuration from a list of CORS rules.
-    pub fn new(cors_rules: Vec<CorsRule>) -> CorsConfiguration {
-        CorsConfiguration { cors_rules }
+    pub fn new(rules: Vec<CorsRule>) -> CorsConfigurationBuilder {
+        CorsConfigurationBuilder { rules }
+    }
+    
+    pub fn build(self) -> CorsConfiguration {
+        CorsConfiguration {
+            cors_rules: self.rules,
+        }
     }
 }
 
