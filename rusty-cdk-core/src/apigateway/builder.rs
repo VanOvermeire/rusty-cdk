@@ -11,6 +11,8 @@ use crate::wrappers::LambdaPermissionAction;
 // most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
 // auth also still to do
 
+// TODO api keys (and should check existence of the key? and actually value also has to be unique, but is it ok to test that?)
+
 struct RouteInfo {
     lambda_id: Id,
     path: String,
