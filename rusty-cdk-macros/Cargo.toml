@@ -2,6 +2,11 @@
 name = "rusty-cdk-macros"
 version = "0.1.0"
 edition = "2024"
+description = "Macros of the rusty-cdk"
+license = "MIT"
+homepage = "https://github.com/VanOvermeire/rusty-cdk"
+repository = "https://github.com/VanOvermeire/rusty-cdk"
+keywords = ["AWS", "CDK", "CloudFormation", "IAC"]
 
 [lib]
 proc-macro = true
