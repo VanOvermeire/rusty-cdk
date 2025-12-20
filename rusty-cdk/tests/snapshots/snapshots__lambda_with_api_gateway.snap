@@ -17,6 +17,7 @@ expression: synthesized
     "[HttpApiGateway]": {
       "Properties": {
         "DisableExecuteApiEndpoint": true,
+        "Name": "exampleGW",
         "ProtocolType": "HTTP"
       },
       "Type": "AWS::ApiGatewayV2::Api"

@@ -36,7 +36,7 @@ async fn main() {
         .check_permissions_against_dependencies(toml_file!("./examples/apigateway_lambda_dynamodb/files/Cargo.toml"))
         .build(&mut stack_builder);
  
-    ApiGatewayV2Builder::new("myAGW")
+    ApiGatewayV2Builder::new("myAGW", "exampleGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);

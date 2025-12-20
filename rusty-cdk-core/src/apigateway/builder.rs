@@ -38,8 +38,7 @@ struct RouteInfo {
 ///
 /// let function = unimplemented!("create a function");
 ///
-/// let (api, stage) = ApiGatewayV2Builder::new("my-api")
-///     .name("MyHttpApi")
+/// let (api, stage) = ApiGatewayV2Builder::new("my-api", "MyHttpApi")
 ///     .add_route_lambda("/hello", HttpMethod::Get, &function)
 ///     .add_route_lambda("/world", HttpMethod::Post, &function)
 ///     .build(&mut stack_builder);
@@ -57,21 +56,14 @@ impl ApiGatewayV2Builder {
     ///
     /// # Arguments
     /// * `id` - Unique identifier for the API Gateway
-    pub fn new(id: &str) -> Self {
+    /// * `name` - Name of the API Gateway
+    pub fn new<T: Into<String>>(id: &str, name: T) -> Self {
         Self {
             id: Id(id.to_string()),
-            name: None,
+            name: Some(name.into()), // TODO name is required when not OpenAPI (so currently always)
             disable_execute_api_endpoint: None,
             cors_configuration: None,
             route_info: vec![],
-        }
-    }
-
-    // TODO required when no OpenAPI body! -> so add to new for now
-    pub fn name<T: Into<String>>(self, name: T) -> Self {
-        Self {
-            name: Some(name.into()),
-            ..self
         }
     }
 

@@ -270,7 +270,7 @@ fn lambda_with_api_gateway() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
-    ApiGatewayV2Builder::new("AGW")
+    ApiGatewayV2Builder::new("AGW", "exampleGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);
@@ -521,7 +521,7 @@ fn api_gateway_and_existing_lambdas_keeps_ids() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
-    ApiGatewayV2Builder::new("myAGW")
+    ApiGatewayV2Builder::new("myAGW", "exampleGW")
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);
