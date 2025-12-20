@@ -1,7 +1,7 @@
 error[E0599]: no method named `content_based_deduplication` found for struct `QueueBuilder<StandardState>` in the current scope
   --> tests/fails/no_content_based_dedup_for_standard_queue.rs:12:10
    |
-9  |       QueueBuilder::new("myQueue")
+ 9 |       QueueBuilder::new("myQueue")
    |       ----------------------------
    |       |
    |  _____method `content_based_deduplication` is available on `QueueBuilder<rusty_cdk_core::sqs::StartState>`

@@ -105,7 +105,7 @@ impl Stack {
     /// This method converts the stack and all its resources into a JSON-formatted
     /// CloudFormation template that can be deployed to AWS using the AWS CLI, SDKs,
     /// or the AWS Console.
-    /// 
+    ///
     /// This method always created a 'fresh' template, and its ids might not match those of an earlier synthesis.
     /// Use `synth_for_existing` if you want to keep the existing resource ids.
     /// The deployment methods of this library (`deploy` and `deploy_with_result`) automatically check the resource ids when updating a stack.
@@ -150,23 +150,23 @@ impl Stack {
 
         Ok(naive_synth)
     }
-    
+
     // TODO proper error instead of string (also for normal synth above)
     // TODO add proper example
-    
+
     /// Synthesizes the stack into a CloudFormation template JSON string.
     ///
     /// This method converts the stack and all its resources into a JSON-formatted
     /// CloudFormation template that can be deployed to AWS using the AWS CLI, SDKs,
-    /// or the AWS Console. 
-    /// 
+    /// or the AWS Console.
+    ///
     /// It makes sure the resource ids match those of an existing stack.
     /// *This will only work if the existing stack was also created with this library.*
-    /// 
+    ///
     /// # Parameters
     ///
     /// * `existing_stack` - The existing stack, as a CloudFormation template JSON string
-    /// 
+    ///
     /// # Returns
     ///
     /// * `Ok(String)` - A JSON-formatted CloudFormation template string
@@ -186,15 +186,15 @@ impl Stack {
     ///     .build(&mut stack_builder);
     ///
     /// // Build the stack
-    /// let stack = stack_builder.build().unwrap();
-    /// 
+    /// let mut stack = stack_builder.build().unwrap();
+    ///
     /// // Retrieve the existing stack template
     /// let existing_stack_template = r#"{"Resources": { "LogGroup198814893": { "Type": "AWS::Logs::LogGroup", "Properties": { "RetentionInDays": 731 } } }, "Metadata": { "myFunLogGroup": "LogGroup198814893" } }"#;
     ///
     /// // Synthesize to a CloudFormation template respecting the existing ids
     /// let template_json = stack.synth_for_existing(existing_stack_template).unwrap();
     /// ```
-    /// 
+    ///
     /// # Usage with AWS Tools
     ///
     /// The synthesized template can be used with:

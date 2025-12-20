@@ -1,7 +1,7 @@
 error[E0599]: no method named `read_capacity` found for struct `TableBuilder<PayPerRequestState>` in the current scope
   --> tests/fails/no_read_capacity_for_pay_per_request.rs:11:10
    |
-9  |       TableBuilder::new("myTable", Key::new(key, AttributeType::String))
+ 9 |       TableBuilder::new("myTable", Key::new(key, AttributeType::String))
    |       ------------------------------------------------------------------
    |       |
    |  _____method `read_capacity` is available on `TableBuilder<rusty_cdk_core::dynamodb::StartState>`
