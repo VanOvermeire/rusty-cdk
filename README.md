@@ -3,7 +3,7 @@
 ***This is not an official AWS project.***
 
 Rather, it is an attempt to make Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
-Think of it as a safe wrapper around `unsafe` CloudFormation.
+Think of it as a safe wrapper around `unsafe` CloudFormation. Also see [this blog post](https://medium.com/@sam.van.overmeire/rusty-cdk-an-infrastructure-as-code-experiment-c10ed7804a2a).
 
 ## Usage
 
@@ -15,22 +15,36 @@ Now create a stack, and add infrastructure to it by using builders.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
+use rusty_cdk_core::wrappers::*;
+
+fn main() {
+  // prepare a stack builder
+  let mut stack_builder = StackBuilder::new();
+  // create resource builders, and call `build` to add the resulting resources to the stack
+  let stack = stack_builder.build().expect("this stack to build"); // create the stack
+  // now `synth` the template or use `deploy` to deploy the stack
+}
+```
+
+For example, a queue:
+
+```rust
+use rusty_cdk::stack::StackBuilder;
 use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::{delay_seconds,message_retention_period};
 
 fn main() {
-  // prepare a stack builder
   let mut stack_builder = StackBuilder::new();
-  // create a queue by calling its Builder
-  // the queue_ref can be used to reference the queue when other resources need it
+  // create a queue by calling its builder
+  // the queue_ref can be used to reference the queue in other resource builders
   let queue_ref = QueueBuilder::new("queue")
           .fifo_queue()
           .content_based_deduplication(true)
           .delay_seconds(delay_seconds!(30))
           .message_retention_period(message_retention_period!(600))
-          .build(&mut stack_builder); // ... and add it to the stack builder
-  let stack = stack_builder.build().expect("this stack to build"); // the stack has been created
+          .build(&mut stack_builder); // add it to the stack builder
+  let stack = stack_builder.build().expect("this stack to build");
 }
 ```
 
@@ -163,7 +177,7 @@ To be added at some point:
 
 ### Available builders
 
-Based on rg `^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
+Based on `rg ^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
 
 - ApiGatewayV2Builder
 - ApplicationBuilder

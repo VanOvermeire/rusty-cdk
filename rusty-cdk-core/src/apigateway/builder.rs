@@ -67,6 +67,7 @@ impl ApiGatewayV2Builder {
         }
     }
 
+    // TODO required when no OpenAPI body! -> so add to new for now
     pub fn name<T: Into<String>>(self, name: T) -> Self {
         Self {
             name: Some(name.into()),

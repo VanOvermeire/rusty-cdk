@@ -23,7 +23,8 @@ async fn main() {
         .build(&mut stack_builder);
 
     let bucket = bucket!("configuration-of-sam-van-overmeire");
-    let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip"); // this is an empty zip file, won't do anything useful
+    // this is an empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
+    let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip");
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
@@ -49,6 +50,6 @@ async fn main() {
     } else {
         let synthesized = stack.unwrap().synth().unwrap();
         println!("{}", synthesized);
-        // rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("ExampleWithGatewayLambdaAndDynamoDB"), stack.unwrap()).await;
+        // let deploy_result = rusty_cdk::deploy_with_result(string_with_only_alphanumerics_and_hyphens!("ExampleWithGatewayLambdaAndDynamoDB"), stack.unwrap()).await;
     }
 }

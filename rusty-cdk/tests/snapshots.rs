@@ -1,20 +1,30 @@
+use std::fs::read_to_string;
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
+use rusty_cdk_core::appconfig::{
+    ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo,
+};
+use rusty_cdk_core::cloudfront::{
+    CachePolicyBuilder, Cookies, DefaultCacheBehaviorBuilder, DistributionBuilder, Headers, OriginAccessControlBuilder,
+    OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol,
+    ViewerProtocolPolicy,
+};
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use rusty_cdk_core::s3::{
+    BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
+    LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder,
+};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
-use rusty_cdk_core::sns::{FifoThroughputScope, TopicBuilder, SubscriptionType};
+use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
 use rusty_cdk_core::sqs::QueueBuilder;
-use rusty_cdk_core::stack::{StackBuilder};
+use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
-use rusty_cdk_core::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo};
-use rusty_cdk_core::cloudfront::{CachePolicyBuilder, DistributionBuilder, OriginAccessControlBuilder, Cookies, DefaultCacheBehaviorBuilder, Headers, OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol, ViewerProtocolPolicy};
-use rusty_cdk_core::s3::{CorsConfigurationBuilder, CorsRuleBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder, BucketBuilder, Encryption};
 
 #[test]
 fn dynamodb() {
@@ -46,15 +56,19 @@ fn bucket() {
     let mut stack_builder = StackBuilder::new();
     BucketBuilder::new("bucket")
         .encryption(Encryption::S3Managed)
-        .lifecycle_configuration(LifecycleConfigurationBuilder::new()
-            .add_rule(LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
-                .prefix("/prefix")
-                .add_transition(LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
-                    .transition_in_days(lifecycle_transition_in_days!(30,"Glacier"))
-                    .build()
+        .lifecycle_configuration(
+            LifecycleConfigurationBuilder::new()
+                .add_rule(
+                    LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
+                        .prefix("/prefix")
+                        .add_transition(
+                            LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
+                                .transition_in_days(lifecycle_transition_in_days!(30, "Glacier"))
+                                .build(),
+                        )
+                        .build(),
                 )
-                .build())
-            .build()
+                .build(),
         )
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
@@ -75,7 +89,9 @@ fn website_bucket() {
     BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
-        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]))
+        .cors_config(CorsConfigurationBuilder::new(vec![
+            CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build(),
+        ]).build())
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -173,7 +189,9 @@ fn lambda_with_sns_subscription() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
-    TopicBuilder::new("topic").add_subscription(SubscriptionType::Lambda(&fun)).build(&mut stack_builder);
+    TopicBuilder::new("topic")
+        .add_subscription(SubscriptionType::Lambda(&fun))
+        .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
     let synthesized = stack.synth().unwrap();
@@ -207,11 +225,12 @@ fn lambda_with_secret_and_custom_permissions() {
     let mut template_for_string = Map::new();
     template_for_string.insert("user".to_string(), Value::String("me".to_string()));
     let secret = SecretBuilder::new("my-secret")
-        .generate_secret_string(GenerateSecretStringBuilder::new()
-            .exclude_punctuation(true)
-            .generate_string_key("password")
-            .secret_string_template(Value::Object(template_for_string))
-            .build()
+        .generate_secret_string(
+            GenerateSecretStringBuilder::new()
+                .exclude_punctuation(true)
+                .generate_string_key("password")
+                .secret_string_template(Value::Object(template_for_string))
+                .build(),
         )
         .build(&mut stack_builder);
     FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
@@ -279,7 +298,7 @@ fn lambda_with_api_gateway() {
 #[test]
 fn lambda_with_dynamodb() {
     let mut stack_builder = StackBuilder::new();
-    
+
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alphanumerics_and_underscores!("test");
@@ -321,7 +340,7 @@ fn lambda_with_dynamodb() {
 #[test]
 fn lambda_with_dynamodb_and_sqs() {
     let mut stack_builder = StackBuilder::new();
-    
+
     let read_capacity = non_zero_number!(1);
     let write_capacity = non_zero_number!(1);
     let key = string_with_only_alphanumerics_and_underscores!("test");
@@ -367,21 +386,35 @@ fn lambda_with_dynamodb_and_sqs() {
 #[test]
 fn cloudfront_with_s3_origin() {
     let mut stack_builder = StackBuilder::new();
-    let oac = OriginAccessControlBuilder::new("oac", "myoac", OriginAccessControlType::S3, SigningBehavior::Always, SigningProtocol::SigV4)
-        .build(&mut stack_builder);
+    let oac = OriginAccessControlBuilder::new(
+        "oac",
+        "myoac",
+        OriginAccessControlType::S3,
+        SigningBehavior::Always,
+        SigningProtocol::SigV4,
+    )
+    .build(&mut stack_builder);
     let bucket = BucketBuilder::new("bucket")
         .name(bucket_name!("sam-cloudfront-test"))
-        .public_access_block_configuration(PublicAccessBlockConfigurationBuilder::new().block_public_acls(false).block_public_acls(false).ignore_public_acls(false).restrict_public_buckets(false).build())
+        .public_access_block_configuration(
+            PublicAccessBlockConfigurationBuilder::new()
+                .block_public_acls(false)
+                .block_public_acls(false)
+                .ignore_public_acls(false)
+                .restrict_public_buckets(false)
+                .build(),
+        )
         .build(&mut stack_builder);
-    let params = ParametersInCacheKeyAndForwardedToOriginBuilder::new(false, Cookies::All, QueryString::All, Headers::Whitelist(vec!["authorization".to_string()]))
-        .build();
-    let pol = CachePolicyBuilder::new("policy", "unique-pol-name", 5, 0, 30, params)
-        .build(&mut stack_builder);
-    let origin = OriginBuilder::new("originId")
-        .s3_origin(&bucket, &oac, None)
-        .build();
-    let default_cache = DefaultCacheBehaviorBuilder::new(&origin, &pol, ViewerProtocolPolicy::RedirectToHttps)
-        .build();
+    let params = ParametersInCacheKeyAndForwardedToOriginBuilder::new(
+        false,
+        Cookies::All,
+        QueryString::All,
+        Headers::Whitelist(vec!["authorization".to_string()]),
+    )
+    .build();
+    let pol = CachePolicyBuilder::new("policy", "unique-pol-name", 5, 0, 30, params).build(&mut stack_builder);
+    let origin = OriginBuilder::new("originId").s3_origin(&bucket, &oac, None).build();
+    let default_cache = DefaultCacheBehaviorBuilder::new(&origin, &pol, ViewerProtocolPolicy::RedirectToHttps).build();
     DistributionBuilder::new("distro", default_cache)
         .origins(vec![origin])
         .build(&mut stack_builder);
@@ -406,8 +439,16 @@ fn appconfig() {
     let mut stack_builder = StackBuilder::new();
     let app_config = ApplicationBuilder::new("app", app_config_name!("my-application")).build(&mut stack_builder);
     EnvironmentBuilder::new("env", app_config_name!("prod"), &app_config).build(&mut stack_builder);
-    ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted")).build(&mut stack_builder);
-    DeploymentStrategyBuilder::new("ds", app_config_name!("instant"), deployment_duration_in_minutes!(0), growth_factor!(100), ReplicateTo::None).build(&mut stack_builder);
+    ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted"))
+        .build(&mut stack_builder);
+    DeploymentStrategyBuilder::new(
+        "ds",
+        app_config_name!("instant"),
+        deployment_duration_in_minutes!(0),
+        growth_factor!(100),
+        ReplicateTo::None,
+    )
+    .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
     let synthesized = stack.synth().unwrap();
@@ -428,8 +469,16 @@ fn appconfig_with_lambda() {
     let mut stack_builder = StackBuilder::new();
     let app_config = ApplicationBuilder::new("app", app_config_name!("my-application")).build(&mut stack_builder);
     let env = EnvironmentBuilder::new("env", app_config_name!("prod"), &app_config).build(&mut stack_builder);
-    let profile = ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted")).build(&mut stack_builder);
-    DeploymentStrategyBuilder::new("ds", app_config_name!("instant"), deployment_duration_in_minutes!(0), growth_factor!(100), ReplicateTo::None).build(&mut stack_builder);
+    let profile = ConfigurationProfileBuilder::new("cp", app_config_name!("config-profile"), &app_config, location_uri!("hosted"))
+        .build(&mut stack_builder);
+    DeploymentStrategyBuilder::new(
+        "ds",
+        app_config_name!("instant"),
+        deployment_duration_in_minutes!(0),
+        growth_factor!(100),
+        ReplicateTo::None,
+    )
+    .build(&mut stack_builder);
     let bucket = get_bucket();
     let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
     let memory = memory!(512);
@@ -439,10 +488,7 @@ fn appconfig_with_lambda() {
         .zip(Zip::new(bucket, zip_file))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
-        .env_var(
-            env_var_key!("APPCONFIG_APPLICATION_ID"),
-            app_config.get_ref(),
-        )
+        .env_var(env_var_key!("APPCONFIG_APPLICATION_ID"), app_config.get_ref())
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -458,6 +504,40 @@ fn appconfig_with_lambda() {
             (r"ConfigurationProfile[0-9]+", "[ConfigurationProfile]"),
             (r"DeploymentStrategy[0-9]+", "[DeploymentStrategy]"),
             (r"Environment[0-9]+", "[Environment]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn api_gateway_and_existing_lambdas_keeps_ids() {
+    let mut stack_builder = StackBuilder::new();
+    let bucket = get_bucket();
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+        .zip(Zip::new(bucket, zip_file))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .build(&mut stack_builder);
+    ApiGatewayV2Builder::new("myAGW")
+        .disable_execute_api_endpoint(true)
+        .add_route_lambda("/books", HttpMethod::Get, &fun)
+        .build(&mut stack_builder);
+    let mut stack = stack_builder.build().unwrap();
+
+    let existing = read_to_string("./tests/existing_stack.json").expect("example JSON to be present");
+    let synthesized = stack.synth_for_existing(&existing).unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"HttpApiStage[0-9]+", "[HttpApiStage]"),
+            (r"HttpApiRoute[0-9]+", "[HttpApiRoute]"),
+            (r"HttpApiIntegration[0-9]+", "[HttpApiIntegration]"),
+            (r"HttpApiGateway[0-9]+", "[HttpApiGateway]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

@@ -1,0 +1,171 @@
+{
+  "Resources": {
+    "LambdaPermission87509426": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "LambdaFunction980704468",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApiGateway808595565"
+              },
+              "*/*/books"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiStage3842331154": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApiGateway808595565"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true
+      }
+    },
+    "HttpApiIntegration2283655026": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApiGateway808595565"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "LambdaFunction980704468",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "LambdaFunction980704468": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "configuration-of-sam-van-overmeire",
+          "S3Key": "Asset1854283476.zip"
+        },
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Architectures": [
+          "arm64"
+        ],
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaFunctionRole1001400925",
+            "Arn"
+          ]
+        },
+        "Runtime": "provided.al2023",
+        "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "LogGroup2215447583"
+          }
+        }
+      }
+    },
+    "HttpApiGateway808595565": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "ProtocolType": "HTTP",
+        "DisableExecuteApiEndpoint": true
+      }
+    },
+    "LambdaFunctionRole1001400925": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Policies": []
+      }
+    },
+    "HttpApiRoute277075941": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApiGateway808595565"
+        },
+        "RouteKey": "GET /books",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "HttpApiIntegration2283655026"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "LogGroup2215447583": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 731
+      }
+    }
+  },
+  "Metadata": {
+    "myAGWStage": "HttpApiStage3842331154",
+    "myFunRole": "LambdaFunctionRole1001400925",
+    "myAGWIntegration": "HttpApiIntegration2283655026",
+    "myAGW": "HttpApiGateway808595565",
+    "myAGWmyFun": "HttpApiRoute277075941",
+    "myFunLogGroup": "LogGroup2215447583",
+    "myFun": "LambdaFunction980704468",
+    "myAGWPermission": "LambdaPermission87509426"
+  }
+}

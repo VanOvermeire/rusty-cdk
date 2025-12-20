@@ -42,7 +42,8 @@ async fn main() {
     // (used by claude because it could not guess what buckets are in my account, causing the macro to fail)
     let bucket = Bucket("configuration-of-sam-van-overmeire".to_string());
 
-    let secret_lambda_zip = zip_file!("./examples/app_config_and_secrets_with_two_lambdas/files/empty.zip"); // this is an empty zip file, and won't do anything useful
+    // this is an empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
+    let secret_lambda_zip = zip_file!("./examples/app_config_and_secrets_with_two_lambdas/files/empty.zip");
     let secret_lambda_memory = memory!(512);
     let secret_lambda_timeout = timeout!(30);
 
@@ -62,7 +63,8 @@ async fn main() {
         .permissions(Permission::SecretsManagerRead(&secret))
         .build(&mut stack_builder);
 
-    let appconfig_lambda_zip = zip_file!("./examples/app_config_and_secrets_with_two_lambdas/files/empty.zip"); // the same empty zip file; won't do anything useful
+    // this is the same empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
+    let appconfig_lambda_zip = zip_file!("./examples/app_config_and_secrets_with_two_lambdas/files/empty.zip");
     let appconfig_lambda_memory = memory!(512);
     let appconfig_lambda_timeout = timeout!(30);
 

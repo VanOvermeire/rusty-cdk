@@ -9,8 +9,9 @@ use crate::shared::Id;
 use crate::sns::{Subscription, Topic};
 use crate::sqs::Queue;
 use rand::Rng;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 
@@ -19,6 +20,12 @@ pub struct Asset {
     pub s3_bucket: String,
     pub s3_key: String,
     pub path: String,
+}
+
+impl Display for Asset {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("Asset at path {} for bucket {} and key {}", self.path, self.s3_bucket, self.s3_key))
+    }
 }
 
 /// Represents a CloudFormation stack containing AWS resources and their configurations.
@@ -72,6 +79,12 @@ pub struct Stack {
     pub(crate) metadata: HashMap<String, String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct StackOnlyMetadata {
+    #[serde(rename = "Metadata")]
+    pub(crate) metadata: HashMap<String, String>,
+}
+
 impl Stack {
     pub fn get_tags(&self) -> Vec<(String, String)> {
         self.tags.clone()
@@ -87,11 +100,15 @@ impl Stack {
             .collect()
     }
 
-    /// Synthesizes the stack into a CloudFormation template JSON string.
+    /// Synthesizes the stack into a new CloudFormation template JSON string.
     ///
     /// This method converts the stack and all its resources into a JSON-formatted
     /// CloudFormation template that can be deployed to AWS using the AWS CLI, SDKs,
     /// or the AWS Console.
+    /// 
+    /// This method always created a 'fresh' template, and its ids might not match those of an earlier synthesis.
+    /// Use `synth_for_existing` if you want to keep the existing resource ids.
+    /// The deployment methods of this library (`deploy` and `deploy_with_result`) automatically check the resource ids when updating a stack.
     ///
     /// # Returns
     ///
@@ -114,7 +131,7 @@ impl Stack {
     /// // Build the stack
     /// let stack = stack_builder.build().unwrap();
     ///
-    /// // Synthesize to CloudFormation template
+    /// // Synthesize to a 'fresh' CloudFormation template
     /// let template_json = stack.synth().unwrap();
     /// ```
     ///
@@ -133,8 +150,66 @@ impl Stack {
 
         Ok(naive_synth)
     }
+    
+    // TODO proper error instead of string (also for normal synth above)
+    // TODO add proper example
+    
+    /// Synthesizes the stack into a CloudFormation template JSON string.
+    ///
+    /// This method converts the stack and all its resources into a JSON-formatted
+    /// CloudFormation template that can be deployed to AWS using the AWS CLI, SDKs,
+    /// or the AWS Console. 
+    /// 
+    /// It makes sure the resource ids match those of an existing stack.
+    /// *This will only work if the existing stack was also created with this library.*
+    /// 
+    /// # Parameters
+    ///
+    /// * `existing_stack` - The existing stack, as a CloudFormation template JSON string
+    /// 
+    /// # Returns
+    ///
+    /// * `Ok(String)` - A JSON-formatted CloudFormation template string
+    /// * `Err(String)` - An error message if serialization fails
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rusty_cdk_core::stack::StackBuilder;
+    /// use rusty_cdk_core::sqs::QueueBuilder;
+    ///
+    /// let mut stack_builder = StackBuilder::new();
+    ///
+    /// // Add resources to the stack
+    /// QueueBuilder::new("my-queue")
+    ///     .standard_queue()
+    ///     .build(&mut stack_builder);
+    ///
+    /// // Build the stack
+    /// let stack = stack_builder.build().unwrap();
+    /// 
+    /// // Retrieve the existing stack template
+    /// let existing_stack_template = r#"{"Resources": { "LogGroup198814893": { "Type": "AWS::Logs::LogGroup", "Properties": { "RetentionInDays": 731 } } }, "Metadata": { "myFunLogGroup": "LogGroup198814893" } }"#;
+    ///
+    /// // Synthesize to a CloudFormation template respecting the existing ids
+    /// let template_json = stack.synth_for_existing(existing_stack_template).unwrap();
+    /// ```
+    /// 
+    /// # Usage with AWS Tools
+    ///
+    /// The synthesized template can be used with:
+    /// - AWS CLI: `aws cloudformation create-stack --template-body file://template.json`
+    /// - AWS SDKs: Pass the template string to the CloudFormation client
+    /// - AWS Console: Upload the template file directly
+    pub fn synth_for_existing(&mut self, existing_stack: &str) -> Result<String, String> {
+        let meta: StackOnlyMetadata = serde_json::from_str(existing_stack).map_err(|_| {
+            "Could not retrieve resource info from existing stack".to_string()
+        })?;
+        self.update_resource_ids_for_existing_stack(meta.metadata);
+        self.synth()
+    }
 
-    pub fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
+    fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
         let current_ids: HashMap<String, String> = self
             .resources
             .iter()
