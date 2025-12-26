@@ -203,4 +203,6 @@ pub struct LambdaPermissionProperties {
     pub(super) principal: String,
     #[serde(rename = "SourceArn", skip_serializing_if = "Option::is_none")]
     pub(super) source_arn: Option<Value>,
+    #[serde(rename = "SourceAccount", skip_serializing_if = "Option::is_none")]
+    pub(super) source_account: Option<Value>,
 }

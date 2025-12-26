@@ -13,10 +13,7 @@ use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::s3::{
-    BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
-    LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder,
-};
+use rusty_cdk_core::s3::{BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, PublicAccessBlockConfigurationBuilder};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
@@ -25,8 +22,6 @@ use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
-
-// TODO lambda with inline code test
 
 #[test]
 fn dynamodb() {
@@ -544,6 +539,67 @@ fn api_gateway_and_existing_lambdas_keeps_ids() {
             insta::assert_json_snapshot!(synthesized);
     });
 }
+
+#[test]
+fn lambda_with_inline_code() {
+    let mut stack_builder = StackBuilder::new();
+
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+        .code(Code::Inline("module.exports.handler = async (e) => { console.log(e) };".to_string()))
+        .handler("index.handler")
+        .runtime(Runtime::NodeJs22)
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+// TODO
+// #[test]
+// fn bucket_with_notifications_to_sns() {
+//     let mut stack_builder = StackBuilder::new();
+// 
+//     let memory = memory!(512);
+//     let timeout = timeout!(30);
+//     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+//         .code(Code::Inline("module.exports.handler = async (e) => { console.log(e) };".to_string()))
+//         .handler("index.handler")
+//         .runtime(Runtime::NodeJs22)
+//         .build(&mut stack_builder);
+// 
+//     BucketBuilder::new("someBuck")
+//         .add_bucket_notification(NotificationDestination::Lambda(&fun))
+//         .build(&mut stack_builder);
+// 
+//     let stack = stack_builder.build().unwrap();
+// 
+//     let synthesized = stack.synth().unwrap();
+//     let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+// 
+//     insta::with_settings!({filters => vec![
+//             (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+//             (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+//             (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+//             (r"LogGroup[0-9]+", "[LogGroup]"),
+//             (r"S3Bucket[0-9]+", "[S3Bucket]"),
+//             (r"BucketNotification[0-9]+", "[BucketNotification]"),
+//         ]},{
+//             insta::assert_json_snapshot!(synthesized);
+//     });
+// }
 
 fn get_bucket() -> Bucket {
     // not interested in testing the bucket macro here, so use the wrapper directly

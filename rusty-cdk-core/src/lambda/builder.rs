@@ -1,21 +1,30 @@
-use crate::iam::{AssumeRolePolicyDocumentBuilder, Effect, RoleBuilder, RolePropertiesBuilder, Permission as IamPermission, Policy, StatementBuilder, PrincipalBuilder, map_toml_dependencies_to_services, find_missing_services, RoleRef};
+use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
+use crate::iam::{
+    find_missing_services, map_toml_dependencies_to_services, AssumeRolePolicyDocumentBuilder, Effect, Permission as IamPermission, Policy, PrincipalBuilder,
+    RoleBuilder, RolePropertiesBuilder, RoleRef, StatementBuilder,
+};
 use crate::intrinsic::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceProperties, LambdaCode, Function, LambdaFunctionProperties, Permission, LambdaPermissionProperties, LoggingInfo, ScalingConfig, FunctionRef, PermissionRef};
-use crate::sqs::{QueueRef};
+use crate::lambda::{
+    Environment, EventSourceMapping, EventSourceProperties, Function, FunctionRef, LambdaCode, LambdaFunctionProperties,
+    LambdaPermissionProperties, LoggingInfo, Permission, PermissionRef, ScalingConfig,
+};
+use crate::shared::Id;
+use crate::sqs::QueueRef;
 use crate::stack::{Asset, Resource, StackBuilder};
-use crate::wrappers::{Bucket, EnvVarKey, LambdaPermissionAction, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile};
+use crate::type_state;
+use crate::wrappers::{
+    Bucket, EnvVarKey, LambdaPermissionAction, LogGroupName, Memory, RetentionInDays, SqsEventSourceMaxConcurrency,
+    StringWithOnlyAlphaNumericsUnderscoresAndHyphens, Timeout, TomlFile, ZipFile,
+};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
-use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
-use crate::shared::Id;
-use crate::type_state;
 
 pub enum Runtime {
     NodeJs22,
     Java21,
     Python313,
-    ProvidedAl2023
+    ProvidedAl2023,
 }
 
 impl From<Runtime> for String {
@@ -31,7 +40,7 @@ impl From<Runtime> for String {
 
 pub enum Architecture {
     X86_64,
-    ARM64
+    ARM64,
 }
 
 impl From<Architecture> for String {
@@ -52,7 +61,7 @@ impl From<PackageType> for String {
     fn from(value: PackageType) -> Self {
         match value {
             PackageType::Image => "Image".to_string(),
-            PackageType::Zip => "Zip".to_string()
+            PackageType::Zip => "Zip".to_string(),
         }
     }
 }
@@ -64,10 +73,7 @@ pub struct Zip {
 
 impl Zip {
     pub fn new(bucket: Bucket, file: ZipFile) -> Self {
-        Zip {
-            bucket: bucket.0,
-            file
-        }
+        Zip { bucket: bucket.0, file }
     }
 }
 
@@ -145,9 +151,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
 
     pub fn add_permission(mut self, permission: IamPermission) -> FunctionBuilder<T> {
         self.additional_policies.push(permission.into_policy());
-        Self {
-            ..self
-        }
+        Self { ..self }
     }
 
     /// Checks that the function has permissions for AWS services listed in Cargo.toml dependencies.
@@ -156,25 +160,21 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
     /// have been granted for those services.
     pub fn check_permissions_against_dependencies(self, cargo_toml: TomlFile) -> Self {
         let services = map_toml_dependencies_to_services(cargo_toml.0.as_ref());
-        
+
         Self {
             aws_services_in_dependencies: services,
             ..self
         }
     }
-    
+
     pub fn env_var(mut self, key: EnvVarKey, value: Value) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, value));
-        Self {
-            ..self
-        }
+        Self { ..self }
     }
 
     pub fn env_var_string<V: Into<String>>(mut self, key: EnvVarKey, value: V) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, Value::String(value.into())));
-        Self {
-            ..self
-        }
+        Self { ..self }
     }
 
     pub fn reserved_concurrent_executions(self, executions: u32) -> FunctionBuilder<T> {
@@ -183,21 +183,21 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             ..self
         }
     }
-    
+
     fn build_internal(self, stack_builder: &mut StackBuilder) -> (FunctionRef, RoleRef, LogGroupRef) {
         let function_resource_id = Resource::generate_id("LambdaFunction");
-        
+
         let code = match self.code.expect("code to be present, enforced by builder") {
             Code::Zip(z) => {
                 let asset_id = Resource::generate_id("Asset");
                 let asset_id = format!("{asset_id}.zip");
-                
+
                 let asset = Asset {
                     s3_bucket: z.bucket.clone(),
                     s3_key: asset_id.clone(),
                     path: z.file.0.to_string(),
                 };
-                
+
                 let code = LambdaCode {
                     s3_bucket: Some(z.bucket),
                     s3_key: Some(asset_id),
@@ -205,7 +205,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
                 };
 
                 (Some(asset), code)
-            },
+            }
             Code::Inline(inline_code) => {
                 let code = LambdaCode {
                     s3_bucket: None,
@@ -231,15 +231,24 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             };
             stack_builder.add_resource(event_source_mapping);
         };
-        
+
         let assume_role_statement = StatementBuilder::internal_new(vec!["sts:AssumeRole".to_string()], Effect::Allow)
             .principal(PrincipalBuilder::new().service("lambda.amazonaws.com").build())
             .build();
         let assumed_role_policy_document = AssumeRolePolicyDocumentBuilder::new(vec![assume_role_statement]).build();
-        let managed_policy_arns = vec![join("", vec![Value::String("arn:".to_string()), get_ref(AWS_PARTITION_PSEUDO_PARAM), Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string())])];
+        let managed_policy_arns = vec![join(
+            "",
+            vec![
+                Value::String("arn:".to_string()),
+                get_ref(AWS_PARTITION_PSEUDO_PARAM),
+                Value::String(":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole".to_string()),
+            ],
+        )];
         let potentially_missing = find_missing_services(&self.aws_services_in_dependencies, &self.additional_policies);
-        let props = RolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns).policies(self.additional_policies).build();
-        
+        let props = RolePropertiesBuilder::new(assumed_role_policy_document, managed_policy_arns)
+            .policies(self.additional_policies)
+            .build();
+
         let role_id = Id::generate_id(&self.id, "Role");
         let role_resource_id = Resource::generate_id("LambdaFunctionRole");
         let role_ref = get_arn(&role_resource_id);
@@ -255,15 +264,16 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
 
         let log_group_id = Id::generate_id(&self.id, "LogGroup");
         let log_group_name = self.function_name.clone().map(|fun_name| format!("/aws/lambda/{fun_name}"));
-        let base_builder = LogGroupBuilder::new(&log_group_id)
-            .log_group_retention(RetentionInDays(731));
+        let base_builder = LogGroupBuilder::new(&log_group_id).log_group_retention(RetentionInDays(731));
         let log_group = if let Some(name) = log_group_name {
             base_builder.log_group_name_string(LogGroupName(name)).build(stack_builder)
         } else {
             base_builder.build(stack_builder)
         };
-        
-        let logging_info = LoggingInfo { log_group: Some( get_ref(log_group.get_resource_id())) };
+
+        let logging_info = LoggingInfo {
+            log_group: Some(get_ref(log_group.get_resource_id())),
+        };
 
         let properties = LambdaFunctionProperties {
             code: code.1,
@@ -289,11 +299,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
 
         let function = FunctionRef::new(self.id, function_resource_id);
 
-        (
-            function,
-            role,
-            log_group,
-        )
+        (function, role, log_group)
     }
 }
 
@@ -392,14 +398,18 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
     /// Configures the function to be triggered by an SQS queue.
     ///
     /// Automatically adds the necessary IAM permissions for reading from the queue.
-    pub fn sqs_event_source_mapping(mut self, sqs_queue: &QueueRef, max_concurrency: Option<SqsEventSourceMaxConcurrency>) -> FunctionBuilder<EventSourceMappingState>  {
+    pub fn sqs_event_source_mapping(
+        mut self,
+        sqs_queue: &QueueRef,
+        max_concurrency: Option<SqsEventSourceMaxConcurrency>,
+    ) -> FunctionBuilder<EventSourceMappingState> {
         self.additional_policies.push(IamPermission::SqsRead(sqs_queue).into_policy());
-        
+
         let mapping = EventSourceMappingInfo {
             id: sqs_queue.get_resource_id().to_string(),
             max_concurrency: max_concurrency.map(|c| c.0),
         };
-        
+
         FunctionBuilder {
             id: self.id,
             sqs_event_source_mapping: Some(mapping),
@@ -446,6 +456,7 @@ pub struct PermissionBuilder {
     function_name: Value,
     principal: String,
     source_arn: Option<Value>,
+    source_account: Option<Value>,
 }
 
 impl PermissionBuilder {
@@ -463,6 +474,7 @@ impl PermissionBuilder {
             function_name,
             principal: principal.into(),
             source_arn: None,
+            source_account: None,
         }
     }
 
@@ -473,7 +485,14 @@ impl PermissionBuilder {
         }
     }
 
-    pub fn build(self , stack_builder: &mut StackBuilder) -> PermissionRef {
+    pub fn current_account(self) -> Self {
+        Self {
+            source_account: Some(get_ref("AWS::AccountId")),
+            ..self
+        }
+    }
+
+    pub fn build(self, stack_builder: &mut StackBuilder) -> PermissionRef {
         let permission_resource_id = Resource::generate_id("LambdaPermission");
 
         stack_builder.add_resource(Permission {
@@ -485,9 +504,10 @@ impl PermissionBuilder {
                 function_name: self.function_name,
                 principal: self.principal,
                 source_arn: self.source_arn,
+                source_account: self.source_account,
             },
         });
-        
+
         PermissionRef::new(self.id, permission_resource_id)
     }
 }

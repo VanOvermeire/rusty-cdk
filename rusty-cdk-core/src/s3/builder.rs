@@ -243,6 +243,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    // TODO allow SNS, SQS
     pub fn add_bucket_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
             NotificationDestination::Lambda(l) => {
@@ -356,11 +357,9 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
 
         for (i, arn) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
-            // TODO
-            //  that uses an additional lambda
-            //  which has permission to invoke bucket notifications
             let permission = PermissionBuilder::new(&format!("{}-destination-perm-{}", self.id, i), LambdaPermissionAction("lambda:InvokeFunction".to_string()), arn.clone(), "s3.amazonaws.com")
                 .source_arn(bucket.get_arn())
+                .current_account()
                 .build(stack_builder);
             let (handler, ..) = FunctionBuilder::new(&format!("{}-handler-{}", self.id, i), Architecture::X86_64, Memory(128), Timeout(300))
                 .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
