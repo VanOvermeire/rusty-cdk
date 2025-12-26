@@ -177,7 +177,7 @@ To be added at some point:
 
 ### Available builders
 
-Based on `rg ^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
+Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
 
 - ApiGatewayV2Builder
 - ApplicationBuilder
@@ -208,6 +208,7 @@ Based on `rg ^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /
 - PrincipalBuilder
 - PublicAccessBlockConfigurationBuilder
 - QueueBuilder
+- QueuePolicyBuilder
 - RoleBuilder
 - RolePropertiesBuilder
 - SecretBuilder
@@ -215,6 +216,7 @@ Based on `rg ^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /
 - StatementBuilder
 - TableBuilder
 - TopicBuilder
+- TopicPolicyBuilder
 - ValidatorBuilder
 - ViewerCertificateBuilder
 
