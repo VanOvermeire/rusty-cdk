@@ -1,6 +1,6 @@
 use rusty_cdk::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, EnvironmentBuilder};
 use rusty_cdk::iam::{Permission};
-use rusty_cdk::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use rusty_cdk::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
@@ -53,14 +53,14 @@ async fn main() {
         secret_lambda_memory,
         secret_lambda_timeout,
     )
-        .zip(Zip::new(bucket.clone(), secret_lambda_zip))
+        .code(Code::Zip(Zip::new(bucket.clone(), secret_lambda_zip)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .function_name(string_with_only_alphanumerics_underscores_and_hyphens!(
         "secret-lambda"
     ))
         .env_var(env_var_key!("SECRET_ARN"), secret.get_ref())
-        .permissions(Permission::SecretsManagerRead(&secret))
+        .add_permission(Permission::SecretsManagerRead(&secret))
         .build(&mut stack_builder);
 
     // this is the same empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
@@ -74,7 +74,7 @@ async fn main() {
         appconfig_lambda_memory,
         appconfig_lambda_timeout,
     )
-        .zip(Zip::new(bucket, appconfig_lambda_zip))
+        .code(Code::Zip(Zip::new(bucket, appconfig_lambda_zip)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .function_name(string_with_only_alphanumerics_underscores_and_hyphens!(
@@ -92,7 +92,7 @@ async fn main() {
             env_var_key!("APPCONFIG_CONFIGURATION_PROFILE_ID"),
             config_profile.get_ref(),
         )
-        .permissions(Permission::AppConfigRead(&app_config, &app_config_env, &config_profile))
+        .add_permission(Permission::AppConfigRead(&app_config, &app_config_env, &config_profile))
         .build(&mut stack_builder);
 
     let synthesized = stack_builder.build().unwrap().synth().unwrap();

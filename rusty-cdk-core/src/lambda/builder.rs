@@ -72,13 +72,14 @@ impl Zip {
 }
 
 pub enum Code {
-    Zip(Zip)
+    Zip(Zip),
+    Inline(String),
 }
 
 type_state!(
     FunctionBuilderState,
     StartState,
-    ZipState,
+    CodeState,
     ZipStateWithHandler,
     ZipStateWithHandlerAndRuntime,
     EventSourceMappingState,
@@ -111,7 +112,7 @@ struct EventSourceMappingInfo {
 ///         memory!(512),
 ///         timeout!(30)
 ///     )
-///     .zip(zip)
+///     .code(zip)
 ///     .handler("index.handler")
 ///     .runtime(Runtime::NodeJs22)
 ///     .env_var_string(env_var_key!("TABLE_NAME"), "my-table")
@@ -142,7 +143,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
 
-    pub fn permissions(mut self, permission: IamPermission) -> FunctionBuilder<T> {
+    pub fn add_permission(mut self, permission: IamPermission) -> FunctionBuilder<T> {
         self.additional_policies.push(permission.into_policy());
         Self {
             ..self
@@ -200,9 +201,18 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
                 let code = LambdaCode {
                     s3_bucket: Some(z.bucket),
                     s3_key: Some(asset_id),
+                    zipfile: None,
                 };
 
-                (asset, code)
+                (Some(asset), code)
+            },
+            Code::Inline(inline_code) => {
+                let code = LambdaCode {
+                    s3_bucket: None,
+                    s3_key: None,
+                    zipfile: Some(inline_code),
+                };
+                (None, code)
             }
         };
 
@@ -287,8 +297,10 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
     }
 }
 
+// TODO does it make more sense to add runtime and handler to `new`? Other builders do this for required args
 impl FunctionBuilder<StartState> {
     /// Creates a new Lambda function builder.
+    /// You will have to specify a handler and runtime before you are able to build a function.
     ///
     /// # Arguments
     /// * `id` - Unique identifier for the function
@@ -314,9 +326,9 @@ impl FunctionBuilder<StartState> {
         }
     }
 
-    pub fn zip(self, zip: Zip) -> FunctionBuilder<ZipState> {
+    pub fn code(self, code: Code) -> FunctionBuilder<CodeState> {
         FunctionBuilder {
-            code: Some(Code::Zip(zip)),
+            code: Some(code),
             state: Default::default(),
             id: self.id,
             architecture: self.architecture,
@@ -334,7 +346,7 @@ impl FunctionBuilder<StartState> {
     }
 }
 
-impl FunctionBuilder<ZipState> {
+impl FunctionBuilder<CodeState> {
     pub fn handler<T: Into<String>>(self, handler: T) -> FunctionBuilder<ZipStateWithHandler> {
         FunctionBuilder {
             id: self.id,
@@ -465,7 +477,7 @@ impl PermissionBuilder {
         let permission_resource_id = Resource::generate_id("LambdaPermission");
 
         stack_builder.add_resource(Permission {
-            id: self.id,
+            id: self.id.clone(),
             resource_id: permission_resource_id.clone(),
             r#type: "AWS::Lambda::Permission".to_string(),
             properties: LambdaPermissionProperties {
@@ -476,6 +488,6 @@ impl PermissionBuilder {
             },
         });
         
-        PermissionRef::new(permission_resource_id)
+        PermissionRef::new(self.id, permission_resource_id)
     }
 }

@@ -1,5 +1,8 @@
-use crate::iam::{Effect, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
+use crate::lambda::{Architecture, Runtime};
+use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
+use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use crate::intrinsic::join;
+use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
 use crate::s3::dto;
 use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
@@ -9,15 +12,11 @@ use crate::s3::{
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{BucketName, IamAction, LifecycleTransitionInDays, S3LifecycleObjectSizes};
+use crate::type_state;
+use crate::wrappers::{BucketName, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, S3LifecycleObjectSizes, Timeout};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::time::Duration;
-use crate::type_state;
-
-// TODO notifications will require custom work to avoid circular dependencies
-//  CDK approach with custom resources is one way
-//  other way would be for the deploy to do extra work, but then the cloudformation template can only work correctly with our deploy method...
 
 /// Builder for S3 bucket policies.
 ///
@@ -70,7 +69,7 @@ impl BucketPolicyBuilder {
             policy_document,
         }
     }
-    
+
     pub(crate) fn new_with_bucket_ref(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -78,7 +77,7 @@ impl BucketPolicyBuilder {
             policy_document,
         }
     }
-    
+
     pub(crate) fn raw_build(self) -> (String, BucketPolicy) {
         let resource_id = Resource::generate_id("S3BucketPolicy");
         let policy = BucketPolicy {
@@ -132,11 +131,11 @@ impl From<Encryption> for String {
     }
 }
 
-type_state!(
-    BucketBuilderState,
-    StartState,
-    WebsiteState,
-);
+pub enum NotificationDestination<'a> {
+    Lambda(&'a FunctionRef),
+}
+
+type_state!(BucketBuilderState, StartState, WebsiteState,);
 
 /// Builder for S3 buckets.
 ///
@@ -177,6 +176,7 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     redirect_all_requests_to: Option<(String, Option<Protocol>)>,
     cors_config: Option<CorsConfiguration>,
     bucket_encryption: Option<Encryption>,
+    bucket_notification_lambda_destinations: Vec<Value>,
 }
 
 impl BucketBuilder<StartState> {
@@ -197,6 +197,7 @@ impl BucketBuilder<StartState> {
             redirect_all_requests_to: None,
             cors_config: None,
             bucket_encryption: None,
+            bucket_notification_lambda_destinations: vec![],
         }
     }
 
@@ -242,6 +243,15 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    pub fn add_bucket_notification(mut self, destination: NotificationDestination) -> Self {
+        match destination {
+            NotificationDestination::Lambda(l) => {
+                self.bucket_notification_lambda_destinations.push(l.get_arn());
+                self
+            },
+        }
+    }
+
     /// Configures the bucket for static website hosting.
     ///
     /// Automatically disables public access blocks and creates a bucket policy
@@ -259,15 +269,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             redirect_all_requests_to: self.redirect_all_requests_to,
             cors_config: self.cors_config,
             bucket_encryption: self.bucket_encryption,
+            bucket_notification_lambda_destinations: self.bucket_notification_lambda_destinations,
         }
     }
 
     fn build_internal(self, website: bool, stack_builder: &mut StackBuilder) -> (BucketRef, Option<BucketPolicyRef>) {
         let resource_id = Resource::generate_id("S3Bucket");
 
-        let versioning_configuration = self
-            .versioning_configuration
-            .map(|c| dto::VersioningConfig { status: c.into() });
+        let versioning_configuration = self.versioning_configuration.map(|c| dto::VersioningConfig { status: c.into() });
 
         let website_configuration = if website {
             let redirect_all_requests_to = self.redirect_all_requests_to.map(|r| RedirectAllRequestsTo {
@@ -345,6 +354,25 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             None
         };
 
+
+        for (i, arn) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
+            // TODO
+            //  that uses an additional lambda
+            //  which has permission to invoke bucket notifications
+            let permission = PermissionBuilder::new(&format!("{}-destination-perm-{}", self.id, i), LambdaPermissionAction("lambda:InvokeFunction".to_string()), arn.clone(), "s3.amazonaws.com")
+                .source_arn(bucket.get_arn())
+                .build(stack_builder);
+            let (handler, ..) = FunctionBuilder::new(&format!("{}-handler-{}", self.id, i), Architecture::X86_64, Memory(128), Timeout(300))
+                .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
+                .handler("index.handler")
+                .runtime(Runtime::Python313)
+                .add_permission(Permission::Custom(CustomPermission::new("NotificationPermission", StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow).all_resources().build())))
+                .build(stack_builder);
+            BucketNotificationBuilder::new(&format!("{}-bucket-notification-{}", self.id, i), handler.get_arn(), bucket.get_ref(), arn, permission.get_id())
+                .build(stack_builder);
+            
+        }
+
         (bucket, policy)
     }
 }
@@ -383,18 +411,16 @@ impl BucketBuilder<WebsiteState> {
 
 /// Builder for S3 CORS configuration.
 pub struct CorsConfigurationBuilder {
-    rules: Vec<CorsRule>
+    rules: Vec<CorsRule>,
 }
 
 impl CorsConfigurationBuilder {
     pub fn new(rules: Vec<CorsRule>) -> CorsConfigurationBuilder {
         CorsConfigurationBuilder { rules }
     }
-    
+
     pub fn build(self) -> CorsConfiguration {
-        CorsConfiguration {
-            cors_rules: self.rules,
-        }
+        CorsConfiguration { cors_rules: self.rules }
     }
 }
 

@@ -1,7 +1,7 @@
 use rusty_cdk::apigateway::ApiGatewayV2Builder;
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
-use rusty_cdk::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use rusty_cdk::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk::shared::http::HttpMethod;
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
@@ -28,8 +28,8 @@ async fn main() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
-        .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new(bucket, zipper))
+        .add_permission(Permission::DynamoDBRead(&table))
+        .code(Code::Zip(Zip::new(bucket, zipper)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())

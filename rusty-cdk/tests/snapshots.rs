@@ -12,7 +12,7 @@ use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
-use rusty_cdk_core::lambda::{Architecture, FunctionBuilder, Runtime, Zip};
+use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{
     BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
     LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, PublicAccessBlockConfigurationBuilder,
@@ -25,6 +25,8 @@ use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
+
+// TODO lambda with inline code test
 
 #[test]
 fn dynamodb() {
@@ -115,7 +117,7 @@ fn lambda() {
     let bucket = get_bucket();
     FunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
         .env_var_string(env_var_key!("STAGE"), "prod")
-        .zip(Zip::new(bucket, zip_file))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
@@ -185,7 +187,7 @@ fn lambda_with_sns_subscription() {
     let bucket = get_bucket();
 
     let (fun, _role, _log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .zip(Zip::new(bucket, zip_file))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
@@ -234,11 +236,11 @@ fn lambda_with_secret_and_custom_permissions() {
         )
         .build(&mut stack_builder);
     FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .zip(Zip::new(bucket, zip_file))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("SECRET"), secret.get_ref())
-        .permissions(Permission::Custom(CustomPermission::new("my-perm", statement)))
+        .add_permission(Permission::Custom(CustomPermission::new("my-perm", statement)))
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -266,7 +268,7 @@ fn lambda_with_api_gateway() {
     let bucket = get_bucket();
 
     let (fun, _role, _log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .zip(Zip::new(bucket, zip_file))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);
@@ -315,8 +317,8 @@ fn lambda_with_dynamodb() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
     FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new(bucket, zip_file))
+        .add_permission(Permission::DynamoDBRead(&table))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
@@ -359,8 +361,8 @@ fn lambda_with_dynamodb_and_sqs() {
     let timeout = timeout!(30);
     let bucket = get_bucket();
     FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .permissions(Permission::DynamoDBRead(&table))
-        .zip(Zip::new(bucket, zip_file))
+        .add_permission(Permission::DynamoDBRead(&table))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
@@ -484,8 +486,8 @@ fn appconfig_with_lambda() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
-        .permissions(Permission::AppConfigRead(&app_config, &env, &profile))
-        .zip(Zip::new(bucket, zip_file))
+        .add_permission(Permission::AppConfigRead(&app_config, &env, &profile))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("APPCONFIG_APPLICATION_ID"), app_config.get_ref())
@@ -517,7 +519,7 @@ fn api_gateway_and_existing_lambdas_keeps_ids() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
-        .zip(Zip::new(bucket, zip_file))
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .build(&mut stack_builder);

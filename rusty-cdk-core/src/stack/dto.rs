@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
+use crate::custom_resource::BucketNotification;
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -94,8 +95,8 @@ impl Stack {
         self.resources
             .values()
             .flat_map(|r| match r {
-                Resource::Function(l) => vec![l.asset.clone()], // see if we can avoid the clone
-                _ => vec![],
+                Resource::Function(l) => l.asset.clone(), // see if we can avoid the clone
+                _ => None,
             })
             .collect()
     }
@@ -238,6 +239,7 @@ pub enum Resource {
     Application(Application),
     Bucket(Bucket),
     BucketPolicy(BucketPolicy),
+    BucketNotification(BucketNotification),
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
     Environment(Environment),
@@ -286,6 +288,7 @@ impl Resource {
             Resource::ConfigurationProfile(r) => r.get_id(),
             Resource::DeploymentStrategy(r) => r.get_id(),
             Resource::Environment(r) => r.get_id(),
+            Resource::BucketNotification(r) => r.get_id(),
         };
         id.clone()
     }
@@ -315,6 +318,7 @@ impl Resource {
             Resource::ConfigurationProfile(r) => r.get_resource_id(),
             Resource::DeploymentStrategy(r) => r.get_resource_id(),
             Resource::Environment(r) => r.get_resource_id(),
+            Resource::BucketNotification(r) => r.get_resource_id(),
         }
     }
 
@@ -358,6 +362,7 @@ from_resource!(Secret);
 from_resource!(Distribution);
 from_resource!(CachePolicy);
 from_resource!(OriginAccessControl);
+from_resource!(BucketNotification);
 
 #[cfg(test)]
 mod tests {

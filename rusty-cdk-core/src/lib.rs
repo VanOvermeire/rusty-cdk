@@ -13,6 +13,8 @@ pub mod cloudfront;
 pub mod appconfig;
 pub mod shared;
 
+// keep this one private for now, if made public, changes should be made to contract of resources (see the module for details)
+mod custom_resource; 
 mod intrinsic;
 
 
