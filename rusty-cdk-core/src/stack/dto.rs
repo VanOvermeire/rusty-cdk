@@ -7,7 +7,7 @@ use crate::s3::{Bucket, BucketPolicy};
 use crate::secretsmanager::Secret;
 use crate::shared::Id;
 use crate::sns::{Subscription, Topic, TopicPolicy};
-use crate::sqs::Queue;
+use crate::sqs::{Queue, QueuePolicy};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -247,6 +247,7 @@ pub enum Resource {
     Function(Function),
     LogGroup(LogGroup),
     Queue(Queue),
+    QueuePolicy(QueuePolicy),
     Topic(Topic),
     TopicPolicy(TopicPolicy),
     Subscription(Subscription),
@@ -291,6 +292,7 @@ impl Resource {
             Resource::Environment(r) => r.get_id(),
             Resource::BucketNotification(r) => r.get_id(),
             Resource::TopicPolicy(r) => r.get_id(),
+            Resource::QueuePolicy(r) => r.get_id(),
         };
         id.clone()
     }
@@ -322,6 +324,7 @@ impl Resource {
             Resource::Environment(r) => r.get_resource_id(),
             Resource::BucketNotification(r) => r.get_resource_id(),
             Resource::TopicPolicy(r) => r.get_resource_id(),
+            Resource::QueuePolicy(r) => r.get_resource_id(),
         }
     }
 
@@ -353,6 +356,7 @@ from_resource!(Function);
 from_resource!(Role);
 from_resource!(LogGroup);
 from_resource!(Queue);
+from_resource!(QueuePolicy);
 from_resource!(Topic);
 from_resource!(TopicPolicy);
 from_resource!(EventSourceMapping);

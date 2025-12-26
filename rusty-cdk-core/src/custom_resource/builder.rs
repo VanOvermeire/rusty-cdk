@@ -1,6 +1,6 @@
 use crate::custom_resource::{
     BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration,
-    TopicConfiguration,
+    TopicConfiguration, QueueConfiguration
 };
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
@@ -125,6 +125,7 @@ pub struct BucketNotificationBuilder {
     event: String,
     lambda_arn: Option<Value>,
     sns_ref: Option<Value>,
+    sqs_arn: Option<Value>,
     dependency: Id,
 }
 
@@ -141,6 +142,7 @@ impl BucketNotificationBuilder {
             event,
             lambda_arn: None,
             sns_ref: None,
+            sqs_arn: None,
             dependency,
         }
     }
@@ -159,6 +161,13 @@ impl BucketNotificationBuilder {
         }
     }
 
+    pub(crate) fn sqs(self, arn: Value) -> Self {
+        Self {
+            sqs_arn: Some(arn),
+            ..self
+        }
+    }
+
     pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> BucketNotificationRef {
         let resource_id = Resource::generate_id("BucketNotification");
         let bucket_notification_ref = BucketNotificationRef::new(resource_id.to_string());
@@ -170,6 +179,7 @@ impl BucketNotificationBuilder {
                     arn,
                 }]),
                 topic_configs: None,
+                queue_configs: None,
             }
         } else if let Some(arn) = self.sns_ref {
             NotificationConfiguration {
@@ -178,9 +188,19 @@ impl BucketNotificationBuilder {
                     arn,
                 }]),
                 lambda_configs: None,
+                queue_configs: None,
+            }
+        } else if let Some(arn) = self.sqs_arn {
+            NotificationConfiguration {
+                queue_configs: Some(vec![QueueConfiguration {
+                    events: vec![self.event],
+                    arn,
+                }]),
+                topic_configs: None,
+                lambda_configs: None,
             }
         } else {
-            unreachable!("should be either lambda or sns");
+            unreachable!("should be either lambda, sns or sqs");
         };
 
         stack_builder.add_resource(BucketNotification {

@@ -1,5 +1,5 @@
 use crate::shared::Id;
-use crate::sqs::{Queue, QueueProperties, RedrivePolicy};
+use crate::sqs::{Queue, QueuePolicy, QueuePolicyProperties, QueuePolicyRef, QueueProperties, RedrivePolicy};
 use crate::sqs::QueueRef;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{
@@ -8,6 +8,7 @@ use crate::wrappers::{
 };
 use serde_json::Value;
 use std::marker::PhantomData;
+use crate::iam::PolicyDocument;
 use crate::type_state;
 
 const FIFO_SUFFIX: &str = ".fifo";
@@ -300,5 +301,39 @@ impl QueueBuilder<FifoState> {
                 self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         self.build_internal(true, stack_builder)
+    }
+}
+
+// TODO make available to outside
+//  - public new accepts QueueRef
+//  - private new accepts Value
+pub(crate) struct QueuePolicyBuilder {
+    id: Id,
+    doc: PolicyDocument,
+    queues: Vec<Value>
+}
+
+impl QueuePolicyBuilder {
+    pub(crate) fn new(id: &str, doc: PolicyDocument, queues: Vec<Value>) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            doc,
+            queues,
+        }
+    }
+
+    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
+        let resource_id = Resource::generate_id("QueuePolicy");
+        stack_builder.add_resource(QueuePolicy {
+            id: self.id.clone(),
+            resource_id: resource_id.clone(),
+            r#type: "AWS::SQS::QueuePolicy".to_string(),
+            properties: QueuePolicyProperties {
+                doc: self.doc,
+                queues: self.queues,
+            },
+        });
+
+        QueuePolicyRef::new(self.id, resource_id)
     }
 }

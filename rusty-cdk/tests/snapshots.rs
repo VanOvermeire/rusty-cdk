@@ -1,4 +1,3 @@
-use std::fs::read_to_string;
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::appconfig::{
     ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo,
@@ -13,7 +12,11 @@ use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::s3::{BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder};
+use rusty_cdk_core::s3::{
+    BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
+    LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, NotificationEventType,
+    PublicAccessBlockConfigurationBuilder,
+};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
@@ -22,6 +25,7 @@ use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{Map, Value};
+use std::fs::read_to_string;
 
 #[test]
 fn dynamodb() {
@@ -86,9 +90,7 @@ fn website_bucket() {
     BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
-        .cors_config(CorsConfigurationBuilder::new(vec![
-            CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build(),
-        ]).build())
+        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build())
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -547,7 +549,9 @@ fn lambda_with_inline_code() {
     let memory = memory!(512);
     let timeout = timeout!(30);
     FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
-        .code(Code::Inline("module.exports.handler = async (e) => { console.log(e) };".to_string()))
+        .code(Code::Inline(
+            "module.exports.handler = async (e) => { console.log(e) };".to_string(),
+        ))
         .handler("index.handler")
         .runtime(Runtime::NodeJs22)
         .build(&mut stack_builder);
@@ -588,6 +592,34 @@ fn bucket_with_notifications_to_sns() {
             (r"LogGroup[0-9]+", "[LogGroup]"),
             (r"SnsTopic[0-9]+", "[SnsTopic]"),
             (r"TopicPolicy[0-9]+", "[TopicPolicy]"),
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
+            (r"BucketNotification[0-9]+", "[BucketNotification]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn bucket_with_notifications_to_sqs() {
+    let mut stack_builder = StackBuilder::new();
+
+    let queue = QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
+    BucketBuilder::new("buck")
+        .add_notification(NotificationDestination::Sqs(&queue, NotificationEventType::ObjectCreatedPost))
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"QueuePolicy[0-9]+", "[QueuePolicy]"),
+            (r"SqsQueue[0-9]+", "[SqsQueue]"),
             (r"S3Bucket[0-9]+", "[S3Bucket]"),
             (r"BucketNotification[0-9]+", "[BucketNotification]"),
         ]},{

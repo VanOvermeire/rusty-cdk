@@ -21,6 +21,7 @@ use crate::wrappers::{BucketName, IamAction, LambdaPermissionAction, LifecycleTr
 use serde_json::{Map, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
+use crate::sqs::{QueuePolicyBuilder, QueueRef};
 
 /// Builder for S3 bucket policies.
 ///
@@ -135,11 +136,10 @@ impl From<Encryption> for String {
     }
 }
 
-// TODO add sqs
 pub enum NotificationDestination<'a> {
     Lambda(&'a FunctionRef, NotificationEventType),
     Sns(&'a TopicRef, NotificationEventType),
-    // Sqs(&'a QueueRef, NotificationEventType),
+    Sqs(&'a QueueRef, NotificationEventType),
 }
 
 pub enum NotificationEventType {
@@ -249,7 +249,7 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     bucket_encryption: Option<Encryption>,
     bucket_notification_lambda_destinations: Vec<(Value, String)>,
     bucket_notification_sns_destinations: Vec<(Value, String)>,
-    bucket_notification_sqs_destinations: Vec<(Value, String)>,
+    bucket_notification_sqs_destinations: Vec<(Value, Value, String)>,
 }
 
 impl BucketBuilder<StartState> {
@@ -322,7 +322,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
             NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_ref(), e.into())),
-            // NotificationDestination::Sqs(s) => self.bucket_notification_sqs_destinations.push(s.get_arn()),
+            NotificationDestination::Sqs(q, e) => self.bucket_notification_sqs_destinations.push((q.get_ref(), q.get_arn(), e.into())),
         }
         self
     }
@@ -479,6 +479,35 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 topic_ref.get_id(),
             )
             .sns(reference)
+            .build(stack_builder);
+        }
+
+        for (i, (reference, arn, event)) in self.bucket_notification_sqs_destinations.into_iter().enumerate() {
+            let handler = Self::notification_handler(&self.id, "sqs", i, stack_builder);
+            
+            let mut source_arn = Map::new();
+            source_arn.insert("aws:SourceArn".to_string(), bucket.get_arn());
+            let mut condition = Map::new();
+            condition.insert("ArnLike".to_string(), Value::Object(source_arn));
+            let statement = StatementBuilder::new(vec![IamAction("sqs:GetQueueAttributes".to_string()), IamAction("sqs:GetQueueUrl".to_string()), IamAction("sqs:SendMessage".to_string())], Effect::Allow)
+                .principal(Principal::Service(ServicePrincipal {
+                    service: "s3.amazonaws.com".to_string(),
+                }))
+                .condition(Value::Object(condition))
+                .resources(vec![arn.clone()])
+                .build();
+            let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+            let queue_policy_ref = QueuePolicyBuilder::new(&format!("{}-sqs-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                .build(stack_builder);
+
+            BucketNotificationBuilder::new(
+                &format!("{}-sqs-bucket-notification-{}", self.id, i),
+                handler.get_arn(),
+                bucket.get_ref(),
+                event,
+                queue_policy_ref.get_id(),
+            )
+            .sqs(arn)
             .build(stack_builder);
         }
 

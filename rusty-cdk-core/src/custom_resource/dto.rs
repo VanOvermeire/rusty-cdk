@@ -42,7 +42,9 @@ pub struct NotificationConfiguration {
     #[serde(rename = "LambdaFunctionConfigurations", skip_serializing_if = "Option::is_none")]
     pub(super) lambda_configs: Option<Vec<LambdaFunctionConfiguration>>,
     #[serde(rename = "TopicConfigurations", skip_serializing_if = "Option::is_none")]
-    pub(super) topic_configs: Option<Vec<TopicConfiguration>>
+    pub(super) topic_configs: Option<Vec<TopicConfiguration>>,
+    #[serde(rename = "QueueConfigurations", skip_serializing_if = "Option::is_none")]
+    pub(super) queue_configs: Option<Vec<QueueConfiguration>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -58,5 +60,13 @@ pub struct TopicConfiguration {
     #[serde(rename = "Events")]
     pub(super) events: Vec<String>,
     #[serde(rename = "TopicArn")]
+    pub(super) arn: Value,
+}
+
+#[derive(Debug, Serialize)]
+pub struct QueueConfiguration {
+    #[serde(rename = "Events")]
+    pub(super) events: Vec<String>,
+    #[serde(rename = "QueueArn")]
     pub(super) arn: Value,
 }

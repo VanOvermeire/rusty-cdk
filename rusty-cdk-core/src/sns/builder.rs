@@ -283,6 +283,9 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
     }
 }
 
+// TODO make available to outside
+//  - public new accepts TopicRef
+//  - private new accepts Value
 pub(crate) struct TopicPolicyBuilder {
     id: Id,
     doc: PolicyDocument,

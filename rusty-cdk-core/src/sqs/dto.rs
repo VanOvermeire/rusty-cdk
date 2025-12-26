@@ -1,6 +1,8 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
+use crate::iam::PolicyDocument;
+use crate::intrinsic::{get_arn, get_att, get_ref};
 use crate::shared::Id;
 
 ref_struct!(QueueRef);
@@ -46,6 +48,61 @@ pub struct QueueProperties {
     pub(super) redrive_policy: Option<RedrivePolicy>,
     #[serde(rename = "RedriveAllowPolicy", skip_serializing_if = "Option::is_none")]
     pub(super) redrive_allow_policy: Option<Value>,
+}
+
+pub struct QueuePolicyRef {
+    id: Id,
+    resource_id: String,
+}
+
+impl QueuePolicyRef {
+    pub fn new(id: Id, resource_id: String) -> Self {
+        Self {
+            id,
+            resource_id
+        }
+    }
+
+    pub fn get_id(&self) -> Id {
+        self.id.clone()
+    }
+
+    pub fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
+    }
+
+    pub fn get_ref(&self) -> Value {
+        get_ref(self.get_resource_id())
+    }
+
+    pub fn get_arn(&self) -> Value {
+        get_arn(self.get_resource_id())
+    }
+
+    pub fn get_att(&self, id: &str) -> Value {
+        get_att(self.get_resource_id(), id)
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct QueuePolicy {
+    #[serde(skip)]
+    pub(super) id: Id,
+    #[serde(skip)]
+    pub(super) resource_id: String,
+    #[serde(rename = "Type")]
+    pub(super) r#type: String,
+    #[serde(rename = "Properties")]
+    pub(super) properties: QueuePolicyProperties,
+}
+dto_methods!(QueuePolicy);
+
+#[derive(Debug, Serialize)]
+pub struct QueuePolicyProperties {
+    #[serde(rename = "PolicyDocument")]
+    pub(super) doc: PolicyDocument,
+    #[serde(rename = "Queues")]
+    pub(super) queues: Vec<Value>,   
 }
 
 #[derive(Debug, Serialize)]
