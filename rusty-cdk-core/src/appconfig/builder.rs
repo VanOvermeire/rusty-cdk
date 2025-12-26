@@ -75,6 +75,7 @@ pub enum ConfigType {
     Freeform,
 }
 
+// TODO might be more idiomatic to implement display
 impl From<ConfigType> for String {
     fn from(value: ConfigType) -> Self {
         match value {

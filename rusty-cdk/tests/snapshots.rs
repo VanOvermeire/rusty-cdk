@@ -13,7 +13,7 @@ use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::s3::{BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, PublicAccessBlockConfigurationBuilder};
+use rusty_cdk_core::s3::{BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
@@ -573,7 +573,7 @@ fn bucket_with_notifications_to_sns() {
 
     let topic = TopicBuilder::new("top").build(&mut stack_builder);
     BucketBuilder::new("buc")
-        .add_notification(NotificationDestination::Sns(&topic))
+        .add_notification(NotificationDestination::Sns(&topic, NotificationEventType::ObjectCreated))
         .build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();

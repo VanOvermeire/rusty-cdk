@@ -1,4 +1,7 @@
-use crate::custom_resource::{BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration, TopicConfiguration};
+use crate::custom_resource::{
+    BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration,
+    TopicConfiguration,
+};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
@@ -119,6 +122,7 @@ pub struct BucketNotificationBuilder {
     id: Id,
     handler_arn: Value,
     bucket_ref: Value,
+    event: String,
     lambda_arn: Option<Value>,
     sns_ref: Option<Value>,
     dependency: Id,
@@ -128,41 +132,51 @@ impl BucketNotificationBuilder {
     // if this was to become public outside the crate, it should
     // - accept Refs instead of Values
     // - have different param names
-    // - and only one `new`
-    pub(crate) fn new_for_lambda(id: &str, handler_arn: Value, bucket_ref: Value, lambda_arn: Value, dependency: Id) -> Self {
-        Self { id: Id(id.to_string()), handler_arn, bucket_ref, lambda_arn: Some(lambda_arn), sns_ref: None, dependency }
+    // - should allow *either* lambda or sns or sqs
+    pub(crate) fn new(id: &str, handler_arn: Value, bucket_ref: Value, event: String, dependency: Id) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            handler_arn,
+            bucket_ref,
+            event,
+            lambda_arn: None,
+            sns_ref: None,
+            dependency,
+        }
     }
 
-    pub(crate) fn new_for_sns(id: &str, handler_arn: Value, bucket_ref: Value, sns_ref: Value, dependency: Id) -> Self {
-        Self { id: Id(id.to_string()), handler_arn, bucket_ref, lambda_arn: None, sns_ref: Some(sns_ref), dependency }
+    pub(crate) fn lambda(self, arn: Value) -> Self {
+        Self {
+            lambda_arn: Some(arn),
+            ..self
+        }
+    }
+
+    pub(crate) fn sns(self, reference: Value) -> Self {
+        Self {
+            sns_ref: Some(reference),
+            ..self
+        }
     }
 
     pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> BucketNotificationRef {
         let resource_id = Resource::generate_id("BucketNotification");
         let bucket_notification_ref = BucketNotificationRef::new(resource_id.to_string());
-        
+
         let config = if let Some(arn) = self.lambda_arn {
             NotificationConfiguration {
-                lambda_configs: Some(vec![
-                    LambdaFunctionConfiguration {
-                        events: vec![
-                            "s3:ObjectCreated:*".to_string(), // TODO pass in (also in builder) + make sure they're valid (enum?)
-                        ],
-                        arn,
-                    }
-                ]),
+                lambda_configs: Some(vec![LambdaFunctionConfiguration {
+                    events: vec![self.event],
+                    arn,
+                }]),
                 topic_configs: None,
             }
         } else if let Some(arn) = self.sns_ref {
             NotificationConfiguration {
-                topic_configs:  Some(vec![
-                    TopicConfiguration {
-                        events: vec![
-                            "s3:ObjectCreated:*".to_string(), // TODO pass in (also in builder) + make sure they're valid (enum?)
-                        ],
-                        arn,
-                    }
-                ]),
+                topic_configs: Some(vec![TopicConfiguration {
+                    events: vec![self.event],
+                    arn,
+                }]),
                 lambda_configs: None,
             }
         } else {

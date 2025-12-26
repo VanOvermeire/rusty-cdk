@@ -137,9 +137,73 @@ impl From<Encryption> for String {
 
 // TODO add sqs
 pub enum NotificationDestination<'a> {
-    Lambda(&'a FunctionRef),
-    Sns(&'a TopicRef),
-    // Sqs(&'a QueueRef),
+    Lambda(&'a FunctionRef, NotificationEventType),
+    Sns(&'a TopicRef, NotificationEventType),
+    // Sqs(&'a QueueRef, NotificationEventType),
+}
+
+pub enum NotificationEventType {
+    ObjectCreated,
+    ObjectCreatedPut,
+    ObjectCreatedPost,
+    ObjectCreatedCopy,
+    ObjectCreatedCompleteMultipartUpload,
+    ObjectRemoved,
+    ObjectRemovedDelete,
+    ObjectRemovedDeleteMarkerCreated,
+    ObjectRestorePost,
+    ObjectRestoreCompleted,
+    ObjectRestoreDelete,
+    ReducedRedundancyLostObject,
+    ReplicationOperationFailedReplication,
+    ReplicationOperationMissedThreshold,
+    ReplicationOperationReplicatedAfterThreshold,
+    ReplicationOperationNotTracked,
+    LifecycleExpiration,
+    LifecycleExpirationDelete,
+    LifecycleExpirationDeleteMarkerCreated,
+    LifecycleTransition,
+    IntelligentTiering,
+    ObjectTagging,
+    ObjectTaggingPut,
+    ObjectTaggingDelete,
+    ObjectAclPut,
+    ObjectRestore,
+    REPLICATION,
+}
+
+impl From<NotificationEventType> for String {
+    fn from(value: NotificationEventType) -> Self {
+        match value {
+            NotificationEventType::ObjectCreated => "s3:ObjectCreated:*".to_string(),
+            NotificationEventType::ObjectCreatedPut => "s3:ObjectCreated:Put".to_string(),
+            NotificationEventType::ObjectCreatedPost =>  "s3:ObjectCreated:Post".to_string(),
+            NotificationEventType::ObjectCreatedCopy => "s3:ObjectCreated:Copy".to_string(),
+            NotificationEventType::ObjectCreatedCompleteMultipartUpload => "s3:ObjectCreated:CompleteMultipartUpload".to_string(),
+            NotificationEventType::ObjectRemoved => "s3:ObjectRemoved:*".to_string(),
+            NotificationEventType::ObjectRemovedDelete => "s3:ObjectRemoved:Delete".to_string(),
+            NotificationEventType::ObjectRemovedDeleteMarkerCreated => "s3:ObjectRemoved:DeleteMarkerCreated".to_string(),
+            NotificationEventType::ObjectRestorePost => "s3:ObjectRestore:Post".to_string(),
+            NotificationEventType::ObjectRestoreCompleted => "s3:ObjectRestore:Completed".to_string(),
+            NotificationEventType::ObjectRestoreDelete => "s3:ObjectRestore:Delete".to_string(),
+            NotificationEventType::ReducedRedundancyLostObject => "s3:ReducedRedundancyLostObject".to_string(),
+            NotificationEventType::ReplicationOperationFailedReplication => "s3:Replication:OperationFailedReplication".to_string(),
+            NotificationEventType::ReplicationOperationMissedThreshold => "s3:Replication:OperationMissedThreshold".to_string(),
+            NotificationEventType::ReplicationOperationReplicatedAfterThreshold => "s3:Replication:OperationReplicatedAfterThreshold".to_string(),
+            NotificationEventType::ReplicationOperationNotTracked => "s3:Replication:OperationNotTracked".to_string(),
+            NotificationEventType::LifecycleExpiration => "s3:LifecycleExpiration:*".to_string(),
+            NotificationEventType::LifecycleExpirationDelete => "s3:LifecycleExpiration:Delete".to_string(),
+            NotificationEventType::LifecycleExpirationDeleteMarkerCreated => "s3:LifecycleExpiration:DeleteMarkerCreated".to_string(),
+            NotificationEventType::LifecycleTransition => "s3:LifecycleTransition".to_string(),
+            NotificationEventType::IntelligentTiering => "s3:IntelligentTiering".to_string(),
+            NotificationEventType::ObjectTagging => "s3:ObjectTagging:*".to_string(),
+            NotificationEventType::ObjectTaggingPut => "s3:ObjectTagging:Put".to_string(),
+            NotificationEventType::ObjectTaggingDelete => "s3:ObjectTagging:Delete".to_string(),
+            NotificationEventType::ObjectAclPut => "s3:ObjectAcl:Put".to_string(),
+            NotificationEventType::ObjectRestore => "s3:ObjectRestore:*".to_string(),
+            NotificationEventType::REPLICATION => "s3:Replication:*".to_string(),
+        }
+    }
 }
 
 type_state!(BucketBuilderState, StartState, WebsiteState,);
@@ -183,9 +247,9 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     redirect_all_requests_to: Option<(String, Option<Protocol>)>,
     cors_config: Option<CorsConfiguration>,
     bucket_encryption: Option<Encryption>,
-    bucket_notification_lambda_destinations: Vec<Value>,
-    bucket_notification_sns_destinations: Vec<Value>,
-    bucket_notification_sqs_destinations: Vec<Value>,
+    bucket_notification_lambda_destinations: Vec<(Value, String)>,
+    bucket_notification_sns_destinations: Vec<(Value, String)>,
+    bucket_notification_sqs_destinations: Vec<(Value, String)>,
 }
 
 impl BucketBuilder<StartState> {
@@ -256,8 +320,8 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
     pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
-            NotificationDestination::Lambda(l) => self.bucket_notification_lambda_destinations.push(l.get_arn()),
-            NotificationDestination::Sns(s) => self.bucket_notification_sns_destinations.push(s.get_ref()),
+            NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
+            NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_ref(), e.into())),
             // NotificationDestination::Sqs(s) => self.bucket_notification_sqs_destinations.push(s.get_arn()),
         }
         self
@@ -367,7 +431,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             None
         };
 
-        for (i, arn) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
+        for (i, (arn, event)) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
             let permission = PermissionBuilder::new(
                 &format!("{}-lambda-destination-perm-{}", self.id, i),
                 LambdaPermissionAction("lambda:InvokeFunction".to_string()),
@@ -378,19 +442,20 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .current_account()
             .build(stack_builder);
             let handler = Self::notification_handler(&self.id, "lambda", i, stack_builder);
-            BucketNotificationBuilder::new_for_lambda(
+            BucketNotificationBuilder::new(
                 &format!("{}-lambda-bucket-notification-{}", self.id, i),
                 handler.get_arn(),
                 bucket.get_ref(),
-                arn,
+                event,
                 permission.get_id(),
             )
+            .lambda(arn)
             .build(stack_builder);
         }
 
-        for (i, reference) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
+        for (i, (reference, event)) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
             let handler = Self::notification_handler(&self.id, "sns", i, stack_builder);
-            
+
             let mut source_arn = Map::new();
             source_arn.insert("aws:SourceArn".to_string(), bucket.get_arn());
             let mut condition = Map::new();
@@ -403,16 +468,17 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .resources(vec![reference.clone()])
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-            let topic_ref =
-                TopicPolicyBuilder::new(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()]).build(stack_builder);
-            
-            BucketNotificationBuilder::new_for_sns(
+            let topic_ref = TopicPolicyBuilder::new(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                .build(stack_builder);
+
+            BucketNotificationBuilder::new(
                 &format!("{}-sns-bucket-notification-{}", self.id, i),
                 handler.get_arn(),
                 bucket.get_ref(),
-                reference,
+                event,
                 topic_ref.get_id(),
             )
+            .sns(reference)
             .build(stack_builder);
         }
 
