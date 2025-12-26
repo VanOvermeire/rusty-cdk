@@ -6,7 +6,7 @@ use crate::lambda::{EventSourceMapping, Function, Permission};
 use crate::s3::{Bucket, BucketPolicy};
 use crate::secretsmanager::Secret;
 use crate::shared::Id;
-use crate::sns::{Subscription, Topic};
+use crate::sns::{Subscription, Topic, TopicPolicy};
 use crate::sqs::Queue;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -248,6 +248,7 @@ pub enum Resource {
     LogGroup(LogGroup),
     Queue(Queue),
     Topic(Topic),
+    TopicPolicy(TopicPolicy),
     Subscription(Subscription),
     Permission(Permission),
     EventSourceMapping(EventSourceMapping),
@@ -289,6 +290,7 @@ impl Resource {
             Resource::DeploymentStrategy(r) => r.get_id(),
             Resource::Environment(r) => r.get_id(),
             Resource::BucketNotification(r) => r.get_id(),
+            Resource::TopicPolicy(r) => r.get_id(),
         };
         id.clone()
     }
@@ -319,6 +321,7 @@ impl Resource {
             Resource::DeploymentStrategy(r) => r.get_resource_id(),
             Resource::Environment(r) => r.get_resource_id(),
             Resource::BucketNotification(r) => r.get_resource_id(),
+            Resource::TopicPolicy(r) => r.get_resource_id(),
         }
     }
 
@@ -351,6 +354,7 @@ from_resource!(Role);
 from_resource!(LogGroup);
 from_resource!(Queue);
 from_resource!(Topic);
+from_resource!(TopicPolicy);
 from_resource!(EventSourceMapping);
 from_resource!(Permission);
 from_resource!(Subscription);

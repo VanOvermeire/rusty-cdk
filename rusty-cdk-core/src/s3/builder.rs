@@ -1,7 +1,10 @@
-use crate::lambda::{Architecture, Runtime};
 use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
-use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
+use crate::iam::{
+    CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, Principal, PrincipalBuilder, ServicePrincipal,
+    StatementBuilder,
+};
 use crate::intrinsic::join;
+use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
 use crate::s3::dto;
 use crate::s3::{
@@ -11,10 +14,11 @@ use crate::s3::{
 };
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
+use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{BucketName, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, S3LifecycleObjectSizes, Timeout};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
 
@@ -131,8 +135,11 @@ impl From<Encryption> for String {
     }
 }
 
+// TODO add sqs
 pub enum NotificationDestination<'a> {
     Lambda(&'a FunctionRef),
+    Sns(&'a TopicRef),
+    // Sqs(&'a QueueRef),
 }
 
 type_state!(BucketBuilderState, StartState, WebsiteState,);
@@ -177,6 +184,8 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     cors_config: Option<CorsConfiguration>,
     bucket_encryption: Option<Encryption>,
     bucket_notification_lambda_destinations: Vec<Value>,
+    bucket_notification_sns_destinations: Vec<Value>,
+    bucket_notification_sqs_destinations: Vec<Value>,
 }
 
 impl BucketBuilder<StartState> {
@@ -198,6 +207,8 @@ impl BucketBuilder<StartState> {
             cors_config: None,
             bucket_encryption: None,
             bucket_notification_lambda_destinations: vec![],
+            bucket_notification_sns_destinations: vec![],
+            bucket_notification_sqs_destinations: vec![],
         }
     }
 
@@ -243,14 +254,13 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
-    // TODO allow SNS, SQS
-    pub fn add_bucket_notification(mut self, destination: NotificationDestination) -> Self {
+    pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
-            NotificationDestination::Lambda(l) => {
-                self.bucket_notification_lambda_destinations.push(l.get_arn());
-                self
-            },
+            NotificationDestination::Lambda(l) => self.bucket_notification_lambda_destinations.push(l.get_arn()),
+            NotificationDestination::Sns(s) => self.bucket_notification_sns_destinations.push(s.get_ref()),
+            // NotificationDestination::Sqs(s) => self.bucket_notification_sqs_destinations.push(s.get_arn()),
         }
+        self
     }
 
     /// Configures the bucket for static website hosting.
@@ -271,6 +281,8 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             cors_config: self.cors_config,
             bucket_encryption: self.bucket_encryption,
             bucket_notification_lambda_destinations: self.bucket_notification_lambda_destinations,
+            bucket_notification_sns_destinations: self.bucket_notification_sns_destinations,
+            bucket_notification_sqs_destinations: self.bucket_notification_sqs_destinations,
         }
     }
 
@@ -355,24 +367,76 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             None
         };
 
-
         for (i, arn) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
-            let permission = PermissionBuilder::new(&format!("{}-destination-perm-{}", self.id, i), LambdaPermissionAction("lambda:InvokeFunction".to_string()), arn.clone(), "s3.amazonaws.com")
-                .source_arn(bucket.get_arn())
-                .current_account()
-                .build(stack_builder);
-            let (handler, ..) = FunctionBuilder::new(&format!("{}-handler-{}", self.id, i), Architecture::X86_64, Memory(128), Timeout(300))
-                .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
-                .handler("index.handler")
-                .runtime(Runtime::Python313)
-                .add_permission(Permission::Custom(CustomPermission::new("NotificationPermission", StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow).all_resources().build())))
-                .build(stack_builder);
-            BucketNotificationBuilder::new(&format!("{}-bucket-notification-{}", self.id, i), handler.get_arn(), bucket.get_ref(), arn, permission.get_id())
-                .build(stack_builder);
+            let permission = PermissionBuilder::new(
+                &format!("{}-lambda-destination-perm-{}", self.id, i),
+                LambdaPermissionAction("lambda:InvokeFunction".to_string()),
+                arn.clone(),
+                "s3.amazonaws.com",
+            )
+            .source_arn(bucket.get_arn())
+            .current_account()
+            .build(stack_builder);
+            let handler = Self::notification_handler(&self.id, "lambda", i, stack_builder);
+            BucketNotificationBuilder::new_for_lambda(
+                &format!("{}-lambda-bucket-notification-{}", self.id, i),
+                handler.get_arn(),
+                bucket.get_ref(),
+                arn,
+                permission.get_id(),
+            )
+            .build(stack_builder);
+        }
+
+        for (i, reference) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
+            let handler = Self::notification_handler(&self.id, "sns", i, stack_builder);
             
+            let mut source_arn = Map::new();
+            source_arn.insert("aws:SourceArn".to_string(), bucket.get_arn());
+            let mut condition = Map::new();
+            condition.insert("ArnLike".to_string(), Value::Object(source_arn));
+            let statement = StatementBuilder::new(vec![IamAction("sns:Publish".to_string())], Effect::Allow)
+                .principal(Principal::Service(ServicePrincipal {
+                    service: "s3.amazonaws.com".to_string(),
+                }))
+                .condition(Value::Object(condition))
+                .resources(vec![reference.clone()])
+                .build();
+            let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+            let topic_ref =
+                TopicPolicyBuilder::new(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()]).build(stack_builder);
+            
+            BucketNotificationBuilder::new_for_sns(
+                &format!("{}-sns-bucket-notification-{}", self.id, i),
+                handler.get_arn(),
+                bucket.get_ref(),
+                reference,
+                topic_ref.get_id(),
+            )
+            .build(stack_builder);
         }
 
         (bucket, policy)
+    }
+
+    fn notification_handler(id: &Id, target: &str, num: usize, stack_builder: &mut StackBuilder) -> FunctionRef {
+        let (handler, ..) = FunctionBuilder::new(
+            &format!("{}-{}-handler-{}", id, target, num),
+            Architecture::X86_64,
+            Memory(128),
+            Timeout(300),
+        )
+        .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
+        .handler("index.handler")
+        .runtime(Runtime::Python313)
+        .add_permission(Permission::Custom(CustomPermission::new(
+            "NotificationPermission",
+            StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow)
+                .all_resources()
+                .build(),
+        )))
+        .build(stack_builder);
+        handler
     }
 }
 

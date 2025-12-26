@@ -39,8 +39,10 @@ pub struct BucketNotificationProperties {
 
 #[derive(Debug, Serialize)]
 pub struct NotificationConfiguration {
-    #[serde(rename = "LambdaFunctionConfigurations")]
-    pub(super) lambda_configs: Option<Vec<LambdaFunctionConfiguration>>
+    #[serde(rename = "LambdaFunctionConfigurations", skip_serializing_if = "Option::is_none")]
+    pub(super) lambda_configs: Option<Vec<LambdaFunctionConfiguration>>,
+    #[serde(rename = "TopicConfigurations", skip_serializing_if = "Option::is_none")]
+    pub(super) topic_configs: Option<Vec<TopicConfiguration>>
 }
 
 #[derive(Debug, Serialize)]
@@ -48,5 +50,13 @@ pub struct LambdaFunctionConfiguration {
     #[serde(rename = "Events")]
     pub(super) events: Vec<String>,
     #[serde(rename = "LambdaFunctionArn")]
+    pub(super) arn: Value,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TopicConfiguration {
+    #[serde(rename = "Events")]
+    pub(super) events: Vec<String>,
+    #[serde(rename = "TopicArn")]
     pub(super) arn: Value,
 }

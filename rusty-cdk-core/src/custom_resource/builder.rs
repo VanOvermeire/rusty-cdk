@@ -1,4 +1,4 @@
-use crate::custom_resource::{BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration};
+use crate::custom_resource::{BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration, TopicConfiguration};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
@@ -119,39 +119,67 @@ pub struct BucketNotificationBuilder {
     id: Id,
     handler_arn: Value,
     bucket_ref: Value,
-    lambda_arn: Value,
-    lambda_invoke_permission_id: Id,
+    lambda_arn: Option<Value>,
+    sns_ref: Option<Value>,
+    dependency: Id,
 }
 
 impl BucketNotificationBuilder {
-    // if this was to become public outside the crate, it should accept Refs instead of Values
-    // and names would change as well
-    pub fn new(id: &str, handler_arn: Value, bucket_ref: Value, lambda_arn: Value, lambda_invoke_permission_id: Id) -> Self {
-        Self { id: Id(id.to_string()), handler_arn, bucket_ref, lambda_arn, lambda_invoke_permission_id }
+    // if this was to become public outside the crate, it should
+    // - accept Refs instead of Values
+    // - have different param names
+    // - and only one `new`
+    pub(crate) fn new_for_lambda(id: &str, handler_arn: Value, bucket_ref: Value, lambda_arn: Value, dependency: Id) -> Self {
+        Self { id: Id(id.to_string()), handler_arn, bucket_ref, lambda_arn: Some(lambda_arn), sns_ref: None, dependency }
     }
 
-    pub fn build(self, stack_builder: &mut StackBuilder) -> BucketNotificationRef {
+    pub(crate) fn new_for_sns(id: &str, handler_arn: Value, bucket_ref: Value, sns_ref: Value, dependency: Id) -> Self {
+        Self { id: Id(id.to_string()), handler_arn, bucket_ref, lambda_arn: None, sns_ref: Some(sns_ref), dependency }
+    }
+
+    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> BucketNotificationRef {
         let resource_id = Resource::generate_id("BucketNotification");
         let bucket_notification_ref = BucketNotificationRef::new(resource_id.to_string());
         
+        let config = if let Some(arn) = self.lambda_arn {
+            NotificationConfiguration {
+                lambda_configs: Some(vec![
+                    LambdaFunctionConfiguration {
+                        events: vec![
+                            "s3:ObjectCreated:*".to_string(), // TODO pass in (also in builder) + make sure they're valid (enum?)
+                        ],
+                        arn,
+                    }
+                ]),
+                topic_configs: None,
+            }
+        } else if let Some(arn) = self.sns_ref {
+            NotificationConfiguration {
+                topic_configs:  Some(vec![
+                    TopicConfiguration {
+                        events: vec![
+                            "s3:ObjectCreated:*".to_string(), // TODO pass in (also in builder) + make sure they're valid (enum?)
+                        ],
+                        arn,
+                    }
+                ]),
+                lambda_configs: None,
+            }
+        } else {
+            unreachable!("should be either lambda or sns");
+        };
+
         stack_builder.add_resource(BucketNotification {
             id: self.id,
             resource_id,
             r#type: "Custom::S3BucketNotifications".to_string(),
             properties: BucketNotificationProperties {
+                notification_configuration: config,
                 service_token: self.handler_arn,
                 bucket_name: self.bucket_ref,
-                notification_configuration: NotificationConfiguration { lambda_configs: Some(vec![
-                    LambdaFunctionConfiguration {
-                        events: vec![
-                            "s3:ObjectCreated:*".to_string(), // TODO pass in (also in builder) + make sure they're valid (enum?)
-                        ],
-                        arn: self.lambda_arn,
-                    }
-                ]) },
                 managed: true,
                 skip_destination_validation: false,
-                depends_on: vec![self.lambda_invoke_permission_id.to_string()],
+                depends_on: vec![self.dependency.to_string()],
             },
         });
 

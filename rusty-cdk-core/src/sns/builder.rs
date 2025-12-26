@@ -1,8 +1,10 @@
 use std::marker::PhantomData;
+use serde_json::Value;
+use crate::iam::PolicyDocument;
 use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
-use crate::sns::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef};
+use crate::sns::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef, TopicPolicy, TopicPolicyRef, TopicPolicyProperties};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens};
@@ -280,3 +282,35 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
         self.build_internal(true, stack_builder)
     }
 }
+
+pub(crate) struct TopicPolicyBuilder {
+    id: Id,
+    doc: PolicyDocument,
+    topics: Vec<Value>
+}
+
+impl TopicPolicyBuilder {
+    pub(crate) fn new(id: &str, doc: PolicyDocument, topics: Vec<Value>) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            doc,
+            topics,
+        }
+    }
+    
+    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
+        let resource_id = Resource::generate_id("TopicPolicy");
+        stack_builder.add_resource(TopicPolicy {
+            id: self.id.clone(),
+            resource_id: resource_id.clone(),
+            r#type: "AWS::SNS::TopicPolicy".to_string(),
+            properties: TopicPolicyProperties {
+                doc: self.doc,
+                topics: self.topics,
+            },
+        });
+        
+        TopicPolicyRef::new(self.id, resource_id)
+    }
+}
+

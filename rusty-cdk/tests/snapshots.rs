@@ -546,7 +546,7 @@ fn lambda_with_inline_code() {
 
     let memory = memory!(512);
     let timeout = timeout!(30);
-    let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+    FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
         .code(Code::Inline("module.exports.handler = async (e) => { console.log(e) };".to_string()))
         .handler("index.handler")
         .runtime(Runtime::NodeJs22)
@@ -567,39 +567,33 @@ fn lambda_with_inline_code() {
     });
 }
 
-// TODO
-// #[test]
-// fn bucket_with_notifications_to_sns() {
-//     let mut stack_builder = StackBuilder::new();
-// 
-//     let memory = memory!(512);
-//     let timeout = timeout!(30);
-//     let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
-//         .code(Code::Inline("module.exports.handler = async (e) => { console.log(e) };".to_string()))
-//         .handler("index.handler")
-//         .runtime(Runtime::NodeJs22)
-//         .build(&mut stack_builder);
-// 
-//     BucketBuilder::new("someBuck")
-//         .add_bucket_notification(NotificationDestination::Lambda(&fun))
-//         .build(&mut stack_builder);
-// 
-//     let stack = stack_builder.build().unwrap();
-// 
-//     let synthesized = stack.synth().unwrap();
-//     let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
-// 
-//     insta::with_settings!({filters => vec![
-//             (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
-//             (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
-//             (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
-//             (r"LogGroup[0-9]+", "[LogGroup]"),
-//             (r"S3Bucket[0-9]+", "[S3Bucket]"),
-//             (r"BucketNotification[0-9]+", "[BucketNotification]"),
-//         ]},{
-//             insta::assert_json_snapshot!(synthesized);
-//     });
-// }
+#[test]
+fn bucket_with_notifications_to_sns() {
+    let mut stack_builder = StackBuilder::new();
+
+    let topic = TopicBuilder::new("top").build(&mut stack_builder);
+    BucketBuilder::new("buc")
+        .add_notification(NotificationDestination::Sns(&topic))
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"SnsTopic[0-9]+", "[SnsTopic]"),
+            (r"TopicPolicy[0-9]+", "[TopicPolicy]"),
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
+            (r"BucketNotification[0-9]+", "[BucketNotification]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
 
 fn get_bucket() -> Bucket {
     // not interested in testing the bucket macro here, so use the wrapper directly
