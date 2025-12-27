@@ -304,17 +304,19 @@ impl QueueBuilder<FifoState> {
     }
 }
 
-// TODO make available to outside
-//  - public new accepts QueueRef
-//  - private new accepts Value
-pub(crate) struct QueuePolicyBuilder {
+pub struct QueuePolicyBuilder {
     id: Id,
     doc: PolicyDocument,
     queues: Vec<Value>
 }
 
 impl QueuePolicyBuilder {
-    pub(crate) fn new(id: &str, doc: PolicyDocument, queues: Vec<Value>) -> Self {
+    // see remarks topic policy
+    pub fn new(id: &str, doc: PolicyDocument, queues: Vec<&QueueRef>) -> Self {
+        Self::new_with_values(id, doc, queues.into_iter().map(|v| v.get_ref()).collect())
+    }
+    
+    pub(crate) fn new_with_values(id: &str, doc: PolicyDocument, queues: Vec<Value>) -> Self {
         Self {
             id: Id(id.to_string()),
             doc,
@@ -322,7 +324,7 @@ impl QueuePolicyBuilder {
         }
     }
 
-    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
         let resource_id = Resource::generate_id("QueuePolicy");
         stack_builder.add_resource(QueuePolicy {
             id: self.id.clone(),

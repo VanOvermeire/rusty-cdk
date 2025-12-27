@@ -10,7 +10,9 @@ use rusty_cdk_core::cloudfront::{
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
-use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, StatementBuilder};
+use rusty_cdk_core::iam::{
+    CustomPermission, Effect, Permission, PolicyDocumentBuilder, Principal, PrincipalBuilder, ServicePrincipal, StatementBuilder,
+};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{
     BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
@@ -19,12 +21,12 @@ use rusty_cdk_core::s3::{
 };
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
-use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
-use rusty_cdk_core::sqs::QueueBuilder;
+use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder, TopicPolicyBuilder};
+use rusty_cdk_core::sqs::{QueueBuilder, QueuePolicyBuilder};
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
 
 #[test]
@@ -622,6 +624,77 @@ fn bucket_with_notifications_to_sqs() {
             (r"SqsQueue[0-9]+", "[SqsQueue]"),
             (r"S3Bucket[0-9]+", "[S3Bucket]"),
             (r"BucketNotification[0-9]+", "[BucketNotification]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn sns_with_policy() {
+    let mut stack_builder = StackBuilder::new();
+
+    let topic = TopicBuilder::new("top").build(&mut stack_builder);
+    let condition = json!({
+        "ArnLike": {
+            "aws:SourceArn": "some-source-for-publishes"
+        }
+    });
+    let principal = PrincipalBuilder::new().service("s3.amazonaws.com".to_string()).build();
+    let statement = StatementBuilder::new(vec![iam_action!("sns:Publish")], Effect::Allow)
+        .principal(principal)
+        .condition(condition)
+        .resources(vec![topic.get_ref()])
+        .build();
+    let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+    TopicPolicyBuilder::new("pol", doc, vec![&topic]).build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"SnsTopic[0-9]+", "[SnsTopic]"),
+            (r"TopicPolicy[0-9]+", "[TopicPolicy]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn sqs_with_policy() {
+    let mut stack_builder = StackBuilder::new();
+
+    let queue = QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
+    let condition = json!({
+        "ArnLike": {
+            "aws:SourceArn": "some-source-for-publishes"
+        }
+    });
+    let principal = PrincipalBuilder::new().service("s3.amazonaws.com".to_string()).build();
+    let statement = StatementBuilder::new(
+        vec![
+            iam_action!("sqs:GetQueueAttributes"),
+            iam_action!("sqs:GetQueueUrl"),
+            iam_action!("sqs:SendMessage"),
+        ],
+        Effect::Allow,
+    )
+    .principal(principal)
+    .condition(condition)
+    .resources(vec![queue.get_arn()])
+    .build();
+    let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+    QueuePolicyBuilder::new("some-policy", doc, vec![&queue]).build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"QueuePolicy[0-9]+", "[QueuePolicy]"),
+            (r"SqsQueue[0-9]+", "[SqsQueue]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

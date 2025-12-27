@@ -1,8 +1,5 @@
 use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
-use crate::iam::{
-    CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, Principal, PrincipalBuilder, ServicePrincipal,
-    StatementBuilder,
-};
+use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
@@ -15,13 +12,13 @@ use crate::s3::{
 use crate::shared::http::{HttpMethod, Protocol};
 use crate::shared::Id;
 use crate::sns::{TopicPolicyBuilder, TopicRef};
+use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{BucketName, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, S3LifecycleObjectSizes, Timeout};
-use serde_json::{Map, Value};
+use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
-use crate::sqs::{QueuePolicyBuilder, QueueRef};
 
 /// Builder for S3 bucket policies.
 ///
@@ -177,7 +174,7 @@ impl From<NotificationEventType> for String {
         match value {
             NotificationEventType::ObjectCreated => "s3:ObjectCreated:*".to_string(),
             NotificationEventType::ObjectCreatedPut => "s3:ObjectCreated:Put".to_string(),
-            NotificationEventType::ObjectCreatedPost =>  "s3:ObjectCreated:Post".to_string(),
+            NotificationEventType::ObjectCreatedPost => "s3:ObjectCreated:Post".to_string(),
             NotificationEventType::ObjectCreatedCopy => "s3:ObjectCreated:Copy".to_string(),
             NotificationEventType::ObjectCreatedCompleteMultipartUpload => "s3:ObjectCreated:CompleteMultipartUpload".to_string(),
             NotificationEventType::ObjectRemoved => "s3:ObjectRemoved:*".to_string(),
@@ -189,7 +186,9 @@ impl From<NotificationEventType> for String {
             NotificationEventType::ReducedRedundancyLostObject => "s3:ReducedRedundancyLostObject".to_string(),
             NotificationEventType::ReplicationOperationFailedReplication => "s3:Replication:OperationFailedReplication".to_string(),
             NotificationEventType::ReplicationOperationMissedThreshold => "s3:Replication:OperationMissedThreshold".to_string(),
-            NotificationEventType::ReplicationOperationReplicatedAfterThreshold => "s3:Replication:OperationReplicatedAfterThreshold".to_string(),
+            NotificationEventType::ReplicationOperationReplicatedAfterThreshold => {
+                "s3:Replication:OperationReplicatedAfterThreshold".to_string()
+            }
             NotificationEventType::ReplicationOperationNotTracked => "s3:Replication:OperationNotTracked".to_string(),
             NotificationEventType::LifecycleExpiration => "s3:LifecycleExpiration:*".to_string(),
             NotificationEventType::LifecycleExpirationDelete => "s3:LifecycleExpiration:Delete".to_string(),
@@ -456,20 +455,23 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         for (i, (reference, event)) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
             let handler = Self::notification_handler(&self.id, "sns", i, stack_builder);
 
-            let mut source_arn = Map::new();
-            source_arn.insert("aws:SourceArn".to_string(), bucket.get_arn());
-            let mut condition = Map::new();
-            condition.insert("ArnLike".to_string(), Value::Object(source_arn));
+            let bucket_arn = bucket.get_arn();
+            let condition = json!({
+                "ArnLike": {
+                    "aws:SourceArn": bucket_arn
+                }
+            });
+            let principal = PrincipalBuilder::new().service("s3.amazonaws.com".to_string()).build();
             let statement = StatementBuilder::new(vec![IamAction("sns:Publish".to_string())], Effect::Allow)
-                .principal(Principal::Service(ServicePrincipal {
-                    service: "s3.amazonaws.com".to_string(),
-                }))
-                .condition(Value::Object(condition))
+                .principal(principal)
+                .condition(condition)
                 .resources(vec![reference.clone()])
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-            let topic_ref = TopicPolicyBuilder::new(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
-                .build(stack_builder);
+
+            let topic_ref =
+                TopicPolicyBuilder::new_with_values(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                    .build(stack_builder);
 
             BucketNotificationBuilder::new(
                 &format!("{}-sns-bucket-notification-{}", self.id, i),
@@ -484,21 +486,30 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
         for (i, (reference, arn, event)) in self.bucket_notification_sqs_destinations.into_iter().enumerate() {
             let handler = Self::notification_handler(&self.id, "sqs", i, stack_builder);
-            
-            let mut source_arn = Map::new();
-            source_arn.insert("aws:SourceArn".to_string(), bucket.get_arn());
-            let mut condition = Map::new();
-            condition.insert("ArnLike".to_string(), Value::Object(source_arn));
-            let statement = StatementBuilder::new(vec![IamAction("sqs:GetQueueAttributes".to_string()), IamAction("sqs:GetQueueUrl".to_string()), IamAction("sqs:SendMessage".to_string())], Effect::Allow)
-                .principal(Principal::Service(ServicePrincipal {
-                    service: "s3.amazonaws.com".to_string(),
-                }))
-                .condition(Value::Object(condition))
-                .resources(vec![arn.clone()])
-                .build();
+
+            let bucket_arn = bucket.get_arn();
+            let condition = json!({
+                "ArnLike": {
+                    "aws:SourceArn": bucket_arn
+                }
+            });
+            let principal = PrincipalBuilder::new().service("s3.amazonaws.com".to_string()).build();
+            let statement = StatementBuilder::new(
+                vec![
+                    IamAction("sqs:GetQueueAttributes".to_string()),
+                    IamAction("sqs:GetQueueUrl".to_string()),
+                    IamAction("sqs:SendMessage".to_string()),
+                ],
+                Effect::Allow,
+            )
+            .principal(principal)
+            .condition(condition)
+            .resources(vec![arn.clone()])
+            .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-            let queue_policy_ref = QueuePolicyBuilder::new(&format!("{}-sqs-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
-                .build(stack_builder);
+            let queue_policy_ref =
+                QueuePolicyBuilder::new_with_values(&format!("{}-sqs-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                    .build(stack_builder);
 
             BucketNotificationBuilder::new(
                 &format!("{}-sqs-bucket-notification-{}", self.id, i),

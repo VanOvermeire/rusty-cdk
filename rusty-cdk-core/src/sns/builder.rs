@@ -1,13 +1,13 @@
-use std::marker::PhantomData;
-use serde_json::Value;
 use crate::iam::PolicyDocument;
 use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::Id;
-use crate::sns::{Subscription, SnsSubscriptionProperties, Topic, TopicProperties, TopicRef, TopicPolicy, TopicPolicyRef, TopicPolicyProperties};
+use crate::sns::{SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens};
+use serde_json::Value;
+use std::marker::PhantomData;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -283,17 +283,20 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
     }
 }
 
-// TODO make available to outside
-//  - public new accepts TopicRef
-//  - private new accepts Value
-pub(crate) struct TopicPolicyBuilder {
+pub struct TopicPolicyBuilder {
     id: Id,
     doc: PolicyDocument,
     topics: Vec<Value>
 }
 
 impl TopicPolicyBuilder {
-    pub(crate) fn new(id: &str, doc: PolicyDocument, topics: Vec<Value>) -> Self {
+    // TODO is a topic policy valid if it has * for resource?
+    // could help user by setting resource and condition
+    pub fn new(id: &str, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
+        Self::new_with_values(id, doc, topics.into_iter().map(|v| v.get_ref()).collect())
+    }
+    
+    pub(crate) fn new_with_values(id: &str, doc: PolicyDocument, topics: Vec<Value>) -> Self {
         Self {
             id: Id(id.to_string()),
             doc,
@@ -301,7 +304,7 @@ impl TopicPolicyBuilder {
         }
     }
     
-    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
         let resource_id = Resource::generate_id("TopicPolicy");
         stack_builder.add_resource(TopicPolicy {
             id: self.id.clone(),

@@ -1,0 +1,52 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "pol": "[TopicPolicy]",
+    "top": "[SnsTopic]"
+  },
+  "Resources": {
+    "[SnsTopic]": {
+      "Properties": {
+        "FifoTopic": false
+      },
+      "Type": "AWS::SNS::Topic"
+    },
+    "[TopicPolicy]": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sns:Publish"
+              ],
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": "some-source-for-publishes"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Resource": [
+                {
+                  "Ref": "[SnsTopic]"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Topics": [
+          {
+            "Ref": "[SnsTopic]"
+          }
+        ]
+      },
+      "Type": "AWS::SNS::TopicPolicy"
+    }
+  }
+}

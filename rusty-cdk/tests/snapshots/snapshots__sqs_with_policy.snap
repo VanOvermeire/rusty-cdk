@@ -1,0 +1,55 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "queue": "[SqsQueue]",
+    "some-policy": "[QueuePolicy]"
+  },
+  "Resources": {
+    "[QueuePolicy]": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+                "sqs:SendMessage"
+              ],
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": "some-source-for-publishes"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "[SqsQueue]",
+                    "Arn"
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Queues": [
+          {
+            "Ref": "[SqsQueue]"
+          }
+        ]
+      },
+      "Type": "AWS::SQS::QueuePolicy"
+    },
+    "[SqsQueue]": {
+      "Properties": {},
+      "Type": "AWS::SQS::Queue"
+    }
+  }
+}
