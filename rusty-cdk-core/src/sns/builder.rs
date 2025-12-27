@@ -290,7 +290,6 @@ pub struct TopicPolicyBuilder {
 }
 
 impl TopicPolicyBuilder {
-    // TODO is a topic policy valid if it has * for resource?
     // could help user by setting resource and condition
     pub fn new(id: &str, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
         Self::new_with_values(id, doc, topics.into_iter().map(|v| v.get_ref()).collect())
