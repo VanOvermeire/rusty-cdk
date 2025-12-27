@@ -312,10 +312,20 @@ pub struct QueuePolicyBuilder {
 
 impl QueuePolicyBuilder {
     // see remarks topic policy
+
+    /// Creates a new SQS queue policy builder.
+    /// 
+    /// *Important* Current limitation: CloudFormation only allows one resource policy for a given queue, applying the last one it receives.
+    /// If you've added a bucket notification for this queue, which requires a policy, and you also define one yourself, one of both will get lost.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the queue
+    /// * `doc` - The resource policy that should be applied to the queues
+    /// * `queues` - Queues for which the policy is valid
     pub fn new(id: &str, doc: PolicyDocument, queues: Vec<&QueueRef>) -> Self {
         Self::new_with_values(id, doc, queues.into_iter().map(|v| v.get_ref()).collect())
     }
-    
+
     pub(crate) fn new_with_values(id: &str, doc: PolicyDocument, queues: Vec<Value>) -> Self {
         Self {
             id: Id(id.to_string()),

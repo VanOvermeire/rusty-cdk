@@ -230,7 +230,7 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
   - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
   - The same goes for unsupported resources: open an issue or PR!
 - _"How do I add tags to resources?"
-  - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags.
+  - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags. See an example below.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
 - _"I create a resource and my deployment failed"_
   - If you think that failure could have been avoided at compile time (or before synthesizing), please open an issue
@@ -238,29 +238,34 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
   - Maybe? But keeping everything except for `deploy` synchronous is easiest for now.
 - _"Won't this library always be behind on the latest additions/changes to AWS?"_
   - Sadly, yes. But for a long time that was the case with CloudFormation as well. And sometimes you have to wait for months or a few years before L2-3 constructs arrive in the AWS CDK.
+- Why don't you use more borrowing in the internals of this library?
+  - It started out with less borrowing because that's easier, less complex. And when I experimented with introducing borrowing everywhere, the performance gain was barely noticeable.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::sqs::QueueBuilder;
 
 async fn tagging() {
-let mut stack_builder = StackBuilder::new();
-// add your resources
-stack_builder.add_tag("OWNER", "me").build();
-// and deploy
+  let mut stack_builder = StackBuilder::new();
+  // add your resources
+  stack_builder.add_tag("OWNER", "me").build();
+  // and deploy
 }
 ```
 
 ## TODO
 
-- Pick a style for ids (Camelcase?)
+- Pick a style for ids (camelcase?)
+- Allow overriding of Lambda log group
+- Multiple queue/topic policy = only last one is applied
+  - Merge the policies during build? Too bad that this is not transparent though
+    - Prefer the user policy id, not our generated one
+  - Another option is to pass on a ref (but not sure how to implement yet + forgetting to do that would case issues)
+  - Remove docs pointing out current limitation
 - UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
-- more help with IAM permissions
-  - additional checks for structure of iam policies
-    - for example resources is not required in all cases, but in most contexts it is
-- try to replace `syn` with more something more compile-time lightweight - `facet`?
-- switch to uploading template to s3? helps avoid the 51 kb limit
-  - or at least offer that option
-- borrow all the things? see borrowing-example branch for an example
-  - the gain in performance was not that impressive
-  - so probably not worth the added complexity
+- More help with IAM permissions
+  - Additional checks for structure of iam policies
+    - For example `resources` is not required in all cases, but in most contexts it is
+- Try to replace `syn` with more something more compile-time lightweight - `facet`?
+- Switch to uploading template to s3? helps avoid the 51 kb limit
+  - Or at least offer that option

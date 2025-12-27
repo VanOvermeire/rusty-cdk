@@ -291,6 +291,16 @@ pub struct TopicPolicyBuilder {
 
 impl TopicPolicyBuilder {
     // could help user by setting resource and condition
+
+    /// Creates a new SNS topic policy builder.
+    ///
+    /// *Important* Current limitation: CloudFormation only allows one resource policy for a given topic, applying the last one it receives.
+    /// If you've added a bucket notification for this topic, which requires a policy, and you also define one yourself, one of both will get lost.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the topic
+    /// * `doc` - The resource policy that should be applied to the topics
+    /// * `topics` - Topics for which the policy is valid
     pub fn new(id: &str, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
         Self::new_with_values(id, doc, topics.into_iter().map(|v| v.get_ref()).collect())
     }

@@ -20,8 +20,6 @@ use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
 
-// TODO allow overwriting the log group
-
 pub enum Runtime {
     NodeJs22,
     Java21,

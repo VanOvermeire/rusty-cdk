@@ -126,7 +126,7 @@ pub struct BucketNotificationBuilder {
     lambda_arn: Option<Value>,
     sns_ref: Option<Value>,
     sqs_arn: Option<Value>,
-    dependency: Id,
+    dependency: Option<Id>,
 }
 
 impl BucketNotificationBuilder {
@@ -134,7 +134,7 @@ impl BucketNotificationBuilder {
     // - accept Refs instead of Values
     // - have different param names
     // - should allow *either* lambda or sns or sqs
-    pub(crate) fn new(id: &str, handler_arn: Value, bucket_ref: Value, event: String, dependency: Id) -> Self {
+    pub(crate) fn new(id: &str, handler_arn: Value, bucket_ref: Value, event: String, dependency: Option<Id>) -> Self {
         Self {
             id: Id(id.to_string()),
             handler_arn,
@@ -213,7 +213,7 @@ impl BucketNotificationBuilder {
                 bucket_name: self.bucket_ref,
                 managed: true,
                 skip_destination_validation: false,
-                depends_on: vec![self.dependency.to_string()],
+                depends_on: self.dependency.map(|v| vec![v.to_string()]),
             },
         });
 

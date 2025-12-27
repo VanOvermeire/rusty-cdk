@@ -33,8 +33,8 @@ pub struct BucketNotificationProperties {
     pub(super) skip_destination_validation: bool,
     #[serde(rename = "NotificationConfiguration")]
     pub(super) notification_configuration: NotificationConfiguration,
-    #[serde(rename = "DependsOn")]
-    pub(super) depends_on: Vec<String>,
+    #[serde(rename = "DependsOn", skip_serializing_if = "Option::is_none")]
+    pub(super) depends_on: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]

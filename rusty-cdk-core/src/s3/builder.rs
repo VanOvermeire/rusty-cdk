@@ -446,7 +446,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                permission.get_id(),
+                Some(permission.get_id()),
             )
             .lambda(arn)
             .build(stack_builder);
@@ -478,7 +478,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                topic_ref.get_id(),
+                Some(topic_ref.get_id()),
             )
             .sns(reference)
             .build(stack_builder);
@@ -516,7 +516,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                queue_policy_ref.get_id(),
+                Some(queue_policy_ref.get_id()),
             )
             .sqs(arn)
             .build(stack_builder);
