@@ -24,9 +24,9 @@ expression: synthesized
           ]
         },
         "PublicAccessBlockConfiguration": {
-          "BlockPublicAcls": false,
+          "BlockPublicAcls": true,
           "BlockPublicPolicy": false,
-          "IgnorePublicAcls": false,
+          "IgnorePublicAcls": true,
           "RestrictPublicBuckets": false
         },
         "WebsiteConfiguration": {
