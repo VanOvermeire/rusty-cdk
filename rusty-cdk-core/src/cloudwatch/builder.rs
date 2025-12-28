@@ -4,6 +4,7 @@ use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{LogGroupName, RetentionInDays};
 use serde_json::Value;
 
+#[derive(Debug, Clone)]
 pub enum LogGroupClass {
     Standard,
     InfrequentAccess,

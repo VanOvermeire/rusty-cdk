@@ -9,6 +9,7 @@ use std::fmt::{Display, Formatter};
 use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
+use aws_sdk_cloudformation::error::{ProvideErrorMetadata, SdkError};
 use tokio::time::sleep;
 
 #[derive(Debug)]
@@ -303,15 +304,31 @@ async fn create_or_update_stack(name: &String, stack: &mut Stack, cloudformation
                 .synth_for_existing(&existing)
                 .map_err(|e| DeployError::SynthError(format!("{e:?}")))?;
 
-            cloudformation_client
+            return match cloudformation_client
                 .update_stack()
                 .stack_name(name)
                 .template_body(body)
                 .capabilities(Capability::CapabilityNamedIam)
                 .set_tags(tags)
                 .send()
-                .await
-                .map_err(|e| DeployError::StackUpdateError(format!("{e:?}")))?;
+                .await {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    match e {
+                        SdkError::ServiceError(ref s) => {
+                            let update_stack_error = s.err();
+                            if update_stack_error.message().map(|v| v.contains("No updates are to be performed")).unwrap_or(false) {
+                                Ok(())   
+                            } else {
+                                Err(DeployError::StackUpdateError(format!("{e:?}")))
+                            }
+                        }
+                        _ => {
+                            Err(DeployError::StackUpdateError(format!("{e:?}")))
+                        }
+                    }
+                }
+            }
         }
         None => {
             let body = stack.synth().map_err(|e| DeployError::SynthError(format!("{e:?}")))?;

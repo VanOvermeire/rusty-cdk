@@ -13,6 +13,7 @@ use crate::type_state;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
+#[derive(Debug, Clone)]
 pub enum DeduplicationScope {
     Queue,
     MessageGroup,
@@ -27,6 +28,7 @@ impl From<DeduplicationScope> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum FifoThroughputLimit {
     PerQueue,
     PerMessageGroupId,

@@ -320,6 +320,7 @@ impl AssumeRolePolicyDocumentBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Effect {
     Allow,
     Deny,

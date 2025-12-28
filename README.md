@@ -261,7 +261,6 @@ async fn tagging() {
 - Add a note on ids (and how they should not change)
 - During synth or deploy, check that all ids and resource ids are unique across the stack (random suffixes do not guarantee this)
   - Either fail or fix the ids
-- Debug + Clone for builder enums?
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied
@@ -269,7 +268,10 @@ async fn tagging() {
     - Prefer the user policy id, not our generated one
   - Another option is to pass on a ref (but not sure how to implement yet + forgetting to do that would case issues)
   - Remove docs pointing out current limitation
-- UpdateReplacePolicy/DeletionPolicy for storage structs (will slow down testing, so not yet)
+- UpdateReplacePolicy/DeletionPolicy for
+  - DynamoDB
+  - S3
+  - Other storage structs
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is

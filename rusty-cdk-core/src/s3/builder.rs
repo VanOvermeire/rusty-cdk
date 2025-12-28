@@ -101,6 +101,7 @@ impl BucketPolicyBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum VersioningConfiguration {
     Enabled,
     Suspended,
@@ -115,6 +116,7 @@ impl From<VersioningConfiguration> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Encryption {
     S3Managed,
     KmsManaged,
@@ -139,6 +141,7 @@ pub enum NotificationDestination<'a> {
     Sqs(&'a QueueRef, NotificationEventType),
 }
 
+#[derive(Debug, Clone)]
 pub enum NotificationEventType {
     ObjectCreated,
     ObjectCreatedPut,
@@ -370,12 +373,12 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         };
 
         let access = if self.access.is_none() && website {
-            // turning this off is required for an S3 website
+            // required for an S3 website
             Some(PublicAccessBlockConfiguration {
-                block_public_acls: Some(false),
                 block_public_policy: Some(false),
-                ignore_public_acls: Some(false),
                 restrict_public_buckets: Some(false),
+                block_public_acls: Some(true),
+                ignore_public_acls: Some(true),
             })
         } else {
             self.access
@@ -653,6 +656,7 @@ impl CorsRuleBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum TransitionDefaultMinimumObjectSize {
     VariesByStorageClass,
     AllStorageClasses128k,
@@ -667,6 +671,7 @@ impl From<TransitionDefaultMinimumObjectSize> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum LifecycleStorageClass {
     IntelligentTiering,
     OneZoneIA,
@@ -756,6 +761,7 @@ impl NonCurrentVersionTransitionBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum LifecycleRuleStatus {
     Enabled,
     Disabled,

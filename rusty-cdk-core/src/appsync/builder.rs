@@ -190,6 +190,7 @@ impl AuthProviderBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum AppSyncApiLogLevel {
     None,
     Error,

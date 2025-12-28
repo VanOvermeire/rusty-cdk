@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
+#[derive(Debug, Clone)]
 pub enum FifoThroughputScope {
     Topic,
     MessageGroup

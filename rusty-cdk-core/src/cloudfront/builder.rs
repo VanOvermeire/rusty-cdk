@@ -11,6 +11,7 @@ use serde_json::{json, Value};
 use std::marker::PhantomData;
 use crate::type_state;
 
+#[derive(Debug, Clone)]
 pub enum SslSupportedMethod {
     SniOnly,
     Vip,
@@ -27,6 +28,7 @@ impl From<SslSupportedMethod> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum MinProtocolVersion {
     SSLV3,
     TLSv1,
@@ -170,18 +172,23 @@ impl ViewerCertificateBuilder<ViewerCertificateStateEndState> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Cookies {
     None,
     Whitelist(Vec<String>),
     AllExcept(Vec<String>),
     All,
 }
+
+#[derive(Debug, Clone)]
 pub enum QueryString {
     None,
     Whitelist(Vec<String>),
     AllExcept(Vec<String>),
     All,
 }
+
+#[derive(Debug, Clone)]
 pub enum Headers {
     None,
     Whitelist(Vec<String>),
@@ -333,6 +340,7 @@ impl CachePolicyBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum HttpVersion {
     Http1,
     Http2,
@@ -351,6 +359,7 @@ impl From<HttpVersion> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum PriceClass {
     PriceClass100,
     PriceClass200,
@@ -369,6 +378,7 @@ impl From<PriceClass> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum OriginProtocolPolicy {
     HttpOnly,
     MatchViewer,
@@ -385,6 +395,7 @@ impl From<OriginProtocolPolicy> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum IpAddressType {
     IPv4,
     IPv6,
@@ -651,6 +662,7 @@ impl OriginBuilder<OriginS3OriginState> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum DefaultCacheAllowedMethods {
     GetHead,
     GetHeadOptions,
@@ -675,6 +687,7 @@ impl From<DefaultCacheAllowedMethods> for Vec<String> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum DefaultCacheCachedMethods {
     GetHead,
     GetHeadOptions,
@@ -689,6 +702,7 @@ impl From<DefaultCacheCachedMethods> for Vec<String> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ViewerProtocolPolicy {
     AllowAll,
     RedirectToHttps,
@@ -778,6 +792,7 @@ type_state!(
     DistributionOriginState,
 );
 
+#[derive(Debug, Clone)]
 pub enum SigningBehavior {
     Never,
     NoOverride,
@@ -794,6 +809,7 @@ impl From<SigningBehavior> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum SigningProtocol {
     SigV4,
 }
@@ -806,6 +822,7 @@ impl From<SigningProtocol> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum OriginAccessControlType {
     S3,
     MediaStore,

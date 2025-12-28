@@ -70,6 +70,7 @@ impl ApplicationBuilder {
 //     }
 // }
 
+#[derive(Debug, Clone)]
 pub enum ConfigType {
     FeatureFlags,
     Freeform,
@@ -85,6 +86,7 @@ impl From<ConfigType> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum DeletionProtectionCheck {
     AccountDefault,
     Apply,
@@ -223,7 +225,7 @@ impl ValidatorBuilder {
     }
 }
 
-
+#[derive(Debug, Clone)]
 pub enum ValidatorType {
     JsonSchema,
     Lambda,
@@ -238,6 +240,7 @@ impl From<ValidatorType> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum GrowthType {
     Linear,
     Exponential,
@@ -252,6 +255,7 @@ impl From<GrowthType> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ReplicateTo {
     None,
     SsmDocument,

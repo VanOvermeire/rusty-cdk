@@ -6,7 +6,7 @@ use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 use std::marker::PhantomData;
 use crate::type_state;
 
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BillingMode {
     PayPerRequest,
     Provisioned,
@@ -21,6 +21,7 @@ impl From<BillingMode> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum AttributeType {
     String,
     Number,

@@ -20,6 +20,7 @@ use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
 
+#[derive(Debug, Clone)]
 pub enum Runtime {
     NodeJs22,
     Java21,
@@ -38,6 +39,7 @@ impl From<Runtime> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Architecture {
     X86_64,
     ARM64,
@@ -52,6 +54,7 @@ impl From<Architecture> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum PackageType {
     Image,
     Zip,
@@ -66,6 +69,7 @@ impl From<PackageType> for String {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Zip {
     bucket: String,
     file: ZipFile,
@@ -77,6 +81,7 @@ impl Zip {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Code {
     Zip(Zip),
     Inline(String),
