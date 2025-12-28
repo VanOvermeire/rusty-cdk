@@ -28,6 +28,7 @@ use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
+use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
 
 #[test]
 fn dynamodb() {
@@ -695,6 +696,33 @@ fn sqs_with_policy() {
     insta::with_settings!({filters => vec![
             (r"QueuePolicy[0-9]+", "[QueuePolicy]"),
             (r"SqsQueue[0-9]+", "[SqsQueue]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn app_sync_api() {
+    let mut stack_builder = StackBuilder::new();
+    
+    let auth_provider = AuthProviderBuilder::new(AuthType::ApiKey).build();
+    let auth_mode = AuthMode::ApiKey;
+    let config = EventConfigBuilder::new(vec![auth_provider], vec![auth_mode.clone()], vec![auth_mode.clone()], vec![auth_mode.clone()]).build();
+
+    let api_ref = AppSyncApiBuilder::new("API", app_sync_api_name!("planning-poker-api"))
+        .event_config(config)
+        .build(&mut stack_builder);
+
+    ChannelNamespaceBuilder::new("Namespace", &api_ref, channel_namespace_name!("default")).build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"AppSyncApi[0-9]+", "[AppSyncApi]"),
+            (r"ChannelNamespace[0-9]+", "[ChannelNamespace]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });
