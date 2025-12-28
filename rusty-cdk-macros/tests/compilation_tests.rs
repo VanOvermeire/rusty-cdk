@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri};
+use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -22,6 +22,8 @@ struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 struct LambdaPermissionAction(pub String);
 struct LifecycleTransitionInDays(pub u16);
 struct LocationUri(pub String);
+struct AppSyncApiName(pub String);
+struct ChannelNamespaceName(pub String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -160,4 +162,14 @@ fn location_uri_secretsmanager() {
 #[test]
 fn location_uri_codepipeline() {
     location_uri!("codepipeline","codepipeline://something");
+}
+
+#[test]
+fn app_sync_api_name() {
+    app_sync_api_name!("some-API name");
+}
+
+#[test]
+fn channel_namespace_name() {
+    channel_namespace_name!("default");
 }

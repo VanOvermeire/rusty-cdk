@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
+use crate::appsync::{AppSyncApi, ChannelNamespace};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::custom_resource::BucketNotification;
 
@@ -236,10 +237,12 @@ impl Stack {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
+    AppSyncApi(AppSyncApi),
     Application(Application),
     Bucket(Bucket),
     BucketPolicy(BucketPolicy),
     BucketNotification(BucketNotification),
+    ChannelNamespace(ChannelNamespace),
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
     Environment(Environment),
@@ -293,6 +296,8 @@ impl Resource {
             Resource::BucketNotification(r) => r.get_id(),
             Resource::TopicPolicy(r) => r.get_id(),
             Resource::QueuePolicy(r) => r.get_id(),
+            Resource::AppSyncApi(r) => r.get_id(),
+            Resource::ChannelNamespace(r) => r.get_id(),
         };
         id.clone()
     }
@@ -325,6 +330,8 @@ impl Resource {
             Resource::BucketNotification(r) => r.get_resource_id(),
             Resource::TopicPolicy(r) => r.get_resource_id(),
             Resource::QueuePolicy(r) => r.get_resource_id(),
+            Resource::AppSyncApi(r) => r.get_resource_id(),
+            Resource::ChannelNamespace(r) => r.get_resource_id(),
         }
     }
 
@@ -345,10 +352,12 @@ macro_rules! from_resource {
     };
 }
 
+from_resource!(AppSyncApi);
 from_resource!(Application);
 from_resource!(Bucket);
 from_resource!(BucketPolicy);
 from_resource!(ConfigurationProfile);
+from_resource!(ChannelNamespace);
 from_resource!(DeploymentStrategy);
 from_resource!(Environment);
 from_resource!(Table);

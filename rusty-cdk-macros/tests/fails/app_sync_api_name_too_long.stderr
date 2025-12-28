@@ -1,0 +1,5 @@
+error: name cannot be longer than 50 characters
+ --> tests/fails/app_sync_api_name_too_long.rs:4:37
+  |
+4 |     let bucket = app_sync_api_name!("long-long-long-long-long-long-long-long-long-long-long-long-long-api-name");
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

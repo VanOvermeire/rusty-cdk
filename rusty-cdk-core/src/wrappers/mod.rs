@@ -561,3 +561,17 @@ pub struct LifecycleTransitionInDays(pub u16);
 /// ```
 #[derive(Debug, Clone)]
 pub struct LocationUri(pub String);
+
+/// Name of an AppSync Api
+///
+/// # Recommended Usage
+/// Use the `app_sync_api_name!` macro from `rusty-cdk-macros` for compile-time validation
+#[derive(Debug, Clone)]
+pub struct AppSyncApiName(pub String);
+
+/// ChannelNamespace name for AppSync
+///
+/// # Recommended Usage
+/// Use the `channel_namespace_name!` macro from `rusty-cdk-macros` for compile-time validation
+#[derive(Debug, Clone)]
+pub struct ChannelNamespaceName(pub String);

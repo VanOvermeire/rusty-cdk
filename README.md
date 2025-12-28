@@ -148,7 +148,8 @@ In time, the project might switch to using SDK calls, to try and make things fas
 
 ## Supported services
 
-Currently only a limited number of AWS services are (largely/partly) supported, though the safety varies:
+Currently only a limited number of services are (partly) supported:
+- Appsync
 - API Gateway
 - AppConfig
 - CloudFront
@@ -163,7 +164,6 @@ Currently only a limited number of AWS services are (largely/partly) supported, 
 In other words, you can create serverless applications with this library.
 
 To be added at some point:
-- Appsync
 - Athena
 - Cloudwatch (-logs)
 - CodeBuild
@@ -174,6 +174,7 @@ To be added at some point:
 - Kinesis
 - RDS
 - Step Functions
+- and additional functionality from the already supported services
 
 ### Available builders
 
@@ -238,8 +239,10 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
   - Maybe? But keeping everything except for `deploy` synchronous is easiest for now.
 - _"Won't this library always be behind on the latest additions/changes to AWS?"_
   - Sadly, yes. But for a long time that was the case with CloudFormation as well. And sometimes you have to wait for months or a few years before L2-3 constructs arrive in the AWS CDK.
-- Why don't you use more borrowing in the internals of this library?
+- _"Why don't you use more borrowing in the internals of this library?"_
   - It started out with less borrowing because that's easier, less complex. And when I experimented with introducing borrowing everywhere, the performance gain was barely noticeable.
+- _"Why not use regex for the macros?"_
+  - I want to avoid any dependency that I don't strictly need, and _most_ validations are actually relatively simple. Still, if the project keeps growing, I might face the choice between using `regex`, or accepting a lot of additional complexity and code.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
@@ -255,8 +258,10 @@ async fn tagging() {
 
 ## TODO
 
+- Debug + Clone for builder enums?
 - Pick a style for ids (camelcase?)
 - Allow overriding of Lambda log group
+  - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied
   - Merge the policies during build? Too bad that this is not transparent though
     - Prefer the user policy id, not our generated one

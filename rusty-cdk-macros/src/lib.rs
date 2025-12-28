@@ -115,6 +115,70 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
     }
 }
 
+/// Creates a validated `AppSyncApiName` wrapper for AppSync Api names at compile time.
+///
+/// This macro ensures that the input string is a valid name for AppSync Apis,
+/// following AWS naming conventions and character restrictions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters, and the following special characters are allowed: _, - and whitespace
+/// - Max length 50 characters
+#[proc_macro]
+pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+    
+    if value.len() > 50 {
+        return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
+            .into_compile_error()
+            .into();
+    }
+
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', ' ']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            AppSyncApiName(#value.to_string())
+        )
+            .into(),
+        Some(e) => e.into_compile_error().into(),
+    }
+}
+
+/// Creates a validated `ChannelNamespaceName` wrapper for AppSync Api at compile time.
+///
+/// This macro ensures that the input string is a valid name for a Channel Namespace,
+/// following AWS naming conventions and character restrictions.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Only alphanumeric characters, and the following special characters are allowed: -
+/// - Max length 50 characters
+#[proc_macro]
+pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+    
+    if value.len() > 50 {
+        return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
+            .into_compile_error()
+            .into();
+    }
+
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            ChannelNamespaceName(#value.to_string())
+        )
+            .into(),
+        Some(e) => e.into_compile_error().into(),
+    }
+}
+
 /// Creates a validated `StringForSecret` wrapper for AWS Secrets Manager secret names at compile time.
 ///
 /// This macro ensures that the input string is a valid name for AWS Secrets Manager secrets,
