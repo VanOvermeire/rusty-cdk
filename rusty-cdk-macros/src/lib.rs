@@ -129,7 +129,7 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
 pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-    
+
     if value.len() > 50 {
         return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
             .into_compile_error()
@@ -161,7 +161,7 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
 pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-    
+
     if value.len() > 50 {
         return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
             .into_compile_error()
@@ -827,18 +827,16 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
             )
             .into_compile_error()
             .into();
-        } else if let Some(second) = second {
-            if second < first {
-                return Error::new(
-                    Span::call_site(),
-                    format!(
-                        "response completion timeout was {} but should be larger than connection timeout ({})",
-                        second, first
-                    ),
-                )
-                .into_compile_error()
-                .into();
-            }
+        } else if let Some(second) = second && second < first {
+            return Error::new(
+                Span::call_site(),
+                format!(
+                    "response completion timeout was {} but should be larger than connection timeout ({})",
+                    second, first
+                ),
+            )
+            .into_compile_error()
+            .into();
         }
     }
 

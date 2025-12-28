@@ -289,7 +289,7 @@ pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut
 }
 
 async fn create_or_update_stack(name: &String, stack: &mut Stack, cloudformation_client: &Client) -> Result<(), DeployError> {
-    let existing_template = get_existing_template(&cloudformation_client, &name).await;
+    let existing_template = get_existing_template(cloudformation_client, name).await;
     let tags = stack.get_tags();
     let tags = if tags.is_empty() {
         None
@@ -331,7 +331,7 @@ async fn create_or_update_stack(name: &String, stack: &mut Stack, cloudformation
 }
 
 async fn upload_assets(assets: Vec<Asset>, config: &SdkConfig) -> Result<(), DeployError> {
-    let s3_client = Arc::new(aws_sdk_s3::Client::new(&config));
+    let s3_client = Arc::new(aws_sdk_s3::Client::new(config));
 
     let tasks: Vec<_> = assets
         .into_iter()

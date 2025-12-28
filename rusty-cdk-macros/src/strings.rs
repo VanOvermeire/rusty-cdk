@@ -33,19 +33,15 @@ pub(crate) fn check_string_requirements(value: &str, span: Span, requirements: S
         return Some(Error::new(span, "value should not be blank".to_string()));
     }
     
-    if let Some(prefix) = requirements.prefix {
-        if !value.starts_with(&prefix) {
-            return Some(Error::new(span, format!("value `{}` does not contain required prefix `{}`", value, prefix)));   
-        }
+    if let Some(prefix) = requirements.prefix && !value.starts_with(&prefix) {
+        return Some(Error::new(span, format!("value `{}` does not contain required prefix `{}`", value, prefix)));
     }
     
-    if requirements.check_chars {
-        if value.chars().any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c)) {
-            return Some(Error::new(
-                span,
-                format!("value should only contain alphanumeric characters and {:?}", requirements.allowed_chars),
-            ));
-        }   
+    if requirements.check_chars && value.chars().any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c)) {
+        return Some(Error::new(
+            span,
+            format!("value should only contain alphanumeric characters and {:?}", requirements.allowed_chars),
+        ));
     }
 
     None
