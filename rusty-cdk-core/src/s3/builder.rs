@@ -423,16 +423,17 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .principal(PrincipalBuilder::new().normal("*").build())
                 .build();
             let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
-            let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-            let s3_policy = BucketPolicyBuilder::new(bucket_policy_id.as_str(), &bucket, policy_doc).build(stack_builder);
+            let bucket_policy_id = Id::generate_id(&self.id, "S3Policy");
+            let s3_policy = BucketPolicyBuilder::new(&bucket_policy_id, &bucket, policy_doc).build(stack_builder);
             Some(s3_policy)
         } else {
             None
         };
 
         for (i, (arn, event)) in self.bucket_notification_lambda_destinations.into_iter().enumerate() {
+            let permission_id = Id::generate_id(&self.id, format!("LambdaDestPerm{}", i).as_str());
             let permission = PermissionBuilder::new(
-                &format!("{}-lambda-destination-perm-{}", self.id, i),
+                &permission_id,
                 LambdaPermissionAction("lambda:InvokeFunction".to_string()),
                 arn.clone(),
                 "s3.amazonaws.com",
@@ -440,9 +441,10 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .source_arn(bucket.get_arn())
             .current_account()
             .build(stack_builder);
-            let handler = Self::notification_handler(&self.id, "lambda", i, stack_builder);
+            let handler = Self::notification_handler(&self.id, "Lambda", i, stack_builder);
+            let notification_id = Id::generate_id(&self.id, &format!("LambdaNotification{}", i));
             BucketNotificationBuilder::new(
-                &format!("{}-lambda-bucket-notification-{}", self.id, i),
+                &notification_id,
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
@@ -453,7 +455,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
 
         for (i, (reference, event)) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
-            let handler = Self::notification_handler(&self.id, "sns", i, stack_builder);
+            let handler = Self::notification_handler(&self.id, "SNS", i, stack_builder);
 
             let bucket_arn = bucket.get_arn();
             let condition = json!({
@@ -469,12 +471,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]).build();
 
+            let topic_policy_id = Id::generate_id(&self.id, &format!("SNSDestinationPolicy{}", i));
             let topic_ref =
-                TopicPolicyBuilder::new_with_values(&format!("{}-sns-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                TopicPolicyBuilder::new_with_values(&topic_policy_id, doc, vec![reference.clone()])
                     .build(stack_builder);
 
+            let notification_id = Id::generate_id(&self.id, &format!("SNSNotification{}", i));
             BucketNotificationBuilder::new(
-                &format!("{}-sns-bucket-notification-{}", self.id, i),
+                &notification_id,
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
@@ -485,7 +489,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
 
         for (i, (reference, arn, event)) in self.bucket_notification_sqs_destinations.into_iter().enumerate() {
-            let handler = Self::notification_handler(&self.id, "sqs", i, stack_builder);
+            let handler = Self::notification_handler(&self.id, "SQS", i, stack_builder);
 
             let bucket_arn = bucket.get_arn();
             let condition = json!({
@@ -507,12 +511,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .resources(vec![arn.clone()])
             .build();
             let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+            let queue_policy_id = Id::generate_id(&self.id, &format!("SQSDestinationPolicy{}", i));
             let queue_policy_ref =
-                QueuePolicyBuilder::new_with_values(&format!("{}-sqs-destination-policy-{}", self.id, i), doc, vec![reference.clone()])
+                QueuePolicyBuilder::new_with_values(&queue_policy_id, doc, vec![reference.clone()])
                     .build(stack_builder);
 
+            let notification_id = Id::generate_id(&self.id, format!("SQSNotification{}", i).as_str());
             BucketNotificationBuilder::new(
-                &format!("{}-sqs-bucket-notification-{}", self.id, i),
+                &notification_id,
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
@@ -526,8 +532,9 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
     }
 
     fn notification_handler(id: &Id, target: &str, num: usize, stack_builder: &mut StackBuilder) -> FunctionRef {
+        let handler_id = Id::generate_id(id, &format!("{}Handler{}", target, num));
         let (handler, ..) = FunctionBuilder::new(
-            &format!("{}-{}-handler-{}", id, target, num),
+            &handler_id,
             Architecture::X86_64,
             Memory(128),
             Timeout(300),

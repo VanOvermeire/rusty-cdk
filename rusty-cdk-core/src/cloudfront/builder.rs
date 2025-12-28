@@ -1,6 +1,5 @@
 use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
-use crate::iam::Principal::Service;
-use crate::iam::{Effect, PolicyDocumentBuilder, ServicePrincipal, StatementBuilder};
+use crate::iam::{Effect, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use crate::intrinsic::{get_att, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketPolicyBuilder;
 use crate::s3::BucketRef;
@@ -636,11 +635,10 @@ impl OriginBuilder<OriginS3OriginState> {
         let bucket_arn = self.bucket_arn.take().expect("bucket arn to be present in S3 origin state");
 
         let bucket_items = vec![join("", vec![bucket_arn, Value::String("/*".to_string())])];
+        let principal = PrincipalBuilder::new().service("cloudfront.amazonaws.com".to_string()).build();
         let statement = StatementBuilder::new(vec![IamAction("s3:GetObject".to_string())], Effect::Allow)
             .resources(bucket_items)
-            .principal(Service(ServicePrincipal {
-                service: "cloudfront.amazonaws.com".to_string(),
-            }))
+            .principal(principal)
             .build();
         let doc = PolicyDocumentBuilder::new(vec![statement]).build();
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);

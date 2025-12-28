@@ -258,8 +258,10 @@ async fn tagging() {
 
 ## TODO
 
+- Add a note on ids (and how they should not change)
+- During synth or deploy, check that all ids and resource ids are unique across the stack (random suffixes do not guarantee this)
+  - Either fail or fix the ids
 - Debug + Clone for builder enums?
-- Pick a style for ids (camelcase?)
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied

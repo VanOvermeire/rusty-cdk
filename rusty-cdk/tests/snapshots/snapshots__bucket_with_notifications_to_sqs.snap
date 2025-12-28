@@ -5,11 +5,11 @@ expression: synthesized
 {
   "Metadata": {
     "buck": "[S3Bucket]",
-    "buck-sqs-bucket-notification-0": "[BucketNotification]",
-    "buck-sqs-destination-policy-0": "[QueuePolicy]",
-    "buck-sqs-handler-0": "[LambdaFunction]",
-    "buck-sqs-handler-0LogGroup": "[LogGroup]",
-    "buck-sqs-handler-0Role": "[LambdaFunctionRole]",
+    "buckSQSDestinationPolicy0": "[QueuePolicy]",
+    "buckSQSHandler0": "[LambdaFunction]",
+    "buckSQSHandler0LogGroup": "[LogGroup]",
+    "buckSQSHandler0Role": "[LambdaFunctionRole]",
+    "buckSQSNotification0": "[BucketNotification]",
     "queue": "[SqsQueue]"
   },
   "Resources": {
@@ -19,7 +19,7 @@ expression: synthesized
           "Ref": "[S3Bucket]"
         },
         "DependsOn": [
-          "buck-sqs-destination-policy-0"
+          "buckSQSDestinationPolicy0"
         ],
         "Managed": true,
         "NotificationConfiguration": {

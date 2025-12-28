@@ -11,7 +11,7 @@ use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::iam::{
-    CustomPermission, Effect, Permission, PolicyDocumentBuilder, Principal, PrincipalBuilder, ServicePrincipal, StatementBuilder,
+    CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder,
 };
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{

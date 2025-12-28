@@ -5,7 +5,7 @@ expression: synthesized
 {
   "Metadata": {
     "buck": "[S3Bucket]",
-    "buck-website-s3-policy": "[S3BucketPolicy]"
+    "buckS3Policy": "[S3BucketPolicy]"
   },
   "Resources": {
     "[S3Bucket]": {

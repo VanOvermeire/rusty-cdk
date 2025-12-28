@@ -5,11 +5,11 @@ expression: synthesized
 {
   "Metadata": {
     "buc": "[S3Bucket]",
-    "buc-sns-bucket-notification-0": "[BucketNotification]",
-    "buc-sns-destination-policy-0": "[TopicPolicy]",
-    "buc-sns-handler-0": "[LambdaFunction]",
-    "buc-sns-handler-0LogGroup": "[LogGroup]",
-    "buc-sns-handler-0Role": "[LambdaFunctionRole]",
+    "bucSNSDestinationPolicy0": "[TopicPolicy]",
+    "bucSNSHandler0": "[LambdaFunction]",
+    "bucSNSHandler0LogGroup": "[LogGroup]",
+    "bucSNSHandler0Role": "[LambdaFunctionRole]",
+    "bucSNSNotification0": "[BucketNotification]",
     "top": "[SnsTopic]"
   },
   "Resources": {
@@ -19,7 +19,7 @@ expression: synthesized
           "Ref": "[S3Bucket]"
         },
         "DependsOn": [
-          "buc-sns-destination-policy-0"
+          "bucSNSDestinationPolicy0"
         ],
         "Managed": true,
         "NotificationConfiguration": {
