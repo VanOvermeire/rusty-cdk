@@ -1,5 +1,9 @@
 use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Route, ApiGatewayV2Stage};
+use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
+use crate::appsync::{AppSyncApi, ChannelNamespace};
+use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::cloudwatch::LogGroup;
+use crate::custom_resource::BucketNotification;
 use crate::dynamodb::Table;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
@@ -12,10 +16,14 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
-use crate::appsync::{AppSyncApi, ChannelNamespace};
-use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
-use crate::custom_resource::BucketNotification;
+
+#[derive(Debug)]
+pub struct StackDiff {
+    // though might be modified
+    pub unchanged_ids: Vec<(String, String)>,
+    pub ids_to_be_removed: Vec<(String, String)>,
+    pub new_ids: Vec<(String, String)>,
+}
 
 #[derive(Debug, Clone)]
 pub struct Asset {
@@ -26,19 +34,22 @@ pub struct Asset {
 
 impl Display for Asset {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("Asset at path {} for bucket {} and key {}", self.path, self.s3_bucket, self.s3_key))
+        f.write_fmt(format_args!(
+            "Asset at path {} for bucket {} and key {}",
+            self.path, self.s3_bucket, self.s3_key
+        ))
     }
 }
 
 /// Represents a CloudFormation stack containing AWS resources and their configurations.
 ///
 /// A `Stack` is the core abstraction for defining and managing AWS infrastructure.
-/// It contains a collection of AWS resources (such as Lambda functions, S3 buckets, DynamoDB tables, etc.) 
+/// It contains a collection of AWS resources (such as Lambda functions, S3 buckets, DynamoDB tables, etc.)
 /// that are deployed together as a single unit in AWS CloudFormation.
 ///
 /// # Usage
 ///
-/// Stacks are created using the [`StackBuilder`](crate::stack::StackBuilder), which provides a fluent interface for adding resources. 
+/// Stacks are created using the [`StackBuilder`](crate::stack::StackBuilder), which provides a fluent interface for adding resources.
 /// Once built, a stack can be:
 /// - Synthesized into a CloudFormation template JSON using [`synth()`](Stack::synth)
 /// - Deployed to AWS using the deployment utilities (`deploy`)
@@ -72,7 +83,7 @@ impl Display for Asset {
 #[derive(Debug, Serialize)]
 pub struct Stack {
     #[serde(skip)]
-    pub(crate) to_replace: Vec<(String, String)>,
+    pub(crate) resource_ids_to_replace: Vec<(String, String)>,
     #[serde(skip)]
     pub(crate) tags: Vec<(String, String)>,
     #[serde(rename = "Resources")]
@@ -91,7 +102,7 @@ impl Stack {
     pub fn get_tags(&self) -> Vec<(String, String)> {
         self.tags.clone()
     }
-    
+
     pub fn get_assets(&self) -> Vec<Asset> {
         self.resources
             .values()
@@ -146,7 +157,7 @@ impl Stack {
     pub fn synth(&self) -> Result<String, String> {
         let mut naive_synth = serde_json::to_string(self).map_err(|e| format!("Could not serialize stack: {e:#?}"))?;
         // nicer way to do this? for example, a method on each DTO to look for possible arns/refs (`Value`) and replace them if needed. referenced ids should help a bit
-        self.to_replace.iter().for_each(|(current, new)| {
+        self.resource_ids_to_replace.iter().for_each(|(current, new)| {
             naive_synth = naive_synth.replace(current, new);
         });
 
@@ -204,14 +215,53 @@ impl Stack {
     /// - AWS SDKs: Pass the template string to the CloudFormation client
     /// - AWS Console: Upload the template file directly
     pub fn synth_for_existing(&mut self, existing_stack: &str) -> Result<String, String> {
-        let meta: StackOnlyMetadata = serde_json::from_str(existing_stack).map_err(|_| {
-            "Could not retrieve resource info from existing stack".to_string()
-        })?;
+        let meta = Self::get_metadata(existing_stack)?;
         self.update_resource_ids_for_existing_stack(meta.metadata);
         self.synth()
     }
 
+    pub fn get_diff(&self, existing_stack: &str) -> Result<StackDiff, String> {
+        let meta = Self::get_metadata(existing_stack)?;
+        let existing_meta = meta.metadata;
+        let existing_ids: Vec<_> = existing_meta.keys().cloned().collect();
+        
+        let new_meta = &self.metadata;
+        let new_ids: Vec<_> = new_meta.keys().cloned().collect();
+
+        let (in_existing, not_in_existing): (Vec<_>, Vec<_>) = new_ids.into_iter().partition(|v| existing_ids.contains(v));
+        let removed: Vec<_> = existing_ids.into_iter().filter(|v| !in_existing.contains(v)).collect();
+
+        let in_existing = in_existing
+            .into_iter()
+            .map(|v| {
+                let resource_id = existing_meta.get(&v).expect("resource id to be present").to_string();
+                (v, resource_id)
+            })
+            .collect();
+        let removed = removed
+            .into_iter()
+            .map(|v| {
+                let resource_id = existing_meta.get(&v).expect("resource id to be present").to_string();
+                (v, resource_id)
+            })
+            .collect();
+        let not_in_existing = not_in_existing
+            .into_iter()
+            .map(|v| {
+                let resource_id = new_meta.get(&v).expect("resource id to be present").to_string();
+                (v, resource_id)
+            })
+            .collect();
+
+        Ok(StackDiff {
+            unchanged_ids: in_existing,
+            ids_to_be_removed: removed,
+            new_ids: not_in_existing,
+        })
+    }
+
     fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
+        // TODO can't I just use metadata instead of iterating through the resources?
         let current_ids: HashMap<String, String> = self
             .resources
             .iter()
@@ -229,8 +279,16 @@ impl Stack {
                     .expect("resource to exist in stack resources");
                 self.resources.insert(existing_resource_id.clone(), removed);
                 self.metadata.insert(existing_id, existing_resource_id.clone());
-                self.to_replace.push((current_stack_resource_id.to_string(), existing_resource_id));
+                self.resource_ids_to_replace
+                    .push((current_stack_resource_id.to_string(), existing_resource_id));
             });
+    }
+
+    fn get_metadata(existing_stack: &str) -> Result<StackOnlyMetadata, String> {
+        serde_json::from_str(existing_stack).map_err(|e| {
+            println!("{}", e);
+            "Could not retrieve resource info from existing stack".to_string()
+        })
     }
 }
 
@@ -397,7 +455,7 @@ mod tests {
 
         assert_eq!(stack_builder.resources.len(), 0);
         assert_eq!(stack_builder.metadata.len(), 0);
-        assert_eq!(stack_builder.to_replace.len(), 0);
+        assert_eq!(stack_builder.resource_ids_to_replace.len(), 0);
     }
 
     #[test]
@@ -410,7 +468,7 @@ mod tests {
 
         assert_eq!(stack_builder.resources.len(), 0);
         assert_eq!(stack_builder.metadata.len(), 0);
-        assert_eq!(stack_builder.to_replace.len(), 0);
+        assert_eq!(stack_builder.resource_ids_to_replace.len(), 0);
     }
 
     #[test]
@@ -424,7 +482,7 @@ mod tests {
         stack.update_resource_ids_for_existing_stack(existing_ids);
 
         assert_eq!(stack.resources.len(), 1);
-        assert_eq!(stack.to_replace.len(), 1);
+        assert_eq!(stack.resource_ids_to_replace.len(), 1);
         assert_eq!(stack.metadata.len(), 1);
         assert_eq!(stack.metadata.get("topic").unwrap(), &"abc123".to_string());
     }
@@ -441,8 +499,22 @@ mod tests {
         stack.update_resource_ids_for_existing_stack(existing_ids);
 
         assert_eq!(stack.resources.len(), 2);
-        assert_eq!(stack.to_replace.len(), 1);
+        assert_eq!(stack.resource_ids_to_replace.len(), 1);
         assert_eq!(stack.metadata.len(), 2);
         assert_eq!(stack.metadata.get("topic").unwrap(), &"abc123".to_string());
+    }
+
+    #[test]
+    fn should_produce_diff() {
+        let mut stack_builder = StackBuilder::new();
+        TopicBuilder::new("topic").build(&mut stack_builder);
+        QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
+        let stack = stack_builder.build().unwrap();
+        
+        let diff = stack.get_diff(r#"{"Metadata": { "queue": "Queue123", "bucket": "Bucket234" } }"#).expect("diff to work");
+
+        assert_eq!(diff.new_ids, vec![("topic".to_string(), stack.metadata.get("topic").unwrap().to_string())]);
+        assert_eq!(diff.ids_to_be_removed, vec![("bucket".to_string(), "Bucket234".to_string())]);
+        assert_eq!(diff.unchanged_ids, vec![("queue".to_string(), "Queue123".to_string())]);
     }
 }

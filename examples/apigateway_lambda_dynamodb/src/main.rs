@@ -48,8 +48,9 @@ async fn main() {
     if let Err(s) = stack {
         println!("{s}");
     } else {
-        let synthesized = stack.unwrap().synth().unwrap();
+        let stack = stack.unwrap();
+        let synthesized = stack.synth().unwrap();
         println!("{}", synthesized);
-        // let deploy_result = rusty_cdk::deploy_with_result(string_with_only_alphanumerics_and_hyphens!("ExampleWithGatewayLambdaAndDynamoDB"), stack.unwrap()).await;
+        // let deploy_result = rusty_cdk::deploy_with_result(string_with_only_alphanumerics_and_hyphens!("ExampleWithGatewayLambdaAndDynamoDB"), stack).await;
     }
 }

@@ -11,6 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use aws_sdk_cloudformation::error::{ProvideErrorMetadata, SdkError};
 use tokio::time::sleep;
+use crate::util::get_existing_template;
 
 #[derive(Debug)]
 pub enum DeployError {
@@ -32,16 +33,6 @@ impl Display for DeployError {
             DeployError::AssetError(_) => f.write_str("unable to handle asset"),
             DeployError::UnknownError(_) => f.write_str("unknown error"),
         }
-    }
-}
-
-async fn get_existing_template(client: &Client, stack_name: &str) -> Option<String> {
-    match client.describe_stacks().stack_name(stack_name).send().await {
-        Ok(_) => {
-            let template = client.get_template().stack_name(stack_name).send().await;
-            template.unwrap().template_body
-        }
-        Err(_) => None,
     }
 }
 
@@ -123,7 +114,7 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
         }
     }
 
-    let cloudformation_client = aws_sdk_cloudformation::Client::new(&config);
+    let cloudformation_client = Client::new(&config);
 
     match create_or_update_stack(&name, &mut stack, &cloudformation_client).await {
         Ok(_) => {}

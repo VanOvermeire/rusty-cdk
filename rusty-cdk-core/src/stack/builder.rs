@@ -102,7 +102,7 @@ impl StackBuilder {
 
         let resources = self.resources.into_iter().map(|r| (r.get_resource_id().to_string(), r)).collect();
         Ok(Stack {
-            to_replace: vec![],
+            resource_ids_to_replace: vec![],
             tags: self.tags,
             resources,
             metadata,

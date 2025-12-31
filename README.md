@@ -268,8 +268,6 @@ async fn tagging() {
 
 ## TODO
 
-- Add a simple diff method
-  - Will highlight what would be added, modified (?) and destroyed
 - During synth or deploy, check that all ids and resource ids are unique across the stack (random suffixes do not guarantee this)
   - Fail for ids; fix the resource ids
 - Allow overriding of Lambda log group
@@ -285,6 +283,9 @@ async fn tagging() {
   - Other storage structs
 - Most refs should have an 'override' for referring to resources outside the stack
   - In some cases, a macro could be used that the resource actually exists
+- Improve diff
+  - Show whether resource has changed
+- Ability to invoke deploy, diff and synth (?) from command line
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
