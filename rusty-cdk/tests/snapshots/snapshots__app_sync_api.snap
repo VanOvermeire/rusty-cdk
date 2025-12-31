@@ -1,0 +1,52 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "API": "[AppSyncApi]",
+    "Namespace": "[ChannelNamespace]"
+  },
+  "Resources": {
+    "[AppSyncApi]": {
+      "Properties": {
+        "EventConfig": {
+          "AuthProviders": [
+            {
+              "AuthType": "API_KEY"
+            }
+          ],
+          "ConnectionAuthModes": [
+            {
+              "AuthType": "API_KEY"
+            }
+          ],
+          "DefaultPublishAuthModes": [
+            {
+              "AuthType": "API_KEY"
+            }
+          ],
+          "DefaultSubscribeAuthModes": [
+            {
+              "AuthType": "API_KEY"
+            }
+          ]
+        },
+        "Name": "planning-poker-api"
+      },
+      "Type": "AWS::AppSync::Api"
+    },
+    "[ChannelNamespace]": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "[AppSyncApi]",
+            "ApiId"
+          ]
+        },
+        "Name": "default"
+      },
+      "Type": "AWS::AppSync::ChannelNamespace"
+    }
+  }
+}

@@ -146,6 +146,16 @@ It also has some disadvantages. One is that CloudFormation is slow, in part beca
 
 In time, the project might switch to using SDK calls, to try and make things faster as well as easier.
 
+## IDs are similar to the AWS CDK
+
+In its core idea (create a programmatic interface for CloudFormation), some terminology and usage, this project is similar to the AWS CDK.
+And so, just like with the CDK, you should be careful with changing the ids you pass to the builders. 
+These ids are used to identify deployed resources. As such, changing an id is a signal that the resource whose id has been 'removed', will be deleted.
+Meanwhile, a new resource, with the new, changed id will be created. 
+
+E.g. if you have a bucket with id `myBuck`, and you change the id to `myBucket`, the bucket in your account is deleted and a new empty one is created.
+This can cause issues if you've chosen a name for the resource (again, e.g., a bucket), because CloudFormation want to guarantee rollbacks, meaning a resource is only deleted _after_ its replacement has been successfully created. But that creation cannot take place until the previous name has become available again.
+
 ## Supported services
 
 Currently only a limited number of services are (partly) supported:
@@ -258,9 +268,10 @@ async fn tagging() {
 
 ## TODO
 
-- Add a note on ids (and how they should not change)
+- Add a simple diff method
+  - Will highlight what would be added, modified (?) and destroyed
 - During synth or deploy, check that all ids and resource ids are unique across the stack (random suffixes do not guarantee this)
-  - Either fail or fix the ids
+  - Fail for ids; fix the resource ids
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied
@@ -272,6 +283,8 @@ async fn tagging() {
   - DynamoDB
   - S3
   - Other storage structs
+- Most refs should have an 'override' for referring to resources outside the stack
+  - In some cases, a macro could be used that the resource actually exists
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
