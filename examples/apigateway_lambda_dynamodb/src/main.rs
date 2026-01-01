@@ -1,3 +1,4 @@
+use std::process::exit;
 use rusty_cdk::apigateway::ApiGatewayV2Builder;
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
@@ -46,7 +47,8 @@ async fn main() {
         .build();
 
     if let Err(s) = stack {
-        println!("{s}");
+        eprintln!("Error: {s}");
+        exit(1);
     } else {
         let stack = stack.unwrap();
         let synthesized = stack.synth().unwrap();

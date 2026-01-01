@@ -268,8 +268,6 @@ async fn tagging() {
 
 ## TODO
 
-- During synth or deploy, check that all ids and resource ids are unique across the stack (random suffixes do not guarantee this)
-  - Fail for ids; fix the resource ids
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied
