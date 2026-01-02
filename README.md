@@ -268,6 +268,8 @@ async fn tagging() {
 
 ## TODO
 
+- Check duplicate ids in intelligent tiering
+  - And look where we need similar things
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
 - Multiple queue/topic policy = only last one is applied

@@ -3,7 +3,7 @@ use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDoc
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
-use crate::s3::dto;
+use crate::s3::{dto, AccelerateConfiguration, IntelligentTieringConfiguration, InventoryTableConfiguration, JournalTableConfiguration, MetadataConfiguration, MetadataDestination, RecordExpiration, TagFilter, Tiering};
 use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
@@ -15,7 +15,7 @@ use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{BucketName, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, S3LifecycleObjectSizes, Timeout};
+use crate::wrappers::{BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, RecordExpirationDays, S3LifecycleObjectSizes, Timeout};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -172,6 +172,35 @@ pub enum NotificationEventType {
     REPLICATION,
 }
 
+#[derive(Debug, Clone)]
+pub enum AbacStatus {
+    Enabled,
+    Disabled,
+}
+
+impl From<AbacStatus> for String {
+    fn from(value: AbacStatus) -> Self {
+        match value {
+            AbacStatus::Enabled => "Enabled".to_string(),
+            AbacStatus::Disabled => "Disabled".to_string(),
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub enum AccelerationStatus {
+    Enabled,
+    Suspended,
+}
+
+impl From<AccelerationStatus> for String {
+    fn from(value: AccelerationStatus) -> Self {
+        match value {
+            AccelerationStatus::Enabled => "Enabled".to_string(),
+            AccelerationStatus::Suspended => "Suspended".to_string(),
+        }
+    }
+}
+
 impl From<NotificationEventType> for String {
     fn from(value: NotificationEventType) -> Self {
         match value {
@@ -240,8 +269,12 @@ type_state!(BucketBuilderState, StartState, WebsiteState,);
 pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
+    abac_status: Option<String>,
+    acceleration_status: Option<String>,
     name: Option<String>,
     access: Option<PublicAccessBlockConfiguration>,
+    intelligent_tiering_configurations: Option<Vec<IntelligentTieringConfiguration>>,
+    metadata_configuration: Option<MetadataConfiguration>,
     versioning_configuration: Option<VersioningConfiguration>,
     lifecycle_configuration: Option<LifecycleConfiguration>,
     index_document: Option<String>,
@@ -263,8 +296,12 @@ impl BucketBuilder<StartState> {
         Self {
             id: Id(id.to_string()),
             phantom_data: Default::default(),
+            abac_status: None,
+            acceleration_status: None,
             name: None,
             access: None,
+            intelligent_tiering_configurations: None,
+            metadata_configuration: None,
             versioning_configuration: None,
             lifecycle_configuration: None,
             index_document: None,
@@ -288,6 +325,27 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
     pub fn name(self, name: BucketName) -> Self {
         Self {
             name: Some(name.0),
+            ..self
+        }
+    }
+
+    pub fn abac_status(self, abac_status: AbacStatus) -> Self {
+        Self {
+            abac_status: Some(abac_status.into()),
+            ..self
+        }
+    }
+
+    pub fn acceleration_status(self, acceleration_status: AccelerationStatus) -> Self {
+        Self {
+            acceleration_status: Some(acceleration_status.into()),
+            ..self
+        }
+    }
+
+    pub fn metadata_configuration(self, config: MetadataConfiguration) -> Self {
+        Self {
+            metadata_configuration: Some(config),
             ..self
         }
     }
@@ -320,6 +378,16 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    pub fn add_intelligent_tiering(mut self, tiering: IntelligentTieringConfiguration) -> Self {
+        if let Some(mut config) = self.intelligent_tiering_configurations {
+            config.push(tiering);
+            self.intelligent_tiering_configurations = Some(config);
+        } else {
+            self.intelligent_tiering_configurations = Some(vec![tiering]);
+        }
+        self
+    }
+
     pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
@@ -337,8 +405,12 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         BucketBuilder {
             phantom_data: Default::default(),
             id: self.id,
+            abac_status: self.abac_status,
+            acceleration_status: self.acceleration_status,
             name: self.name,
             access: self.access,
+            intelligent_tiering_configurations: self.intelligent_tiering_configurations,
+            metadata_configuration: self.metadata_configuration,
             versioning_configuration: self.versioning_configuration,
             lifecycle_configuration: self.lifecycle_configuration,
             index_document: Some(index_document.into()),
@@ -399,14 +471,21 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         });
 
         let properties = BucketProperties {
+            abac_status: self.abac_status,
+            accelerate_configuration: self.acceleration_status.map(|v| {
+                AccelerateConfiguration {
+                    acceleration_status: v,
+                }
+            }),
             bucket_name: self.name,
             cors_configuration: self.cors_config,
+            intelligent_tiering_configurations: self.intelligent_tiering_configurations,
             lifecycle_configuration: self.lifecycle_configuration,
             public_access_block_configuration: access,
             versioning_configuration,
             website_configuration,
             bucket_encryption: encryption,
-            notification_configuration: None,
+            metadata_configuration: self.metadata_configuration,
         };
 
         stack_builder.add_resource(Bucket {
@@ -993,6 +1072,316 @@ impl PublicAccessBlockConfigurationBuilder {
             block_public_policy: self.block_public_policy,
             ignore_public_acls: self.ignore_public_acls,
             restrict_public_buckets: self.restrict_public_buckets,
+        }
+    }
+}
+
+pub enum IntelligentTieringStatus {
+    Enabled,
+    Disabled,
+}
+
+impl From<IntelligentTieringStatus> for String {
+    fn from(value: IntelligentTieringStatus) -> String {
+        match value {
+            IntelligentTieringStatus::Enabled => "Enabled".to_string(),
+            IntelligentTieringStatus::Disabled => "Disabled".to_string(),
+        }
+    }
+}
+
+pub struct TagFilterBuilder {
+    key: String,
+    value: String,
+}
+
+impl TagFilterBuilder {
+    pub fn new<T: Into<String>>(key: T, value: T) -> Self {
+        Self {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+    
+    pub fn build(self) -> TagFilter {
+        TagFilter {
+            key: self.key,
+            value: self.value,
+        }
+    }
+}
+
+pub struct IntelligentTieringConfigurationBuilder {
+    id: String,
+    status: String,
+    prefix: Option<String>,
+    tag_filters: Option<Vec<TagFilter>>,
+    tierings: Vec<Tiering>,
+}
+
+impl IntelligentTieringConfigurationBuilder {
+    pub fn new(id: &str, status: IntelligentTieringStatus, tierings: Vec<BucketTiering>) -> Self {
+        IntelligentTieringConfigurationBuilder {
+            id: id.to_string(),
+            status: status.into(),
+            prefix: None,
+            tag_filters: None,
+            tierings: tierings.into_iter().map(|t| {
+                Tiering {
+                    access_tier: t.0,
+                    days: t.1,
+                }
+            }).collect(),
+        }
+    }
+    
+    pub fn prefix<T: Into<String>>(self, prefix: T) -> Self {
+        Self {
+            prefix: Some(prefix.into()),
+            ..self
+        }
+    }
+    
+    pub fn add_tag_filter(mut self, tag_filter: TagFilter) -> Self {
+        if let Some(mut filters) = self.tag_filters {
+            filters.push(tag_filter);
+            self.tag_filters = Some(filters);
+        } else {
+            self.tag_filters = Some(vec![tag_filter]);
+        }
+        
+        self
+    }
+
+    pub fn build(self) -> IntelligentTieringConfiguration {
+        IntelligentTieringConfiguration {
+            id: self.id,
+            prefix: self.prefix,
+            status: self.status,
+            tag_filters: self.tag_filters,
+            tierings: self.tierings,
+        }
+    }
+}
+
+pub enum TableBucketType {
+    Aws,
+    Customer,
+}
+
+impl From<TableBucketType> for String {
+    fn from(value: TableBucketType) -> String {
+        match value {
+            TableBucketType::Aws => "aws".to_string(),
+            TableBucketType::Customer => "customer".to_string(),
+        }
+    }
+}
+
+pub enum Expiration {
+    Enabled,
+    Disabled,
+}
+
+impl From<Expiration> for String {
+    fn from(value: Expiration) -> String {
+        match value {
+            Expiration::Enabled => "ENABLED".to_string(),
+            Expiration::Disabled => "DISABLED".to_string(),
+        }
+    }
+}
+
+pub struct RecordExpirationBuilder {
+    days: Option<u32>,
+    expiration: String,
+}
+
+impl RecordExpirationBuilder {
+    pub fn new(expiration: Expiration) -> Self {
+        Self {
+            expiration: expiration.into(),
+            days: None,
+        }
+    }
+
+    pub fn days(self, days: RecordExpirationDays) -> Self {
+        Self {
+            days: Some(days.0),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> RecordExpiration {
+        RecordExpiration {
+            days: self.days,
+            expiration: self.expiration,
+        }
+    }
+}
+
+pub struct JournalTableConfigurationBuilder {
+    record_expiration: RecordExpiration,
+    table_arn: Option<Value>,
+    table_name: Option<String>,
+}
+
+impl JournalTableConfigurationBuilder {
+    pub fn new(record_expiration: RecordExpiration) -> Self {
+        Self {
+            record_expiration,
+            table_arn: None,
+            table_name: None,
+        }
+    }
+
+    pub fn table_name<T: Into<String>>(self, name: T) -> Self {
+        Self {
+            table_name: Some(name.into()),
+           ..self
+        }
+    }
+
+    pub fn table_arn(self, arn: Value) -> Self {
+        Self {
+            table_arn: Some(arn),
+           ..self
+        }
+    }
+
+    pub fn build(self) -> JournalTableConfiguration {
+        JournalTableConfiguration {
+            record_expiration: self.record_expiration,
+            table_arn: self.table_arn,
+            table_name: self.table_name,
+        }
+    }
+}
+
+pub struct MetadataDestinationBuilder {
+    table_bucket_type: String,
+    table_bucket_arn: Option<Value>,
+    table_namespace: Option<String>,
+}
+
+impl MetadataDestinationBuilder {
+    pub fn new(table_bucket_type: TableBucketType) -> Self {
+        Self {
+            table_bucket_type: table_bucket_type.into(),
+            table_bucket_arn: None,
+            table_namespace: None,
+        }
+    }
+
+    pub fn table_bucket_arn(self, table_bucket_arn: Value) -> Self {
+        Self {
+            table_bucket_arn: Some(table_bucket_arn),
+            ..self
+        }
+    }
+
+    pub fn table_namespace<T: Into<String>>(self, table_namespace: T) -> Self {
+        Self {
+            table_namespace: Some(table_namespace.into()),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> MetadataDestination {
+        MetadataDestination {
+            table_bucket_arn: self.table_bucket_arn,
+            table_bucket_type: self.table_bucket_type,
+            table_namespace: self.table_namespace,
+        }
+    }
+}
+
+pub enum ConfigurationState {
+    Enabled,
+    Disabled,
+}
+
+impl From<ConfigurationState> for String {
+    fn from(value: ConfigurationState) -> String {
+        match value {
+            ConfigurationState::Enabled => "ENABLED".to_string(),
+            ConfigurationState::Disabled => "DISABLED".to_string(),
+        }
+    }
+}
+
+pub struct InventoryTableConfigurationBuilder {
+    configuration_state: String,
+    table_arn: Option<Value>,
+    table_name: Option<String>,
+}
+
+impl InventoryTableConfigurationBuilder {
+    pub fn new(configuration_state: ConfigurationState) -> Self {
+        Self {
+            configuration_state: configuration_state.into(),
+            table_arn: None,
+            table_name: None,
+        }
+    }
+
+    pub fn table_arn(self, table_arn: Value) -> Self {
+        Self {
+            table_arn: Some(table_arn),
+            ..self
+        }
+    }
+
+    pub fn table_name<T: Into<String>>(self, table_name: T) -> Self {
+        Self {
+            table_name: Some(table_name.into()),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> InventoryTableConfiguration {
+        InventoryTableConfiguration {
+            configuration_state: self.configuration_state,
+            table_arn: self.table_arn,
+            table_name: self.table_name,
+        }
+    }
+}
+
+pub struct MetadataConfigurationBuilder {
+    destination: Option<MetadataDestination>,
+    inventory_table_configuration: Option<InventoryTableConfiguration>,
+    journal_table_configuration: JournalTableConfiguration,
+}
+
+impl MetadataConfigurationBuilder {
+    pub fn new(journal_table_configuration: JournalTableConfiguration) -> Self {
+        MetadataConfigurationBuilder {
+            journal_table_configuration,
+            destination: None,
+            inventory_table_configuration: None,
+        }
+    }
+
+    pub fn destination(self, destination: MetadataDestination) -> Self {
+        Self {
+            destination: Some(destination),
+            ..self
+        }
+    }
+
+    pub fn inventory_table_configuration(self, inventory_table_configuration: InventoryTableConfiguration) -> Self {
+        Self {
+            inventory_table_configuration: Some(inventory_table_configuration),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> MetadataConfiguration {
+        MetadataConfiguration {
+            destination: self.destination,
+            inventory_table_configuration: self.inventory_table_configuration,
+            journal_table_configuration: self.journal_table_configuration,
         }
     }
 }

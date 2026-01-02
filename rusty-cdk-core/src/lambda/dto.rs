@@ -113,6 +113,9 @@ pub struct Environment {
 pub struct LoggingInfo {
     #[serde(rename = "LogGroup")]
     pub(super) log_group: Option<Value>,
+    // "ApplicationLogLevel" : String,
+    // "LogFormat" : String,
+    // "SystemLogLevel" : String
 }
 
 ref_struct!(EventSourceMappingRef);

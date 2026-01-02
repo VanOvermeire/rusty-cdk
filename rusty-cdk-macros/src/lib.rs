@@ -409,6 +409,7 @@ number_check!(connection_attempts, 1, 3, ConnectionAttempts, u8);
 number_check!(s3_origin_read_timeout, 1, 120, S3OriginReadTimeout, u8);
 number_check!(deployment_duration_in_minutes, 0, 1440, DeploymentDurationInMinutes, u16);
 number_check!(growth_factor, 0, 100, GrowthFactor, u8);
+number_check!(record_expiration_days, 7, 2147483647, RecordExpirationDays, u32);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";

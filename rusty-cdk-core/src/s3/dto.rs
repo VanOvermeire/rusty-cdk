@@ -1,8 +1,8 @@
+use crate::iam::PolicyDocument;
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::Serialize;
 use serde_json::Value;
-use crate::iam::PolicyDocument;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 ref_struct!(BucketPolicyRef);
 
@@ -44,22 +44,128 @@ dto_methods!(Bucket);
 
 #[derive(Debug, Serialize)]
 pub struct BucketProperties {
+    #[serde(rename = "AbacStatus", skip_serializing_if = "Option::is_none")]
+    pub(super) abac_status: Option<String>,
+    #[serde(rename = "AccelerateConfiguration", skip_serializing_if = "Option::is_none")]
+    pub(super) accelerate_configuration: Option<AccelerateConfiguration>,
     #[serde(rename = "BucketName", skip_serializing_if = "Option::is_none")]
     pub(super) bucket_name: Option<String>,
     #[serde(rename = "BucketEncryption", skip_serializing_if = "Option::is_none")]
     pub(super) bucket_encryption: Option<BucketEncryption>,
     #[serde(rename = "CorsConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) cors_configuration: Option<CorsConfiguration>,
+    #[serde(rename = "IntelligentTieringConfigurations", skip_serializing_if = "Option::is_none")]
+    pub(super) intelligent_tiering_configurations: Option<Vec<IntelligentTieringConfiguration>>,
     #[serde(rename = "LifecycleConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) lifecycle_configuration: Option<LifecycleConfiguration>,
-    #[serde(rename = "NotificationConfiguration", skip_serializing_if = "Option::is_none")]
-    pub(super) notification_configuration: Option<NotificationConfiguration>,
+    #[serde(rename = "MetadataConfiguration", skip_serializing_if = "Option::is_none")]
+    pub(super) metadata_configuration: Option<MetadataConfiguration>,
+    // notification_configuration is handled by a custom resource
     #[serde(rename = "PublicAccessBlockConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) public_access_block_configuration: Option<PublicAccessBlockConfiguration>,
     #[serde(rename = "VersioningConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) versioning_configuration: Option<VersioningConfig>,
     #[serde(rename = "WebsiteConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) website_configuration: Option<WebsiteConfiguration>,
+    // to add //
+    // "AnalyticsConfigurations" : [ AnalyticsConfiguration, ... ],
+    // "InventoryConfigurations" : [ InventoryConfiguration, ... ],
+    // "ReplicationConfiguration" : ReplicationConfiguration,
+    // "LoggingConfiguration" : LoggingConfiguration,
+    // "MetricsConfigurations" : [ MetricsConfiguration, ... ],
+
+    // less important //
+    // "ObjectLockConfiguration" : ObjectLockConfiguration,
+    // "ObjectLockEnabled" : Boolean,
+    // "OwnershipControls" : OwnershipControls,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MetadataConfiguration {
+    #[serde(rename = "Destination")]
+    pub(super) destination: Option<MetadataDestination>,
+    #[serde(rename = "InventoryTableConfiguration")]
+    pub(super) inventory_table_configuration: Option<InventoryTableConfiguration>,
+    #[serde(rename = "JournalTableConfiguration")]
+    pub(super) journal_table_configuration: JournalTableConfiguration,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MetadataDestination {
+    #[serde(rename = "TableBucketArn", skip_serializing_if = "Option::is_none")]
+    pub(super) table_bucket_arn: Option<Value>,
+    #[serde(rename = "TableBucketType")]
+    pub(super) table_bucket_type: String,
+    #[serde(rename = "TableNamespace", skip_serializing_if = "Option::is_none")]
+    pub(super) table_namespace: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InventoryTableConfiguration {
+    #[serde(rename = "ConfigurationState")]
+    pub(super) configuration_state: String,
+    #[serde(rename = "TableArn", skip_serializing_if = "Option::is_none")]
+    pub(super) table_arn: Option<Value>,
+    #[serde(rename = "TableName", skip_serializing_if = "Option::is_none")]
+    pub(super) table_name: Option<String>,
+    // #[serde(rename = "EncryptionConfiguration", skip_serializing_if = "Option::is_none")]
+    // pub(super) encryption_configuration: MetadataTableEncryptionConfiguration,
+}
+
+#[derive(Debug, Serialize)]
+pub struct JournalTableConfiguration {
+    #[serde(rename = "RecordExpiration")]
+    pub(super) record_expiration: RecordExpiration,
+    #[serde(rename = "TableArn", skip_serializing_if = "Option::is_none")]
+    pub(super) table_arn: Option<Value>,
+    #[serde(rename = "TableName", skip_serializing_if = "Option::is_none")]
+    pub(super) table_name: Option<String>,
+    // #[serde(rename = "EncryptionConfiguration", skip_serializing_if = "Option::is_none")]
+    // pub(super) encryption_configuration: MetadataTableEncryptionConfiguration,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RecordExpiration {
+    #[serde(rename = "Days", skip_serializing_if = "Option::is_none")]
+    pub(super) days: Option<u32>,
+    #[serde(rename = "Expiration")]
+    pub(super) expiration: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IntelligentTieringConfiguration {
+    #[serde(rename = "Id")]
+    pub(super) id: String,
+    #[serde(rename = "Prefix", skip_serializing_if = "Option::is_none")]
+    pub(super) prefix: Option<String>,
+    #[serde(rename = "Status")]
+    pub(super) status: String,
+    #[serde(rename = "TagFilters", skip_serializing_if = "Option::is_none")]
+    pub(super) tag_filters: Option<Vec<TagFilter>>,
+    #[serde(rename = "Tierings")]
+    pub(super) tierings: Vec<Tiering>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Tiering {
+    #[serde(rename = "AccessTier")]
+    pub(super) access_tier: String,
+    #[serde(rename = "AccessTier")]
+    pub(super) days: u16,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TagFilter {
+    #[serde(rename = "Key")]
+    pub(super) key: String,
+    #[serde(rename = "Value")]
+    pub(super) value: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AccelerateConfiguration {
+    #[serde(rename = "AccelerationStatus")]
+    pub(super) acceleration_status: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -109,7 +215,7 @@ pub struct LifecycleConfiguration {
     #[serde(rename = "Rules")]
     pub(super) rules: Vec<LifecycleRule>,
     #[serde(rename = "TransitionDefaultMinimumObjectSize", skip_serializing_if = "Option::is_none")]
-    pub(super) transition_minimum_size: Option<String>
+    pub(super) transition_minimum_size: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -118,8 +224,8 @@ pub struct LifecycleRuleTransition {
     pub(super) storage_class: String,
     #[serde(rename = "TransitionInDays")]
     pub(super) transition_in_days: u16, // will become optional once `TransitionDate` is added!
-    // #[serde(rename = "TransitionDate")]
-    // pub(super transition_date: String => add and check the regex
+                                        // #[serde(rename = "TransitionDate")]
+                                        // pub(super transition_date: String => add and check the regex
 }
 
 #[derive(Debug, Serialize)]
@@ -129,7 +235,7 @@ pub struct NonCurrentVersionTransition {
     #[serde(rename = "TransitionInDays")]
     pub(super) transition_in_days: u32,
     #[serde(rename = "NewerNoncurrentVersions")]
-    pub(super) newer_non_current_versions: Option<u32>
+    pub(super) newer_non_current_versions: Option<u32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -153,20 +259,10 @@ pub struct LifecycleRule {
     #[serde(rename = "Transitions", skip_serializing_if = "Option::is_none")]
     pub(super) transitions: Option<Vec<LifecycleRuleTransition>>,
     #[serde(rename = "NoncurrentVersionTransitions", skip_serializing_if = "Option::is_none")]
-    pub(super) non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>
+    pub(super) non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>, 
     // #[serde(rename = "ExpiredObjectDeleteMarker", skip_serializing_if = "Option::is_none")]
-    // pub(super expire_object_delete_marker: Option<bool> => cannot be specified with ExpirationInDays, ExpirationDate, or TagFilters.
+    // pub(super) expire_object_delete_marker: Option<bool> => cannot be specified with ExpirationInDays, ExpirationDate, or TagFilters.
     // "ExpirationDate": String => check the regex
-}
-
-#[derive(Debug, Serialize)]
-pub struct NotificationConfiguration {
-    #[serde(rename = "TopicConfigurations", skip_serializing_if = "Option::is_none")]
-    pub(super) topic_configurations: Option<Vec<TopicConfiguration>>,
-    #[serde(rename = "QueueConfigurations", skip_serializing_if = "Option::is_none")]
-    pub(super) queue_configurations: Option<Vec<QueueConfiguration>>, // fifo not allowed!
-    #[serde(rename = "LambdaConfigurations", skip_serializing_if = "Option::is_none")]
-    pub(super) lambda_configurations: Option<Vec<LambdaConfiguration>>,
 }
 
 #[derive(Debug, Serialize)]

@@ -575,3 +575,11 @@ pub struct AppSyncApiName(pub String);
 /// Use the `channel_namespace_name!` macro from `rusty-cdk-macros` for compile-time validation
 #[derive(Debug, Clone)]
 pub struct ChannelNamespaceName(pub String);
+
+// TODO macro ARCHIVE_ACCESS | DEEP_ARCHIVE_ACCESS
+// Archive Access tier must be at least 90 days and Deep Archive Access tier must be at least 180 days. The maximum can be up to 2 years (730 days)
+#[derive(Debug, Clone)]
+pub struct BucketTiering(pub String, pub u16);
+
+#[derive(Debug, Clone)]
+pub struct RecordExpirationDays(pub u32);
