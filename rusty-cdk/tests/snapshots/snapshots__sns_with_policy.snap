@@ -4,8 +4,8 @@ expression: synthesized
 ---
 {
   "Metadata": {
-    "pol": "[TopicPolicy]",
-    "top": "[SnsTopic]"
+    "top": "[SnsTopic]",
+    "topPolicy": "[TopicPolicy]"
   },
   "Resources": {
     "[SnsTopic]": {

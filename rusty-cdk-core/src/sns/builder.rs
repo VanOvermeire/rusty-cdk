@@ -1,7 +1,7 @@
 use crate::iam::PolicyDocument;
 use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
-use crate::shared::Id;
+use crate::shared::{Id, TOPIC_POLICY_ID_SUFFIX};
 use crate::sns::{SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
@@ -72,6 +72,7 @@ pub struct TopicBuilder<T: TopicBuilderState> {
     topic_name: Option<String>,
     content_based_deduplication: Option<bool>,
     fifo_throughput_scope: Option<FifoThroughputScope>,
+    topic_policy_doc: Option<PolicyDocument>,
     lambda_subscription_ids: Vec<(Id, String)>,
 }
 
@@ -87,6 +88,7 @@ impl TopicBuilder<StartState> {
             topic_name: None,
             content_based_deduplication: None,
             fifo_throughput_scope: None,
+            topic_policy_doc: None,
             lambda_subscription_ids: vec![],
         }
     }
@@ -103,6 +105,7 @@ impl TopicBuilder<StartState> {
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
@@ -122,6 +125,7 @@ impl TopicBuilder<StandardStateWithSubscriptions> {
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
@@ -139,6 +143,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             state: Default::default(),
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
@@ -148,6 +153,21 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             state: Default::default(),
             id: self.id,
             topic_name: self.topic_name,
+            content_based_deduplication: self.content_based_deduplication,
+            fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
+            lambda_subscription_ids: self.lambda_subscription_ids,
+        }
+    }
+
+    /// Adds an SNS Topic Policy for this topic.
+    /// The code will automatically set the `resources` section of the `PolicyDocument` to the ARN of this queue, so there's no need to pass that in.
+    pub fn topic_policy(self, doc: PolicyDocument) -> TopicBuilder<T> {
+        TopicBuilder {
+            topic_policy_doc: Some(doc),
+            topic_name: self.topic_name,
+            id: self.id,
+            state: Default::default(),
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
             lambda_subscription_ids: self.lambda_subscription_ids,
@@ -191,15 +211,25 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope.map(Into::into),
         };
+
+        let topic_ref = TopicRef::new(self.id.clone(), topic_resource_id.to_string());
         
+        if let Some(mut policy) = self.topic_policy_doc {
+            for statement in &mut policy.statements {
+                // point the statements of this policy to the queue
+                statement.resource = Some(vec![topic_ref.get_ref()]);
+            }
+            TopicPolicyBuilder::new(Id::generate_id(&self.id, TOPIC_POLICY_ID_SUFFIX), policy, vec![&topic_ref]).build(stack_builder);
+        }
+
         stack_builder.add_resource(Topic {
             id: self.id,
-            resource_id: topic_resource_id.to_string(),
+            resource_id: topic_resource_id,
             r#type: "AWS::SNS::Topic".to_string(),
             properties,
         });
-
-        TopicRef::new(topic_resource_id)
+        
+        topic_ref
     }
 }
 
@@ -227,6 +257,7 @@ impl TopicBuilder<FifoState> {
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
@@ -267,6 +298,7 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
+            topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
         }
     }
@@ -284,37 +316,27 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
     }
 }
 
-pub struct TopicPolicyBuilder {
+pub(crate) struct TopicPolicyBuilder {
     id: Id,
     doc: PolicyDocument,
     topics: Vec<Value>
 }
 
 impl TopicPolicyBuilder {
-    // could help user by setting resource and condition
-
-    /// Creates a new SNS topic policy builder.
-    ///
-    /// *Important* Current limitation: CloudFormation only allows one resource policy for a given topic, applying the last one it receives.
-    /// If you've added a bucket notification for this topic, which requires a policy, and you also define one yourself, one of both will get lost.
-    ///
-    /// # Arguments
-    /// * `id` - Unique identifier for the topic
-    /// * `doc` - The resource policy that should be applied to the topics
-    /// * `topics` - Topics for which the policy is valid
-    pub fn new(id: &str, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
+    /// Use the `topic_policy` method of `TopicBuilder` to add a topic policy to a topic
+    pub(crate) fn new(id: Id, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
         Self::new_with_values(id, doc, topics.into_iter().map(|v| v.get_ref()).collect())
     }
     
-    pub(crate) fn new_with_values(id: &str, doc: PolicyDocument, topics: Vec<Value>) -> Self {
+    pub(crate) fn new_with_values(id: Id, doc: PolicyDocument, topics: Vec<Value>) -> Self {
         Self {
-            id: Id(id.to_string()),
+            id,
             doc,
             topics,
         }
     }
     
-    pub fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
+    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
         let resource_id = Resource::generate_id("TopicPolicy");
         stack_builder.add_resource(TopicPolicy {
             id: self.id.clone(),

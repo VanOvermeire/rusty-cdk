@@ -17,7 +17,7 @@ use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration, IntelligentTieringConfigurationBuilder, IntelligentTieringStatus, InventoryTableConfigurationBuilder, JournalTableConfigurationBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, MetadataConfigurationBuilder, MetadataDestinationBuilder, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder, RecordExpirationBuilder, TableBucketType};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
-use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder, TopicPolicyBuilder};
+use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
 use rusty_cdk_core::sqs::{QueueBuilder};
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
@@ -630,7 +630,7 @@ fn bucket_with_notifications_to_sqs() {
 fn sns_with_policy() {
     let mut stack_builder = StackBuilder::new();
 
-    let topic = TopicBuilder::new("top").build(&mut stack_builder);
+    
     let condition = json!({
         "ArnLike": {
             "aws:SourceArn": "some-source-for-publishes"
@@ -640,10 +640,9 @@ fn sns_with_policy() {
     let statement = StatementBuilder::new(vec![iam_action!("sns:Publish")], Effect::Allow)
         .principal(principal)
         .condition(condition)
-        .resources(vec![topic.get_ref()])
         .build();
     let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-    TopicPolicyBuilder::new("pol", doc, vec![&topic]).build(&mut stack_builder);
+    TopicBuilder::new("top").topic_policy(doc).build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();
 

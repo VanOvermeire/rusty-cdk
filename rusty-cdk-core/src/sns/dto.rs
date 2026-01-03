@@ -1,11 +1,10 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
+use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
-use crate::intrinsic::{get_arn, get_att, get_ref};
 use crate::shared::Id;
 
-ref_struct!(TopicRef);
+ref_struct_with_id_methods!(TopicRef);
 
 #[derive(Debug, Serialize)]
 pub struct Topic {
@@ -32,39 +31,7 @@ pub struct TopicProperties {
     pub(super) fifo_throughput_scope: Option<String>,
 }
 
-pub struct TopicPolicyRef {
-    id: Id,
-    resource_id: String,
-}
-
-impl TopicPolicyRef {
-    pub fn new(id: Id, resource_id: String) -> Self {
-        Self {
-            id,
-            resource_id
-        }
-    }
-
-    pub fn get_id(&self) -> Id {
-        self.id.clone()
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
-
-    pub fn get_arn(&self) -> Value {
-        get_arn(self.get_resource_id())
-    }
-
-    pub fn get_att(&self, id: &str) -> Value {
-        get_att(self.get_resource_id(), id)
-    }
-}
+ref_struct_with_id_methods!(TopicPolicyRef);
 
 #[derive(Debug, Serialize)]
 pub struct TopicPolicy {
@@ -75,14 +42,14 @@ pub struct TopicPolicy {
     #[serde(rename = "Type")]
     pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(super) properties: TopicPolicyProperties,
+    pub(crate) properties: TopicPolicyProperties,
 }
 dto_methods!(TopicPolicy);
 
 #[derive(Debug, Serialize)]
 pub struct TopicPolicyProperties {
     #[serde(rename = "PolicyDocument")]
-    pub(super) doc: PolicyDocument,
+    pub(crate) doc: PolicyDocument,
     #[serde(rename = "Topics")]
     pub(super) topics: Vec<Value>,
 }

@@ -10,7 +10,7 @@ use crate::s3::{
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
 use crate::shared::http::{HttpMethod, Protocol};
-use crate::shared::{Id, QUEUE_POLICY_ID_SUFFIX};
+use crate::shared::{Id, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
@@ -283,7 +283,7 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     cors_config: Option<CorsConfiguration>,
     bucket_encryption: Option<Encryption>,
     bucket_notification_lambda_destinations: Vec<(Value, String)>,
-    bucket_notification_sns_destinations: Vec<(Value, String)>,
+    bucket_notification_sns_destinations: Vec<(Id, Value, String)>,
     bucket_notification_sqs_destinations: Vec<(Id, Value, Value, String)>,
 }
 
@@ -391,7 +391,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
     pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
-            NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_ref(), e.into())),
+            NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_id().clone(), s.get_ref(), e.into())),
             NotificationDestination::Sqs(q, e) => self.bucket_notification_sqs_destinations.push((q.get_id().clone(), q.get_ref(), q.get_arn(), e.into())),
         }
         self
@@ -536,7 +536,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .build(stack_builder);
         }
 
-        for (i, (reference, event)) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
+        for (i, (id, reference, event)) in self.bucket_notification_sns_destinations.into_iter().enumerate() {
             let handler = Self::notification_handler(&self.id, "SNS", i, stack_builder);
 
             let bucket_arn = bucket.get_arn();
@@ -551,12 +551,24 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .condition(condition)
                 .resources(vec![reference.clone()])
                 .build();
-            let doc = PolicyDocumentBuilder::new(vec![statement]).build();
 
-            let topic_policy_id = Id::generate_id(&self.id, &format!("SNSDestinationPolicy{}", i));
-            let topic_ref =
-                TopicPolicyBuilder::new_with_values(&topic_policy_id, doc, vec![reference.clone()])
-                    .build(stack_builder);
+            let topic_policy_id = Id::generate_id(&id, TOPIC_POLICY_ID_SUFFIX);
+            let topic_policy_ref_id = match stack_builder.get_resource(&topic_policy_id) {
+                None => {
+                    // there's no queue policy. add ours
+                    let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+                    let topic_policy_id = Id::generate_id(&self.id, &format!("SNSDestinationPolicy{}", i));
+                    TopicPolicyBuilder::new_with_values(topic_policy_id.clone(), doc, vec![reference.clone()])
+                            .build(stack_builder);
+                    topic_policy_id
+                },
+                Some(Resource::TopicPolicy(pol)) => {
+                    // there's a policy, add the required permissions
+                    pol.properties.doc.statements.push(statement);
+                    topic_policy_id
+                }
+                _ => unreachable!("topic policy id should point to optional topic policy")
+            };
 
             let notification_id = Id::generate_id(&self.id, &format!("SNSNotification{}", i));
             BucketNotificationBuilder::new(
@@ -564,7 +576,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                Some(topic_ref.get_id()),
+                Some(topic_policy_ref_id),
             )
             .sns(reference)
             .build(stack_builder);

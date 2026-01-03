@@ -258,14 +258,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
         };
 
         let resource_id = Resource::generate_id("SqsQueue");
-        stack_builder.add_resource(Queue {
-            id: self.id.clone(),
-            resource_id: resource_id.clone(),
-            r#type: "AWS::SQS::Queue".to_string(),
-            properties,
-        });
-        
-        let queue_ref = QueueRef::new(self.id.clone(), resource_id);
+        let queue_ref = QueueRef::new(self.id.clone(), resource_id.clone());
         
         if let Some(mut policy) = self.queue_policy_doc {
             for statement in &mut policy.statements {
@@ -274,6 +267,13 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
             }
             QueuePolicyBuilder::new(Id::generate_id(&self.id, QUEUE_POLICY_ID_SUFFIX), policy, vec![&queue_ref]).build(stack_builder);
         }
+
+        stack_builder.add_resource(Queue {
+            id: self.id,
+            resource_id: resource_id,
+            r#type: "AWS::SQS::Queue".to_string(),
+            properties,
+        });
 
         queue_ref
     }
