@@ -150,7 +150,7 @@ pub struct IntelligentTieringConfiguration {
 pub struct Tiering {
     #[serde(rename = "AccessTier")]
     pub(super) access_tier: String,
-    #[serde(rename = "AccessTier")]
+    #[serde(rename = "Days")]
     pub(super) days: u16,
 }
 

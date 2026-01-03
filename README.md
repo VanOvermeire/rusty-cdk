@@ -191,11 +191,15 @@ To be added at some point:
 Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
 
 - ApiGatewayV2Builder
+- AppSyncApiBuilder
 - ApplicationBuilder
 - AssumeRolePolicyDocumentBuilder
+- AuthProviderBuilder
 - BucketBuilder
+- BucketNotificationBuilder
 - BucketPolicyBuilder
 - CachePolicyBuilder
+- ChannelNamespaceBuilder
 - ConfigurationProfileBuilder
 - CorsConfigurationBuilder
 - CorsRuleBuilder
@@ -203,12 +207,19 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - DeploymentStrategyBuilder
 - DistributionBuilder
 - EnvironmentBuilder
+- EventConfigBuilder
+- EventLogConfigBuilder
 - FunctionBuilder
 - GenerateSecretStringBuilder
+- IntelligentTieringConfigurationBuilder
+- InventoryTableConfigurationBuilder
+- JournalTableConfigurationBuilder
 - LifecycleConfigurationBuilder
 - LifecycleRuleBuilder
 - LifecycleRuleTransitionBuilder
 - LogGroupBuilder
+- MetadataConfigurationBuilder
+- MetadataDestinationBuilder
 - NonCurrentVersionTransitionBuilder
 - OriginAccessControlBuilder
 - OriginBuilder
@@ -220,12 +231,14 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - PublicAccessBlockConfigurationBuilder
 - QueueBuilder
 - QueuePolicyBuilder
+- RecordExpirationBuilder
 - RoleBuilder
 - RolePropertiesBuilder
 - SecretBuilder
 - StackBuilder
 - StatementBuilder
 - TableBuilder
+- TagFilterBuilder
 - TopicBuilder
 - TopicPolicyBuilder
 - ValidatorBuilder

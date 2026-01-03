@@ -1,0 +1,43 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "test-buck": "[S3Bucket]"
+  },
+  "Resources": {
+    "[S3Bucket]": {
+      "Properties": {
+        "IntelligentTieringConfigurations": [
+          {
+            "Id": "intelligent",
+            "Prefix": "/test",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "DEEP_ARCHIVE_ACCESS",
+                "Days": 180
+              }
+            ]
+          }
+        ],
+        "MetadataConfiguration": {
+          "Destination": {
+            "TableBucketType": "aws"
+          },
+          "InventoryTableConfiguration": {
+            "ConfigurationState": "ENABLED"
+          },
+          "JournalTableConfiguration": {
+            "RecordExpiration": {
+              "Days": 30,
+              "Expiration": "ENABLED"
+            }
+          }
+        }
+      },
+      "Type": "AWS::S3::Bucket"
+    }
+  }
+}

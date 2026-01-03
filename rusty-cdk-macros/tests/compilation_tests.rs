@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name};
+use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -24,6 +24,7 @@ struct LifecycleTransitionInDays(pub u16);
 struct LocationUri(pub String);
 struct AppSyncApiName(pub String);
 struct ChannelNamespaceName(pub String);
+struct BucketTiering(pub String, pub u16);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -172,4 +173,14 @@ fn app_sync_api_name() {
 #[test]
 fn channel_namespace_name() {
     channel_namespace_name!("default");
+}
+
+#[test]
+fn bucket_tiering_archive() {
+    bucket_tiering!("ARCHIVE_ACCESS",100);
+}
+
+#[test]
+fn bucket_tiering_deep_archive() {
+    bucket_tiering!("DEEP_ARCHIVE_ACCESS",181);
 }

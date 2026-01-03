@@ -14,11 +14,7 @@ use rusty_cdk_core::iam::{
     CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder,
 };
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::s3::{
-    BucketBuilder, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, LifecycleConfigurationBuilder, LifecycleRuleBuilder,
-    LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, NotificationDestination, NotificationEventType,
-    PublicAccessBlockConfigurationBuilder,
-};
+use rusty_cdk_core::s3::{BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration, IntelligentTieringConfigurationBuilder, IntelligentTieringStatus, InventoryTableConfigurationBuilder, JournalTableConfigurationBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, MetadataConfigurationBuilder, MetadataDestinationBuilder, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder, RecordExpirationBuilder, TableBucketType};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder, TopicPolicyBuilder};
@@ -723,6 +719,35 @@ fn app_sync_api() {
     insta::with_settings!({filters => vec![
             (r"AppSyncApi[0-9]+", "[AppSyncApi]"),
             (r"ChannelNamespace[0-9]+", "[ChannelNamespace]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn bucket_with_intelligent_tiering_and_metadata_table() {
+    let mut stack_builder = StackBuilder::new();
+
+    BucketBuilder::new("test-buck")
+        .add_intelligent_tiering(IntelligentTieringConfigurationBuilder::new("intelligent", IntelligentTieringStatus::Enabled, vec![bucket_tiering!("DEEP_ARCHIVE_ACCESS", 180)]).prefix("/test").build())
+        .metadata_configuration(
+            MetadataConfigurationBuilder::new(
+                JournalTableConfigurationBuilder::new(RecordExpirationBuilder::new(Expiration::Enabled).days(record_expiration_days!(30)).build())
+                    .build()
+            )
+                .destination(MetadataDestinationBuilder::new(TableBucketType::Aws).build())
+                .inventory_table_configuration(InventoryTableConfigurationBuilder::new(ConfigurationState::Enabled)
+                    .build())
+                .build())
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"S3Bucket[0-9]+", "[S3Bucket]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

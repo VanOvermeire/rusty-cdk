@@ -30,6 +30,7 @@ mod object_sizes;
 mod strings;
 mod timeouts;
 mod transition_in_days;
+mod bucket_tiering;
 
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
@@ -44,6 +45,7 @@ use quote::quote;
 use std::env;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
+use crate::bucket_tiering::BucketTiering;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -966,11 +968,45 @@ pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
     .into()
 }
 
+const ACCESS_TIERS: [&str; 2] = ["ARCHIVE_ACCESS", "DEEP_ARCHIVE_ACCESS"];
+
+#[proc_macro]
+pub fn bucket_tiering(input: TokenStream) -> TokenStream {
+    let BucketTiering { access_tier, days } = parse_macro_input!(input);
+    
+    if !ACCESS_TIERS.contains(&access_tier.as_str()) {
+        return Error::new(
+            Span::call_site(),
+            format!("access tier should be one of {} (was {})", ACCESS_TIERS.join(","), access_tier),
+        )
+            .into_compile_error()
+            .into();
+    }
+    
+    if &access_tier == "ARCHIVE_ACCESS" {
+        if days < 90 || days > 730 {
+            return Error::new(Span::call_site(), format!("days for access tier `ARCHIVE_ACCESS` should be between 90 and 730 (was {})", days))
+                .into_compile_error()
+                .into();
+        }
+    } else if &access_tier == "DEEP_ARCHIVE_ACCESS" {
+        if days < 180 || days > 730 {
+            return Error::new(Span::call_site(), format!("days for access tier `DEEP_ARCHIVE_ACCESS` should be between 180 and 730 (was {})", days))
+                .into_compile_error()
+                .into();
+        }
+    }
+    
+    quote! {
+        BucketTiering(#access_tier.to_string(), #days)
+    }
+    .into()
+}
+
 const LOCATION_URI_TYPES: [&str; 4] = ["hosted", "codepipeline", "secretsmanager", "s3"];
 const LOCATION_URI_CODEPIPELINE_START: &str = "codepipeline://";
 const LOCATION_URI_SECRETS_MANAGER_START: &str = "secretsmanager://";
 const LOCATION_URI_S3_START: &str = "s3://";
-
 
 /// Creates a validated `LocationUri` wrapper for AppConfig
 ///
