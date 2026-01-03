@@ -18,7 +18,7 @@ use rusty_cdk_core::s3::{BucketBuilder, ConfigurationState, CorsConfigurationBui
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::http::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder, TopicPolicyBuilder};
-use rusty_cdk_core::sqs::{QueueBuilder, QueuePolicyBuilder};
+use rusty_cdk_core::sqs::{QueueBuilder};
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
@@ -662,7 +662,6 @@ fn sns_with_policy() {
 fn sqs_with_policy() {
     let mut stack_builder = StackBuilder::new();
 
-    let queue = QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
     let condition = json!({
         "ArnLike": {
             "aws:SourceArn": "some-source-for-publishes"
@@ -677,12 +676,11 @@ fn sqs_with_policy() {
         ],
         Effect::Allow,
     )
-    .principal(principal)
-    .condition(condition)
-    .resources(vec![queue.get_arn()])
-    .build();
+        .principal(principal)
+        .condition(condition)
+        .build();
     let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-    QueuePolicyBuilder::new("some-policy", doc, vec![&queue]).build(&mut stack_builder);
+    QueueBuilder::new("queue").standard_queue().queue_policy(doc).build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();
 

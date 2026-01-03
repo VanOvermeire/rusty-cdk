@@ -5,7 +5,7 @@ expression: synthesized
 {
   "Metadata": {
     "queue": "[SqsQueue]",
-    "some-policy": "[QueuePolicy]"
+    "queuePolicy": "[QueuePolicy]"
   },
   "Resources": {
     "[QueuePolicy]": {

@@ -1,11 +1,11 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
+use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
 use crate::intrinsic::{get_arn, get_att, get_ref};
 use crate::shared::Id;
 
-ref_struct!(QueueRef);
+ref_struct_with_id_methods!(QueueRef);
 
 #[derive(Debug, Serialize)]
 pub struct Queue {
@@ -18,6 +18,7 @@ pub struct Queue {
     #[serde(rename = "Properties")]
     pub(super) properties: QueueProperties,
 }
+
 dto_methods!(Queue);
 
 #[derive(Debug, Serialize)]
@@ -93,14 +94,14 @@ pub struct QueuePolicy {
     #[serde(rename = "Type")]
     pub(super) r#type: String,
     #[serde(rename = "Properties")]
-    pub(super) properties: QueuePolicyProperties,
+    pub(crate) properties: QueuePolicyProperties,
 }
 dto_methods!(QueuePolicy);
 
 #[derive(Debug, Serialize)]
 pub struct QueuePolicyProperties {
     #[serde(rename = "PolicyDocument")]
-    pub(super) doc: PolicyDocument,
+    pub(crate) doc: PolicyDocument,
     #[serde(rename = "Queues")]
     pub(super) queues: Vec<Value>,   
 }

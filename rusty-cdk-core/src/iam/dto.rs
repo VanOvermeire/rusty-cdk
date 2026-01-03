@@ -3,8 +3,6 @@ use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
-// try to limit visibility to super 
-
 ref_struct!(RoleRef);
 
 #[derive(Debug, Serialize)]

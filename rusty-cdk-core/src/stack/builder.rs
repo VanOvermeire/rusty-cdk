@@ -1,6 +1,7 @@
 use crate::stack::{Resource, Stack};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use crate::shared::Id;
 
 #[derive(Debug)]
 pub enum StackBuilderError {
@@ -93,6 +94,11 @@ impl StackBuilder {
     pub fn add_tag<T: Into<String>>(mut self, key: T, value: T) -> Self {
         self.tags.push((key.into(), value.into()));
         self
+    }
+    
+    pub(crate) fn get_resource(&mut self, id: &Id) -> Option<&mut Resource> {
+        self.resources.iter_mut()
+            .find(|v| &v.get_id() == id)
     }
 
     /// Builds the stack and validates all resources.

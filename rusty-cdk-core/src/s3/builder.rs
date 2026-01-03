@@ -10,7 +10,7 @@ use crate::s3::{
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
 use crate::shared::http::{HttpMethod, Protocol};
-use crate::shared::Id;
+use crate::shared::{Id, QUEUE_POLICY_ID_SUFFIX};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
@@ -284,7 +284,7 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     bucket_encryption: Option<Encryption>,
     bucket_notification_lambda_destinations: Vec<(Value, String)>,
     bucket_notification_sns_destinations: Vec<(Value, String)>,
-    bucket_notification_sqs_destinations: Vec<(Value, Value, String)>,
+    bucket_notification_sqs_destinations: Vec<(Id, Value, Value, String)>,
 }
 
 impl BucketBuilder<StartState> {
@@ -392,7 +392,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
             NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_ref(), e.into())),
-            NotificationDestination::Sqs(q, e) => self.bucket_notification_sqs_destinations.push((q.get_ref(), q.get_arn(), e.into())),
+            NotificationDestination::Sqs(q, e) => self.bucket_notification_sqs_destinations.push((q.get_id().clone(), q.get_ref(), q.get_arn(), e.into())),
         }
         self
     }
@@ -530,7 +530,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                Some(permission.get_id()),
+                Some(permission.get_id().clone()),
             )
             .lambda(arn)
             .build(stack_builder);
@@ -570,7 +570,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .build(stack_builder);
         }
 
-        for (i, (reference, arn, event)) in self.bucket_notification_sqs_destinations.into_iter().enumerate() {
+        for (i, (id, reference, arn, event)) in self.bucket_notification_sqs_destinations.into_iter().enumerate() {
             let handler = Self::notification_handler(&self.id, "SQS", i, stack_builder);
 
             let bucket_arn = bucket.get_arn();
@@ -592,11 +592,24 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .condition(condition)
             .resources(vec![arn.clone()])
             .build();
-            let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-            let queue_policy_id = Id::generate_id(&self.id, &format!("SQSDestinationPolicy{}", i));
-            let queue_policy_ref =
-                QueuePolicyBuilder::new_with_values(&queue_policy_id, doc, vec![reference.clone()])
-                    .build(stack_builder);
+
+            let queue_policy_id = Id::generate_id(&id, QUEUE_POLICY_ID_SUFFIX);
+
+            let queue_policy_ref_id = match stack_builder.get_resource(&queue_policy_id) {
+                None => {
+                    // there's no queue policy. add ours
+                    let doc = PolicyDocumentBuilder::new(vec![statement]).build();
+                    let queue_policy_id = Id::generate_id(&self.id, &format!("SQSDestinationPolicy{}", i));
+                    QueuePolicyBuilder::new_with_values(queue_policy_id.clone(), doc, vec![reference.clone()]).build(stack_builder);
+                    queue_policy_id
+                },
+                Some(Resource::QueuePolicy(pol)) => {
+                    // there's a policy, add the required permissions
+                    pol.properties.doc.statements.push(statement);
+                    queue_policy_id
+                }
+                _ => unreachable!("queue policy id should point to optional queue policy")
+            };
 
             let notification_id = Id::generate_id(&self.id, format!("SQSNotification{}", i).as_str());
             BucketNotificationBuilder::new(
@@ -604,7 +617,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 handler.get_arn(),
                 bucket.get_ref(),
                 event,
-                Some(queue_policy_ref.get_id()),
+                Some(queue_policy_ref_id),
             )
             .sqs(arn)
             .build(stack_builder);

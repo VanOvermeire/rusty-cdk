@@ -1,42 +1,11 @@
-use crate::{dto_methods, ref_struct};
+use crate::{dto_methods, ref_struct, ref_struct_with_id_methods};
 use crate::shared::Id;
 use crate::stack::Asset;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use crate::intrinsic::{get_arn, get_att, get_ref};
 
-// this one also needs the `id` field for some custom ids used by API Gateway and subscriptions
-pub struct FunctionRef {
-    id: Id,
-    resource_id: String,
-}
-
-impl FunctionRef {
-    pub fn new(id: Id, resource_id: String) -> Self {
-        Self { id, resource_id }
-    }
-    
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-
-    pub fn get_ref(&self) -> Value {
-        crate::intrinsic::get_ref(self.get_resource_id())
-    }
-
-    pub fn get_arn(&self) -> Value {
-        crate::intrinsic::get_arn(self.get_resource_id())
-    }
-
-    pub fn get_att(&self, id: &str) -> Value {
-        crate::intrinsic::get_att(self.get_resource_id(), id)
-    }
-}
+ref_struct_with_id_methods!(FunctionRef);
 
 #[derive(Debug, Serialize)]
 pub struct Function {
@@ -149,39 +118,7 @@ pub struct ScalingConfig {
     pub(super) max_concurrency: u16,
 }
 
-pub struct PermissionRef {
-    id: Id,
-    resource_id: String,
-}
-
-impl PermissionRef {
-    pub fn new(id: Id, resource_id: String) -> Self {
-        Self {
-            id,
-            resource_id
-        }
-    }
-    
-    pub fn get_id(&self) -> Id {
-        self.id.clone()
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-    
-    pub fn get_ref(&self) -> Value {
-        get_ref(self.get_resource_id())
-    }
-    
-    pub fn get_arn(&self) -> Value {
-        get_arn(self.get_resource_id())
-    }
-    
-    pub fn get_att(&self, id: &str) -> Value {
-        get_att(self.get_resource_id(), id)
-    }
-}
+ref_struct_with_id_methods!(PermissionRef);
 
 #[derive(Debug, Serialize)]
 pub struct Permission {

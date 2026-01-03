@@ -9,6 +9,7 @@ use crate::wrappers::{
 use serde_json::Value;
 use std::marker::PhantomData;
 use crate::iam::PolicyDocument;
+use crate::shared::QUEUE_POLICY_ID_SUFFIX;
 use crate::type_state;
 
 const FIFO_SUFFIX: &str = ".fifo";
@@ -94,6 +95,7 @@ pub struct QueueBuilder<T: QueueBuilderState> {
     sqs_managed_sse_enabled: Option<bool>,
     redrive_policy: Option<RedrivePolicy>,
     redrive_allow_policy: Option<Value>,
+    queue_policy_doc: Option<PolicyDocument>,
 }
 
 impl QueueBuilder<StartState> {
@@ -117,6 +119,7 @@ impl QueueBuilder<StartState> {
             sqs_managed_sse_enabled: None,
             redrive_policy: None,
             redrive_allow_policy: None,
+            queue_policy_doc: None,
         }
     }
 
@@ -136,6 +139,7 @@ impl QueueBuilder<StartState> {
             sqs_managed_sse_enabled: self.sqs_managed_sse_enabled,
             redrive_policy: self.redrive_policy,
             redrive_allow_policy: self.redrive_allow_policy,
+            queue_policy_doc: self.queue_policy_doc,
         }
     }
 
@@ -155,6 +159,7 @@ impl QueueBuilder<StartState> {
             sqs_managed_sse_enabled: self.sqs_managed_sse_enabled,
             redrive_policy: self.redrive_policy,
             redrive_allow_policy: self.redrive_allow_policy,
+            queue_policy_doc: self.queue_policy_doc,
         }
     }
 }
@@ -225,6 +230,15 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
             ..self
         }
     }
+    
+    /// Adds an SQS Queue Policy for this queue.
+    /// The code will automatically set the `resources` section of the `PolicyDocument` to the ARN of this queue, so there's no need to pass that in.
+    pub fn queue_policy(self, doc: PolicyDocument) -> Self {
+        Self {
+            queue_policy_doc: Some(doc),
+            ..self
+        }
+    }
 
     fn build_internal(self, fifo: bool, stack_builder: &mut StackBuilder) -> QueueRef {
         let properties = QueueProperties {
@@ -245,13 +259,23 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
 
         let resource_id = Resource::generate_id("SqsQueue");
         stack_builder.add_resource(Queue {
-            id: self.id,
+            id: self.id.clone(),
             resource_id: resource_id.clone(),
             r#type: "AWS::SQS::Queue".to_string(),
             properties,
         });
         
-        QueueRef::new(resource_id)
+        let queue_ref = QueueRef::new(self.id.clone(), resource_id);
+        
+        if let Some(mut policy) = self.queue_policy_doc {
+            for statement in &mut policy.statements {
+                // point the statements of this policy to the queue
+                statement.resource = Some(vec![queue_ref.get_arn()]);
+            }
+            QueuePolicyBuilder::new(Id::generate_id(&self.id, QUEUE_POLICY_ID_SUFFIX), policy, vec![&queue_ref]).build(stack_builder);
+        }
+
+        queue_ref
     }
 }
 
@@ -306,37 +330,27 @@ impl QueueBuilder<FifoState> {
     }
 }
 
-pub struct QueuePolicyBuilder {
+pub(crate) struct QueuePolicyBuilder {
     id: Id,
     doc: PolicyDocument,
     queues: Vec<Value>
 }
 
 impl QueuePolicyBuilder {
-    // see remarks topic policy
-
-    /// Creates a new SQS queue policy builder.
-    /// 
-    /// *Important* Current limitation: CloudFormation only allows one resource policy for a given queue, applying the last one it receives.
-    /// If you've added a bucket notification for this queue, which requires a policy, and you also define one yourself, one of both will get lost.
-    ///
-    /// # Arguments
-    /// * `id` - Unique identifier for the queue
-    /// * `doc` - The resource policy that should be applied to the queues
-    /// * `queues` - Queues for which the policy is valid
-    pub fn new(id: &str, doc: PolicyDocument, queues: Vec<&QueueRef>) -> Self {
+    /// Use the `queue_policy` method of `QueueBuilder` to add a queue policy to a queue
+    pub(crate) fn new(id: Id, doc: PolicyDocument, queues: Vec<&QueueRef>) -> Self {
         Self::new_with_values(id, doc, queues.into_iter().map(|v| v.get_ref()).collect())
     }
 
-    pub(crate) fn new_with_values(id: &str, doc: PolicyDocument, queues: Vec<Value>) -> Self {
+    pub(crate) fn new_with_values(id: Id, doc: PolicyDocument, queues: Vec<Value>) -> Self {
         Self {
-            id: Id(id.to_string()),
+            id,
             doc,
             queues,
         }
     }
 
-    pub fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
+    pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
         let resource_id = Resource::generate_id("QueuePolicy");
         stack_builder.add_resource(QueuePolicy {
             id: self.id.clone(),

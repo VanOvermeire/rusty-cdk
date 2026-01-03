@@ -1,0 +1,1 @@
+pub(crate) const QUEUE_POLICY_ID_SUFFIX: &str = "Policy";
