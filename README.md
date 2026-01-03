@@ -305,3 +305,6 @@ async fn tagging() {
 - Try to replace `syn` with more something more compile-time lightweight - `facet`?
 - Switch to uploading template to s3? helps avoid the 51 kb limit
   - Or at least offer that option
+- GitHub actions
+  - Testing for several platforms
+  - Semver checks
