@@ -1,5 +1,5 @@
 use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
-use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
+use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, Statement, StatementBuilder};
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
@@ -293,6 +293,7 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     bucket_notification_sqs_destinations: Vec<(Id, Value, Value, String)>,
     deletion_policy: Option<String>,
     update_replace_policy: Option<String>,
+    additional_website_policy_statements: Option<Vec<Statement>>,
 }
 
 impl BucketBuilder<StartState> {
@@ -322,6 +323,7 @@ impl BucketBuilder<StartState> {
             bucket_notification_sqs_destinations: vec![],
             deletion_policy: None,
             update_replace_policy: None,
+            additional_website_policy_statements: None,
         }
     }
 
@@ -447,6 +449,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             bucket_notification_sqs_destinations: self.bucket_notification_sqs_destinations,
             deletion_policy: self.deletion_policy,
             update_replace_policy: self.update_replace_policy,
+            additional_website_policy_statements: self.additional_website_policy_statements,
         }
     }
 
@@ -530,7 +533,13 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                 .resources(bucket_resource)
                 .principal(PrincipalBuilder::new().normal("*").build())
                 .build();
-            let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
+            let mut statements = vec![statement];
+
+            if let Some(additional) = self.additional_website_policy_statements {
+                statements.extend(additional);
+            }
+            
+            let policy_doc = PolicyDocumentBuilder::new(statements).build();
             let bucket_policy_id = Id::generate_id(&self.id, "S3Policy");
             let s3_policy = BucketPolicyBuilder::new(&bucket_policy_id, &bucket, policy_doc).build(stack_builder);
             Some(s3_policy)
@@ -701,11 +710,20 @@ impl BucketBuilder<WebsiteState> {
             ..self
         }
     }
+    
+    /// Additional statements that will be added to the bucket policy.
+    /// 
+    /// The bucket policy will by default allow GETs from anywhere.
+    pub fn custom_bucket_policy_statements(self, statements: Vec<Statement>) -> Self {
+        Self {
+            additional_website_policy_statements: Some(statements),
+            ..self
+        }
+    }
 
     /// Builds the website bucket and adds it to the stack.
     ///
-    /// Returns both the bucket and the automatically created bucket policy
-    /// that allows public read access.
+    /// Returns both the bucket and the automatically created bucket policy that allows public read access.
     pub fn build(self, stack_builder: &mut StackBuilder) -> (BucketRef, BucketPolicyRef) {
         let (bucket, policy) = self.build_internal(true, stack_builder);
         (bucket, policy.expect("for website, bucket policy should always be present"))

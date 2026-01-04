@@ -281,7 +281,6 @@ async fn tagging() {
 
 ## TODO
 
-- Allow overriding of bucket policy of website
 - Most refs should have an 'override' for referring to resources outside the stack
   - In some cases, a macro could be used that the resource actually exists
 - Check duplicate ids in intelligent tiering

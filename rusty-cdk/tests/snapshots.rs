@@ -94,6 +94,11 @@ fn website_bucket() {
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
         .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build())
+        .custom_bucket_policy_statements(vec![
+                StatementBuilder::new(vec![iam_action!("s3:Put*")], Effect::Allow)
+                    .resources(vec!["*".into()])
+                    .build()
+        ])
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -668,7 +673,6 @@ fn bucket_with_notifications_to_sqs() {
 #[test]
 fn sns_with_policy() {
     let mut stack_builder = StackBuilder::new();
-
     
     let condition = json!({
         "ArnLike": {
