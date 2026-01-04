@@ -3,7 +3,7 @@ use crate::iam::{Effect, PolicyDocumentBuilder, PrincipalBuilder, StatementBuild
 use crate::intrinsic::{get_att, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketPolicyBuilder;
 use crate::s3::BucketRef;
-use crate::shared::http::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
+use crate::shared::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};

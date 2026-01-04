@@ -3,7 +3,7 @@ use rusty_cdk::apigateway::ApiGatewayV2Builder;
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
 use rusty_cdk::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk::shared::http::HttpMethod;
+use rusty_cdk::shared::HttpMethod;
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
 use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_underscores, timeout, toml_file, zip_file};

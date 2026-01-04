@@ -12,7 +12,7 @@ use crate::s3::{
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
-use crate::shared::http::{HttpMethod, Protocol};
+use crate::shared::{HttpMethod, Protocol};
 use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};

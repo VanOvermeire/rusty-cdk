@@ -1,7 +1,7 @@
 use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
 use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM, AWS_PARTITION_PSEUDO_PARAM, AWS_REGION_PSEUDO_PARAM};
 use crate::lambda::{FunctionRef, PermissionBuilder};
-use crate::shared::http::HttpMethod;
+use crate::shared::HttpMethod;
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
