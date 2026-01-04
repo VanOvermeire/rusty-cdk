@@ -25,6 +25,7 @@ use rusty_cdk_macros::*;
 use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
 use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
+use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
 
 #[test]
 fn dynamodb() {
@@ -37,6 +38,7 @@ fn dynamodb() {
         .read_capacity(non_zero_number!(4))
         .write_capacity(non_zero_number!(5))
         .table_name(string_with_only_alphanumerics_and_underscores!("table_name"))
+        .update_replace_and_deletion_policy(UpdateReplacePolicy::Retain, DeletionPolicy::Retain)
         .build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();
@@ -55,6 +57,7 @@ fn dynamodb() {
 fn bucket() {
     let mut stack_builder = StackBuilder::new();
     BucketBuilder::new("bucket")
+        .update_replace_and_deletion_policy(UpdateReplacePolicy::Retain, DeletionPolicy::Retain)
         .encryption(Encryption::S3Managed)
         .lifecycle_configuration(
             LifecycleConfigurationBuilder::new()

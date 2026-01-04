@@ -8,6 +8,7 @@ expression: synthesized
   },
   "Resources": {
     "[S3Bucket]": {
+      "DeletionPolicy": "Retain",
       "Properties": {
         "BucketEncryption": {
           "ServerSideEncryptionConfiguration": [
@@ -33,7 +34,8 @@ expression: synthesized
           ]
         }
       },
-      "Type": "AWS::S3::Bucket"
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Retain"
     }
   }
 }

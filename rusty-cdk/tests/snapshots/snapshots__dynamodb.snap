@@ -8,6 +8,7 @@ expression: synthesized
   },
   "Resources": {
     "[DynamoDBTable]": {
+      "DeletionPolicy": "Retain",
       "Properties": {
         "AttributeDefinitions": [
           {
@@ -35,7 +36,8 @@ expression: synthesized
           "WriteCapacityUnits": 5
         }
       },
-      "Type": "AWS::DynamoDB::Table"
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Retain"
     }
   }
 }

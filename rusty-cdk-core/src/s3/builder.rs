@@ -3,19 +3,25 @@ use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDoc
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
-use crate::s3::{dto, AccelerateConfiguration, IntelligentTieringConfiguration, InventoryTableConfiguration, JournalTableConfiguration, MetadataConfiguration, MetadataDestination, RecordExpiration, TagFilter, Tiering};
+use crate::s3::{
+    dto, AccelerateConfiguration, IntelligentTieringConfiguration, InventoryTableConfiguration,
+    JournalTableConfiguration, MetadataConfiguration, MetadataDestination, RecordExpiration, TagFilter, Tiering,
+};
 use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
 use crate::shared::http::{HttpMethod, Protocol};
-use crate::shared::{Id, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
+use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, RecordExpirationDays, S3LifecycleObjectSizes, Timeout};
+use crate::wrappers::{
+    BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, RecordExpirationDays,
+    S3LifecycleObjectSizes, Timeout,
+};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -285,6 +291,8 @@ pub struct BucketBuilder<T: BucketBuilderState> {
     bucket_notification_lambda_destinations: Vec<(Value, String)>,
     bucket_notification_sns_destinations: Vec<(Id, Value, String)>,
     bucket_notification_sqs_destinations: Vec<(Id, Value, Value, String)>,
+    deletion_policy: Option<String>,
+    update_replace_policy: Option<String>,
 }
 
 impl BucketBuilder<StartState> {
@@ -312,6 +320,8 @@ impl BucketBuilder<StartState> {
             bucket_notification_lambda_destinations: vec![],
             bucket_notification_sns_destinations: vec![],
             bucket_notification_sqs_destinations: vec![],
+            deletion_policy: None,
+            update_replace_policy: None,
         }
     }
 
@@ -378,6 +388,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    pub fn update_replace_and_deletion_policy(self, update_replace_policy: UpdateReplacePolicy, deletion_policy: DeletionPolicy) -> Self {
+        Self {
+            deletion_policy: Some(deletion_policy.into()),
+            update_replace_policy: Some(update_replace_policy.into()),
+            ..self
+        }
+    }
+
     pub fn add_intelligent_tiering(mut self, tiering: IntelligentTieringConfiguration) -> Self {
         if let Some(mut config) = self.intelligent_tiering_configurations {
             config.push(tiering);
@@ -391,8 +409,14 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
     pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
-            NotificationDestination::Sns(s, e) => self.bucket_notification_sns_destinations.push((s.get_id().clone(), s.get_ref(), e.into())),
-            NotificationDestination::Sqs(q, e) => self.bucket_notification_sqs_destinations.push((q.get_id().clone(), q.get_ref(), q.get_arn(), e.into())),
+            NotificationDestination::Sns(s, e) => {
+                self.bucket_notification_sns_destinations
+                    .push((s.get_id().clone(), s.get_ref(), e.into()))
+            }
+            NotificationDestination::Sqs(q, e) => {
+                self.bucket_notification_sqs_destinations
+                    .push((q.get_id().clone(), q.get_ref(), q.get_arn(), e.into()))
+            }
         }
         self
     }
@@ -421,6 +445,8 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             bucket_notification_lambda_destinations: self.bucket_notification_lambda_destinations,
             bucket_notification_sns_destinations: self.bucket_notification_sns_destinations,
             bucket_notification_sqs_destinations: self.bucket_notification_sqs_destinations,
+            deletion_policy: self.deletion_policy,
+            update_replace_policy: self.update_replace_policy,
         }
     }
 
@@ -472,11 +498,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
         let properties = BucketProperties {
             abac_status: self.abac_status,
-            accelerate_configuration: self.acceleration_status.map(|v| {
-                AccelerateConfiguration {
-                    acceleration_status: v,
-                }
-            }),
+            accelerate_configuration: self.acceleration_status.map(|v| AccelerateConfiguration { acceleration_status: v }),
             bucket_name: self.name,
             cors_configuration: self.cors_config,
             intelligent_tiering_configurations: self.intelligent_tiering_configurations,
@@ -493,6 +515,10 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             resource_id: resource_id.clone(),
             r#type: "AWS::S3::Bucket".to_string(),
             properties,
+            update_delete_policy_dto: UpdateDeletePolicyDTO {
+                deletion_policy: self.deletion_policy,
+                update_replace_policy: self.update_replace_policy,
+            },
         });
 
         let bucket = BucketRef::new(resource_id);
@@ -558,16 +584,15 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                     // there's no queue policy. add ours
                     let doc = PolicyDocumentBuilder::new(vec![statement]).build();
                     let topic_policy_id = Id::generate_id(&self.id, &format!("SNSDestinationPolicy{}", i));
-                    TopicPolicyBuilder::new_with_values(topic_policy_id.clone(), doc, vec![reference.clone()])
-                            .build(stack_builder);
+                    TopicPolicyBuilder::new_with_values(topic_policy_id.clone(), doc, vec![reference.clone()]).build(stack_builder);
                     topic_policy_id
-                },
+                }
                 Some(Resource::TopicPolicy(pol)) => {
                     // there's a policy, add the required permissions
                     pol.properties.doc.statements.push(statement);
                     topic_policy_id
                 }
-                _ => unreachable!("topic policy id should point to optional topic policy")
+                _ => unreachable!("topic policy id should point to optional topic policy"),
             };
 
             let notification_id = Id::generate_id(&self.id, &format!("SNSNotification{}", i));
@@ -614,13 +639,13 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
                     let queue_policy_id = Id::generate_id(&self.id, &format!("SQSDestinationPolicy{}", i));
                     QueuePolicyBuilder::new_with_values(queue_policy_id.clone(), doc, vec![reference.clone()]).build(stack_builder);
                     queue_policy_id
-                },
+                }
                 Some(Resource::QueuePolicy(pol)) => {
                     // there's a policy, add the required permissions
                     pol.properties.doc.statements.push(statement);
                     queue_policy_id
                 }
-                _ => unreachable!("queue policy id should point to optional queue policy")
+                _ => unreachable!("queue policy id should point to optional queue policy"),
             };
 
             let notification_id = Id::generate_id(&self.id, format!("SQSNotification{}", i).as_str());
@@ -640,22 +665,17 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
     fn notification_handler(id: &Id, target: &str, num: usize, stack_builder: &mut StackBuilder) -> FunctionRef {
         let handler_id = Id::generate_id(id, &format!("{}Handler{}", target, num));
-        let (handler, ..) = FunctionBuilder::new(
-            &handler_id,
-            Architecture::X86_64,
-            Memory(128),
-            Timeout(300),
-        )
-        .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
-        .handler("index.handler")
-        .runtime(Runtime::Python313)
-        .add_permission(Permission::Custom(CustomPermission::new(
-            "NotificationPermission",
-            StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow)
-                .all_resources()
-                .build(),
-        )))
-        .build(stack_builder);
+        let (handler, ..) = FunctionBuilder::new(&handler_id, Architecture::X86_64, Memory(128), Timeout(300))
+            .code(Code::Inline(BUCKET_NOTIFICATION_HANDLER_CODE.to_string()))
+            .handler("index.handler")
+            .runtime(Runtime::Python313)
+            .add_permission(Permission::Custom(CustomPermission::new(
+                "NotificationPermission",
+                StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow)
+                    .all_resources()
+                    .build(),
+            )))
+            .build(stack_builder);
         handler
     }
 }
@@ -1127,7 +1147,7 @@ impl TagFilterBuilder {
             value: value.into(),
         }
     }
-    
+
     pub fn build(self) -> TagFilter {
         TagFilter {
             key: self.key,
@@ -1151,22 +1171,23 @@ impl IntelligentTieringConfigurationBuilder {
             status: status.into(),
             prefix: None,
             tag_filters: None,
-            tierings: tierings.into_iter().map(|t| {
-                Tiering {
+            tierings: tierings
+                .into_iter()
+                .map(|t| Tiering {
                     access_tier: t.0,
                     days: t.1,
-                }
-            }).collect(),
+                })
+                .collect(),
         }
     }
-    
+
     pub fn prefix<T: Into<String>>(self, prefix: T) -> Self {
         Self {
             prefix: Some(prefix.into()),
             ..self
         }
     }
-    
+
     pub fn add_tag_filter(mut self, tag_filter: TagFilter) -> Self {
         if let Some(mut filters) = self.tag_filters {
             filters.push(tag_filter);
@@ -1174,7 +1195,7 @@ impl IntelligentTieringConfigurationBuilder {
         } else {
             self.tag_filters = Some(vec![tag_filter]);
         }
-        
+
         self
     }
 
@@ -1263,14 +1284,14 @@ impl JournalTableConfigurationBuilder {
     pub fn table_name<T: Into<String>>(self, name: T) -> Self {
         Self {
             table_name: Some(name.into()),
-           ..self
+            ..self
         }
     }
 
     pub fn table_arn(self, arn: Value) -> Self {
         Self {
             table_arn: Some(arn),
-           ..self
+            ..self
         }
     }
 

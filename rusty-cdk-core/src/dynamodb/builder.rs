@@ -1,6 +1,6 @@
 use crate::dynamodb::{AttributeDefinition, KeySchema, Table, TableProperties};
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput, TableRef};
-use crate::shared::Id;
+use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy};
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 use std::marker::PhantomData;
@@ -97,6 +97,8 @@ pub struct TableBuilder<T: TableBuilderState> {
     write_capacity: Option<u32>,
     max_read_capacity: Option<u32>,
     max_write_capacity: Option<u32>,
+    deletion_policy: Option<String>,
+    update_replace_policy: Option<String>,
 }
 
 impl TableBuilder<StartState> {
@@ -117,6 +119,8 @@ impl TableBuilder<StartState> {
             write_capacity: None,
             max_read_capacity: None,
             max_write_capacity: None,
+            deletion_policy: None,
+            update_replace_policy: None,
         }
     }
 }
@@ -136,6 +140,14 @@ impl<T: TableBuilderState> TableBuilder<T> {
         }
     }
 
+    pub fn update_replace_and_deletion_policy(self, update_replace_policy: UpdateReplacePolicy, deletion_policy: DeletionPolicy) -> Self {
+        Self {
+            deletion_policy: Some(deletion_policy.into()),
+            update_replace_policy: Some(update_replace_policy.into()),
+            ..self
+        }
+    }
+
     /// Configures the table to use pay-per-request billing.
     ///
     /// With this mode, you pay per request and can optionally set max throughput limits.
@@ -149,6 +161,8 @@ impl<T: TableBuilderState> TableBuilder<T> {
             sort_key: self.sort_key,
             max_read_capacity: self.max_read_capacity,
             max_write_capacity: self.max_write_capacity,
+            deletion_policy: self.deletion_policy,
+            update_replace_policy: self.update_replace_policy,
             read_capacity: None,
             write_capacity: None,
         }
@@ -167,6 +181,8 @@ impl<T: TableBuilderState> TableBuilder<T> {
             sort_key: self.sort_key,
             read_capacity: self.read_capacity,
             write_capacity: self.write_capacity,
+            deletion_policy: self.deletion_policy,
+            update_replace_policy: self.update_replace_policy,
             max_read_capacity: None,
             max_write_capacity: None,
         }
@@ -236,6 +252,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
             resource_id: resource_id.clone(),
             r#type: "AWS::DynamoDB::Table".to_string(),
             properties,
+            update_delete_policy_dto: UpdateDeletePolicyDTO { deletion_policy: self.deletion_policy, update_replace_policy: self.update_replace_policy },
         });
 
         TableRef::new(resource_id)
@@ -275,6 +292,8 @@ impl TableBuilder<ProvisionedStateStart> {
             write_capacity: self.write_capacity,
             max_read_capacity: self.read_capacity,
             max_write_capacity: self.max_write_capacity,
+            deletion_policy: self.deletion_policy,
+            update_replace_policy: self.update_replace_policy,
         }
     }
 }
@@ -292,6 +311,8 @@ impl TableBuilder<ProvisionedStateReadSet> {
             read_capacity: self.read_capacity,
             max_read_capacity: self.max_read_capacity,
             max_write_capacity: self.max_write_capacity,
+            deletion_policy: self.deletion_policy,
+            update_replace_policy: self.update_replace_policy,
         }
     }
 }

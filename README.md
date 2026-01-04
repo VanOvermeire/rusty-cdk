@@ -179,10 +179,10 @@ To be added at some point:
 - CodeBuild
 - CodePipeline
 - DocumentDB
+- RDS
 - ECS
 - EventBridge
 - Kinesis
-- RDS
 - Step Functions
 - and additional functionality from the already supported services
 
@@ -285,10 +285,6 @@ async fn tagging() {
   - And look where we need similar things
 - Allow overriding of Lambda log group
   - Similarly, allow overriding of other resources like Bucket Policy of website
-- UpdateReplacePolicy/DeletionPolicy for
-  - DynamoDB
-  - S3
-  - Other storage structs
 - Most refs should have an 'override' for referring to resources outside the stack
   - In some cases, a macro could be used that the resource actually exists
 - Improve diff

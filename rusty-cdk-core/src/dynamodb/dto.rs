@@ -1,7 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
+use crate::shared::{Id, UpdateDeletePolicyDTO};
 
 ref_struct!(TableRef);
 
@@ -15,6 +15,8 @@ pub struct Table {
     pub(super) r#type: String,
     #[serde(rename = "Properties")]
     pub(super) properties: TableProperties,
+    #[serde(flatten)]
+    pub(super) update_delete_policy_dto: UpdateDeletePolicyDTO
 }
 dto_methods!(Table);
 

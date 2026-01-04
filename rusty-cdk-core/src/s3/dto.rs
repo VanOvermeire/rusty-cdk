@@ -1,5 +1,5 @@
 use crate::iam::PolicyDocument;
-use crate::shared::Id;
+use crate::shared::{Id, UpdateDeletePolicyDTO};
 use crate::{dto_methods, ref_struct};
 use serde::Serialize;
 use serde_json::Value;
@@ -39,6 +39,8 @@ pub struct Bucket {
     pub(super) r#type: String,
     #[serde(rename = "Properties")]
     pub(super) properties: BucketProperties,
+    #[serde(flatten)]
+    pub(super) update_delete_policy_dto: UpdateDeletePolicyDTO
 }
 dto_methods!(Bucket);
 
