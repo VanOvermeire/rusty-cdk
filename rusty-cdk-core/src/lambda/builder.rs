@@ -144,6 +144,7 @@ pub struct FunctionBuilder<T: FunctionBuilderState> {
     function_name: Option<String>,
     sqs_event_source_mapping: Option<EventSourceMappingInfo>,
     reserved_concurrent_executions: Option<u32>,
+    log_group: Option<LogGroupRef>,
 }
 
 impl<T: FunctionBuilderState> FunctionBuilder<T> {
@@ -185,6 +186,15 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
     pub fn reserved_concurrent_executions(self, executions: u32) -> FunctionBuilder<T> {
         Self {
             reserved_concurrent_executions: Some(executions),
+            ..self
+        }
+    }
+
+    /// Use a custom log group for this function.
+    /// If no log group is set, once is created automatically
+    pub fn log_group(self, log_group: &LogGroupRef) -> Self {
+        Self {
+            log_group: Some(log_group.clone()),
             ..self
         }
     }
@@ -267,17 +277,22 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             })
         };
 
-        let log_group_id = Id::generate_id(&self.id, "LogGroup");
-        let log_group_name = self.function_name.clone().map(|fun_name| format!("/aws/lambda/{fun_name}"));
-        let base_builder = LogGroupBuilder::new(&log_group_id).log_group_retention(RetentionInDays(731));
-        let log_group = if let Some(name) = log_group_name {
-            base_builder.log_group_name_string(LogGroupName(name)).build(stack_builder)
+        let log_group = if let Some(log_group) = self.log_group {
+            log_group
         } else {
-            base_builder.build(stack_builder)
+            let log_group_id = Id::generate_id(&self.id, "LogGroup");
+            let log_group_name = self.function_name.clone().map(|fun_name| format!("/aws/lambda/{fun_name}"));
+            let base_builder = LogGroupBuilder::new(&log_group_id).log_group_retention(RetentionInDays(731));
+            let log_group = if let Some(name) = log_group_name {
+                base_builder.log_group_name_string(LogGroupName(name)).build(stack_builder)
+            } else {
+                base_builder.build(stack_builder)
+            };
+            log_group
         };
 
         let logging_info = LoggingInfo {
-            log_group: Some(get_ref(log_group.get_resource_id())),
+            log_group: Some(log_group.get_ref()),
         };
 
         let properties = LambdaFunctionProperties {
@@ -334,6 +349,7 @@ impl FunctionBuilder<StartState> {
             function_name: None,
             sqs_event_source_mapping: None,
             reserved_concurrent_executions: None,
+            log_group: None,
         }
     }
 
@@ -353,6 +369,7 @@ impl FunctionBuilder<StartState> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
+            log_group: self.log_group,
         }
     }
 }
@@ -374,6 +391,7 @@ impl FunctionBuilder<CodeState> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
+            log_group: self.log_group,
         }
     }
 }
@@ -395,6 +413,7 @@ impl FunctionBuilder<ZipStateWithHandler> {
             function_name: self.function_name,
             sqs_event_source_mapping: self.sqs_event_source_mapping,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
+            log_group: self.log_group,
         }
     }
 }
@@ -430,6 +449,7 @@ impl FunctionBuilder<ZipStateWithHandlerAndRuntime> {
             env_vars: self.env_vars,
             function_name: self.function_name,
             reserved_concurrent_executions: self.reserved_concurrent_executions,
+            log_group: self.log_group,
         }
     }
 

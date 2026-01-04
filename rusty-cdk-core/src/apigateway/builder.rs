@@ -29,7 +29,7 @@ struct RouteInfo {
 /// ```rust,no_run
 /// use rusty_cdk_core::stack::StackBuilder;
 /// use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
-/// use rusty_cdk_core::shared::http::HttpMethod;
+/// use rusty_cdk_core::shared::HttpMethod;
 /// use rusty_cdk_core::lambda::{FunctionBuilder, Architecture, Runtime, Zip};
 /// use rusty_cdk_core::wrappers::*;
 /// use rusty_cdk_macros::{memory, timeout, zip_file};

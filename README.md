@@ -281,12 +281,11 @@ async fn tagging() {
 
 ## TODO
 
-- Check duplicate ids in intelligent tiering
-  - And look where we need similar things
-- Allow overriding of Lambda log group
-  - Similarly, allow overriding of other resources like Bucket Policy of website
+- Allow overriding of bucket policy of website
 - Most refs should have an 'override' for referring to resources outside the stack
   - In some cases, a macro could be used that the resource actually exists
+- Check duplicate ids in intelligent tiering
+  - And look where we need similar things
 - Improve diff
   - Show whether resource has changed
 - Ability to invoke deploy, diff and synth (?) from command line
@@ -299,3 +298,4 @@ async fn tagging() {
 - GitHub actions
   - Testing for several platforms
   - Semver checks
+- Do some refactoring/splitting up of files

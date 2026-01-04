@@ -18,6 +18,7 @@ macro_rules! dto_methods {
 #[macro_export]
 macro_rules! ref_struct {
     ($name:ident) => {
+        #[derive(Debug,Clone)]
         pub struct $name {
             resource_id: String,
         }

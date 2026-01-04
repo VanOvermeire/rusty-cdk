@@ -1,0 +1,86 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "fun": "[LambdaFunction]",
+    "funLogGroup": "[LogGroup]",
+    "funRole": "[LambdaFunctionRole]"
+  },
+  "Resources": {
+    "[LambdaFunction]": {
+      "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
+        "Code": {
+          "S3Bucket": "some-bucket",
+          "S3Key": "[Asset]"
+        },
+        "Environment": {
+          "Variables": {
+            "STAGE": "prod"
+          }
+        },
+        "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "[LogGroup]"
+          }
+        },
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "[LambdaFunctionRole]",
+            "Arn"
+          ]
+        },
+        "Runtime": "provided.al2023",
+        "Timeout": 30
+      },
+      "Type": "AWS::Lambda::Function"
+    },
+    "[LambdaFunctionRole]": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Policies": []
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "[LogGroup]": {
+      "Properties": {
+        "LogGroupName": "custom-name",
+        "RetentionInDays": 90
+      },
+      "Type": "AWS::Logs::LogGroup"
+    }
+  }
+}

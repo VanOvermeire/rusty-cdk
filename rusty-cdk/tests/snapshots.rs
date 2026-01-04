@@ -16,7 +16,7 @@ use rusty_cdk_core::iam::{
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration, IntelligentTieringConfigurationBuilder, IntelligentTieringStatus, InventoryTableConfigurationBuilder, JournalTableConfigurationBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, MetadataConfigurationBuilder, MetadataDestinationBuilder, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder, RecordExpirationBuilder, TableBucketType};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
-use rusty_cdk_core::shared::http::HttpMethod;
+use rusty_cdk_core::shared::HttpMethod;
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
 use rusty_cdk_core::sqs::{QueueBuilder};
 use rusty_cdk_core::stack::StackBuilder;
@@ -25,6 +25,7 @@ use rusty_cdk_macros::*;
 use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
 use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
+use rusty_cdk_core::cloudwatch::LogGroupBuilder;
 use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
 
 #[test]
@@ -119,6 +120,41 @@ fn lambda() {
         .code(Code::Zip(Zip::new(bucket, zip_file)))
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
+        .build(&mut stack_builder);
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn lambda_with_custom_log_group() {
+    let mut stack_builder = StackBuilder::new();
+
+    let log_group = LogGroupBuilder::new("funLogGroup")
+        .log_group_name_string(log_group_name!("custom-name"))
+        .log_group_retention(log_retention!(90))
+        .build(&mut stack_builder);
+    
+    let mem = memory!(256);
+    let timeout = timeout!(30);
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let bucket = get_bucket();
+    FunctionBuilder::new("fun", Architecture::ARM64, mem, timeout)
+        .env_var_string(env_var_key!("STAGE"), "prod")
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .log_group(&log_group)
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
