@@ -172,7 +172,7 @@ impl StackBuilder {
                 duplicates.push(curr.clone());
             }
             all.push(curr);
-            return (all, duplicates);
+            (all, duplicates)
         });
         results.1
     }

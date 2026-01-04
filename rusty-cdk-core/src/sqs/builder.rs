@@ -270,7 +270,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
 
         stack_builder.add_resource(Queue {
             id: self.id,
-            resource_id: resource_id,
+            resource_id,
             r#type: "AWS::SQS::Queue".to_string(),
             properties,
         });
