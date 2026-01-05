@@ -585,3 +585,24 @@ pub struct BucketTiering(pub String, pub u16);
 
 #[derive(Debug, Clone)]
 pub struct RecordExpirationDays(pub u32);
+
+#[derive(Debug, Clone)]
+pub struct RetryPolicyEventAge(pub u32);
+
+#[derive(Debug, Clone)]
+pub struct RetryPolicyRetries(pub u8);
+
+#[derive(Debug, Clone)]
+pub struct MaxFlexibleTimeWindow(pub u16);
+
+#[derive(Debug, Clone)] // at(yyyy-mm-ddThh:mm:ss)
+pub struct ScheduleAtExpression(pub String);
+
+#[derive(Debug, Clone)]
+pub struct ScheduleRateExpression(pub u16, pub String);
+
+#[derive(Debug, Clone)] // cron expression - cron(fields)
+pub struct ScheduleCronExpression(pub String);
+
+#[derive(Debug, Clone)] // ^[0-9a-zA-Z-_.]+$ 1-64
+pub struct ScheduleName(pub String);

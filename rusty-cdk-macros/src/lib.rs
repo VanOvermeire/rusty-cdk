@@ -31,6 +31,7 @@ mod strings;
 mod timeouts;
 mod transition_in_days;
 mod bucket_tiering;
+mod rate_expression;
 
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
@@ -46,6 +47,7 @@ use std::env;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
 use crate::bucket_tiering::BucketTiering;
+use crate::rate_expression::RateExpression;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -412,6 +414,9 @@ number_check!(s3_origin_read_timeout, 1, 120, S3OriginReadTimeout, u8);
 number_check!(deployment_duration_in_minutes, 0, 1440, DeploymentDurationInMinutes, u16);
 number_check!(growth_factor, 0, 100, GrowthFactor, u8);
 number_check!(record_expiration_days, 7, 2147483647, RecordExpirationDays, u32);
+number_check!(retry_policy_event_age, 60, 86400, RetryPolicyEventAge, u32);
+number_check!(retry_policy_retries, 0, 185, RetryPolicyRetries, u8);
+number_check!(max_flexible_time_window, 1, 1440, MaxFlexibleTimeWindow, u16);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";
@@ -1070,4 +1075,25 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
     )
     .into_compile_error()
     .into()
+}
+
+const RATE_UNITS: [&str; 6] = ["minute", "minutes", "hour", "hours", "day", "days"];
+
+// TODO surround with rate( )
+// rate expression - rate(value unit) A rate expression consists of a value as a positive integer, and a unit with the following options: minute | minutes | hour | hours | day | days
+#[proc_macro]
+pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
+    let RateExpression {
+        value, unit
+    } = parse_macro_input!(input);
+
+    if !RATE_UNITS.contains(&unit.as_str()) {
+        return Error::new(Span::call_site(), format!("unit of at expression should be one of {} (was {})", RATE_UNITS.join(","), unit))
+            .into_compile_error()
+            .into();
+    }
+
+    quote! {
+        ScheduleRateExpression(#value, #unit.to_string())
+    }.into()
 }
