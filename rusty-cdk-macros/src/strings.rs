@@ -29,23 +29,23 @@ impl StringRequirements {
     }
 }
 
-pub(crate) fn check_string_requirements(value: &str, span: Span, requirements: StringRequirements) -> Option<Error> {
+pub(crate) fn check_string_requirements(value: &str, span: Span, requirements: StringRequirements) -> Result<(), Error> {
     if requirements.not_empty && value.is_empty() {
-        return Some(Error::new(span, "value should not be blank".to_string()));
+        return Err(Error::new(span, "value should not be blank".to_string()));
     }
     
     if let Some(prefix) = requirements.prefix && !value.starts_with(&prefix) {
-        return Some(Error::new(span, format!("value `{}` does not contain required prefix `{}`", value, prefix)));
+        return Err(Error::new(span, format!("value `{}` does not contain required prefix `{}`", value, prefix)));
     }
     
     if requirements.check_chars && value.chars().any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c)) {
-        return Some(Error::new(
+        return Err(Error::new(
             span,
             format!("value should only contain alphanumeric characters and {:?}", requirements.allowed_chars),
         ));
     }
 
-    None
+    Ok(())
 }
 
 #[cfg(test)]
@@ -59,7 +59,7 @@ mod tests {
     
         let output = check_string_requirements("some-prefix-and-more-text", Span::call_site(), requirements);
     
-        assert!(output.is_none());
+        assert!(output.is_ok());
     }
 
     #[test]
@@ -68,7 +68,7 @@ mod tests {
     
         let output = check_string_requirements("just-text", Span::call_site(), requirements);
     
-        assert!(output.is_some());
+        assert!(output.is_err());
     }
 
     #[test]
@@ -77,7 +77,7 @@ mod tests {
 
         let output = check_string_requirements("valid", Span::call_site(), requirements);
 
-        assert!(output.is_none());
+        assert!(output.is_ok());
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
 
         let output = check_string_requirements("", Span::call_site(), requirements);
 
-        assert!(output.is_none());
+        assert!(output.is_ok());
     }
 
     #[test]
@@ -100,7 +100,7 @@ mod tests {
 
         let output = check_string_requirements("valid-name_123", Span::call_site(), requirements);
 
-        assert!(output.is_none());
+        assert!(output.is_ok());
     }
     
     #[test]
@@ -109,7 +109,7 @@ mod tests {
         
         let output = check_string_requirements("invalid-hyphen", Span::call_site(), requirements);
 
-        assert!(output.is_some());
+        assert!(output.is_err());
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
 
         let output = check_string_requirements("", Span::call_site(), requirements);
 
-        assert_eq!(output.unwrap().to_string(), "value should not be blank");
+        assert_eq!(output.unwrap_err().to_string(), "value should not be blank");
     }
 
     #[test]
@@ -127,7 +127,7 @@ mod tests {
 
         let output = check_string_requirements("invalid_underscore", Span::call_site(), requirements);
 
-        assert!(output.is_some());
+        assert!(output.is_err());
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
 
         let output = check_string_requirements("invalid name", Span::call_site(), requirements);
 
-        assert!(output.is_some());
+        assert!(output.is_err());
     }
 
     #[test]
@@ -145,6 +145,6 @@ mod tests {
 
         let output = check_string_requirements("invalid@email.com", Span::call_site(), requirements);
 
-        assert!(output.is_some());
+        assert!(output.is_err());
     }
 }

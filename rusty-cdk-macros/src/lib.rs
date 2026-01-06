@@ -34,10 +34,13 @@ mod bucket_tiering;
 mod rate_expression;
 mod cron_validation;
 
+use crate::bucket_tiering::BucketTiering;
+use crate::cron_validation::validate_cron;
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
 use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
+use crate::rate_expression::RateExpression;
 use crate::strings::{check_string_requirements, StringRequirements};
 use crate::timeouts::Timeouts;
 use crate::transition_in_days::TransitionInfo;
@@ -47,9 +50,6 @@ use quote::quote;
 use std::env;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
-use crate::bucket_tiering::BucketTiering;
-use crate::cron_validation::validate_cron;
-use crate::rate_expression::RateExpression;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -65,12 +65,11 @@ pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> Tok
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['_']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             StringWithOnlyAlphaNumericsAndUnderscores(#value.to_string())
-        )
-        .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
@@ -87,12 +86,11 @@ pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['_', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
-        )
-        .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
@@ -113,12 +111,11 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             StringWithOnlyAlphaNumericsAndHyphens(#value.to_string())
-        )
-        .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `AppSyncApiName` wrapper for AppSync Api names at compile time.
@@ -145,12 +142,11 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', ' ']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             AppSyncApiName(#value.to_string())
-        )
-            .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 #[proc_macro]
@@ -167,12 +163,11 @@ pub fn schedule_name(input: TokenStream) -> TokenStream {
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', '.']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             ScheduleName(#value.to_string())
-        )
-            .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `ChannelNamespaceName` wrapper for AppSync Api at compile time.
@@ -199,12 +194,11 @@ pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             ChannelNamespaceName(#value.to_string())
-        )
-            .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `StringForSecret` wrapper for AWS Secrets Manager secret names at compile time.
@@ -224,12 +218,11 @@ pub fn string_for_secret(input: TokenStream) -> TokenStream {
     let requirements = StringRequirements::not_empty_allowed_chars(vec!['/', '_', '+', '=', '.', '@', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             StringForSecret(#value.to_string())
-        )
-        .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `EnvVarKey` wrapper for AWS Lambda environment variable keys at compile time.
@@ -261,14 +254,14 @@ pub fn env_var_key(input: TokenStream) -> TokenStream {
             output.span(),
             "env var key should only contain alphanumeric characters and underscores".to_string(),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
     quote!(
         EnvVarKey(#value.to_string())
     )
-    .into()
+        .into()
 }
 
 /// Creates a validated `ZipFile` wrapper for AWS Lambda deployment packages at compile time.
@@ -314,7 +307,7 @@ pub fn zip_file(input: TokenStream) -> TokenStream {
     quote!(
         ZipFile(#value.to_string())
     )
-    .into()
+        .into()
 }
 
 /// Creates a validated `TomlFile` wrapper.
@@ -358,7 +351,7 @@ pub fn toml_file(input: TokenStream) -> TokenStream {
     quote!(
         TomlFile(#value.to_string())
     )
-    .into()
+        .into()
 }
 
 /// Creates a validated `NonZeroNumber` wrapper for positive integers at compile time.
@@ -391,7 +384,7 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
     quote!(
         NonZeroNumber(#num)
     )
-    .into()
+        .into()
 }
 
 macro_rules! number_check {
@@ -572,8 +565,8 @@ pub fn bucket_name(input: TokenStream) -> TokenStream {
             input.span(),
             "value should contain only letters, numbers, periods and dashes".to_string(),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
     let no_remote_check_wanted = env::var(NO_REMOTE_OVERRIDE_ENV_VAR_NAME)
@@ -641,7 +634,7 @@ pub fn log_retention(input: TokenStream) -> TokenStream {
             quote! {
                 RetentionInDays(#num)
             }
-            .into()
+                .into()
         } else {
             Error::new(output.span(), format!("value should be one of {:?}", POSSIBLE_LOG_RETENTION_VALUES))
                 .into_compile_error()
@@ -691,14 +684,14 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
                 ADDITIONAL_ALLOWED_FOR_LOG_GROUP
             ),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
     quote!(
         LogGroupName(#value.to_string())
     )
-    .into()
+        .into()
 }
 
 /// Creates a validated `IamAction` wrapper for AWS IAM permissions at compile time.
@@ -718,21 +711,14 @@ pub fn log_group_name(input: TokenStream) -> TokenStream {
 pub fn iam_action(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-
-    if value.is_empty() {
-        return Error::new(output.span(), "value should not be blank".to_string())
-            .into_compile_error()
-            .into();
-    }
-
     let validator = PermissionValidator::new();
+
     match validator.is_valid_action(&value) {
         ValidationResponse::Valid => quote!(
             IamAction(#value.to_string())
-        )
-        .into(),
-        ValidationResponse::Invalid(message) => Error::new(output.span(), message).into_compile_error().into(),
-    }
+        ),
+        ValidationResponse::Invalid(message) => Error::new(output.span(), message).into_compile_error()
+    }.into()
 }
 
 /// Creates a validated `S3LifecycleObjectSizes` wrapper for S3 lifecycle rule object size constraints at compile time.
@@ -759,30 +745,23 @@ pub fn lifecycle_object_sizes(input: TokenStream) -> TokenStream {
                 second.unwrap()
             ),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
     let first_output = if let Some(first) = first {
-        quote! {
-            Some(#first)
-        }
+        quote!(Some(#first))
     } else {
-        quote! { None }
+        quote!(None)
     };
 
     let second_output = if let Some(second) = second {
-        quote! {
-            Some(#second)
-        }
+        quote!(Some(#second))
     } else {
-        quote! { None }
+        quote!(None)
     };
 
-    quote! {
-        S3LifecycleObjectSizes(#first_output, #second_output)
-    }
-    .into()
+    quote!(S3LifecycleObjectSizes(#first_output, #second_output)).into()
 }
 
 /// Creates a validated `OriginPath` wrapper for CloudFront origin path prefixes at compile time.
@@ -804,14 +783,14 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
             value.span(),
             format!("origin path should start with a / and should not end with / (but got {})", value),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
     quote! {
         OriginPath(#value)
     }
-    .into()
+        .into()
 }
 
 /// Creates a validated `DefaultRootObject` wrapper for CloudFront default root objects at compile time.
@@ -837,7 +816,7 @@ pub fn default_root_object(input: TokenStream) -> TokenStream {
     quote! {
         DefaultRootObject(#value)
     }
-    .into()
+        .into()
 }
 
 /// Creates a validated `CfConnectionTimeout` wrapper for CloudFront origin connection timeouts at compile time.
@@ -857,8 +836,8 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
                 Span::call_site(),
                 format!("connection timeout was {} but should be between 1 and 10", first),
             )
-            .into_compile_error()
-            .into();
+                .into_compile_error()
+                .into();
         } else if let Some(second) = second && second < first {
             return Error::new(
                 Span::call_site(),
@@ -867,31 +846,24 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
                     second, first
                 ),
             )
-            .into_compile_error()
-            .into();
+                .into_compile_error()
+                .into();
         }
     }
 
     let first_output = if let Some(first) = first {
-        quote! {
-            Some(#first)
-        }
+        quote!(Some(#first))
     } else {
-        quote! { None }
+        quote!(None)
     };
 
     let second_output = if let Some(second) = second {
-        quote! {
-            Some(#second)
-        }
+        quote!(Some(#second))
     } else {
-        quote! { None }
+        quote!(None)
     };
 
-    quote! {
-        CfConnectionTimeout(#first_output, #second_output)
-    }
-    .into()
+    quote!(CfConnectionTimeout(#first_output, #second_output)).into()
 }
 
 /// Creates a validated `LambdaPermissionAction` wrapper for Lambda resource-based policy actions at compile time.
@@ -912,12 +884,11 @@ pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     let requirements = StringRequirements::not_empty_prefix("lambda");
 
     match check_string_requirements(&value, output.span(), requirements) {
-        None => quote!(
+        Ok(()) => quote!(
             LambdaPermissionAction(#value.to_string())
-        )
-        .into(),
-        Some(e) => e.into_compile_error().into(),
-    }
+        ),
+        Err(e) => e.into_compile_error(),
+    }.into()
 }
 
 /// Creates a validated `AppConfigName` wrapper for AWS AppConfig resource names at compile time.
@@ -940,14 +911,11 @@ pub fn app_config_name(input: TokenStream) -> TokenStream {
             Span::call_site(),
             "app config name should be between 1 and 64 chars in length".to_string(),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
-    quote! {
-        AppConfigName(#value.to_string())
-    }
-    .into()
+    quote!(AppConfigName(#value.to_string())).into()
 }
 
 const LIFECYCLE_STORAGE_TYPES: [&str; 6] = [
@@ -977,8 +945,8 @@ pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
             Span::call_site(),
             format!("service should be one of {} (was {})", LIFECYCLE_STORAGE_TYPES.join(","), service),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     } else if LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.contains(&service) && days <= 30 {
         return Error::new(
             Span::call_site(),
@@ -987,14 +955,11 @@ pub fn lifecycle_transition_in_days(input: TokenStream) -> TokenStream {
                 LIFECYCLE_STORAGE_TYPES_MORE_THAN_THIRTY_DAYS.join(" or ")
             ),
         )
-        .into_compile_error()
-        .into();
+            .into_compile_error()
+            .into();
     }
 
-    quote! {
-        LifecycleTransitionInDays(#days)
-    }
-    .into()
+    quote!(LifecycleTransitionInDays(#days)).into()
 }
 
 const ACCESS_TIERS: [&str; 2] = ["ARCHIVE_ACCESS", "DEEP_ARCHIVE_ACCESS"];
@@ -1002,7 +967,7 @@ const ACCESS_TIERS: [&str; 2] = ["ARCHIVE_ACCESS", "DEEP_ARCHIVE_ACCESS"];
 #[proc_macro]
 pub fn bucket_tiering(input: TokenStream) -> TokenStream {
     let BucketTiering { access_tier, days } = parse_macro_input!(input);
-    
+
     if !ACCESS_TIERS.contains(&access_tier.as_str()) {
         return Error::new(
             Span::call_site(),
@@ -1011,7 +976,7 @@ pub fn bucket_tiering(input: TokenStream) -> TokenStream {
             .into_compile_error()
             .into();
     }
-    
+
     if &access_tier == "ARCHIVE_ACCESS" {
         if days < 90 || days > 730 {
             return Error::new(Span::call_site(), format!("days for access tier `ARCHIVE_ACCESS` should be between 90 and 730 (was {})", days))
@@ -1025,11 +990,8 @@ pub fn bucket_tiering(input: TokenStream) -> TokenStream {
                 .into();
         }
     }
-    
-    quote! {
-        BucketTiering(#access_tier.to_string(), #days)
-    }
-    .into()
+
+    quote!(BucketTiering(#access_tier.to_string(), #days)).into()
 }
 
 const LOCATION_URI_TYPES: [&str; 4] = ["hosted", "codepipeline", "secretsmanager", "s3"];
@@ -1066,7 +1028,7 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
             return quote! {
                 LocationUri(#location_uri_type.to_string())
             }
-            .into();
+                .into();
         } else if content.is_none() {
             error = Some(format!("location uri of type {}, should have content", location_uri_type));
         } else {
@@ -1088,7 +1050,7 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
                 return quote! {
                     LocationUri(#content.to_string())
                 }
-                .into();
+                    .into();
             }
         }
     }
@@ -1097,8 +1059,8 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
         Span::call_site(),
         error.unwrap_or_else(|| "unknown error".to_string()),
     )
-    .into_compile_error()
-    .into()
+        .into_compile_error()
+        .into()
 }
 
 const RATE_UNITS: [&str; 6] = ["minute", "minutes", "hour", "hours", "day", "days"];
@@ -1115,9 +1077,7 @@ pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    quote! {
-        ScheduleRateExpression(#value, #unit.to_string())
-    }.into()
+    quote!(ScheduleRateExpression(#value, #unit.to_string())).into()
 }
 
 #[proc_macro]

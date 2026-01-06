@@ -20,6 +20,10 @@ impl PermissionValidator {
     }
 
     pub(crate) fn is_valid_action(&self, action: &str) -> ValidationResponse {
+        if action.is_empty() {
+            return ValidationResponse::Invalid("action should not be blank".to_string())
+        }
+        
         if action.chars().any(|c| c.is_whitespace()) {
             return ValidationResponse::Invalid(format!("whitespaces (`{}`) are not allowed in an IAM action", action))
         }
