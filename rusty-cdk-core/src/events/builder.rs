@@ -103,9 +103,10 @@ impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
 
 impl ScheduleBuilder<StartState> {
     pub fn one_time_schedule(self, expression: ScheduleAtExpression) -> ScheduleBuilder<OneTimeScheduleState> {
+        let one_time_schedule = format!("at({})", expression.0);
         ScheduleBuilder {
             phantom_data: Default::default(),
-            schedule_expression: Some(expression.0),
+            schedule_expression: Some(one_time_schedule),
             id: self.id,
             flexible_time_window: self.flexible_time_window,
             group_name: self.group_name,
@@ -134,9 +135,10 @@ impl ScheduleBuilder<StartState> {
     }
     
     pub fn cron_schedule(self, expression: ScheduleCronExpression) -> ScheduleBuilder<RepeatedScheduleState> {
+        let schedule = format!("cron({})", expression.0);
         ScheduleBuilder {
             phantom_data: Default::default(),
-            schedule_expression: Some(expression.0),
+            schedule_expression: Some(schedule),
             id: self.id,
             flexible_time_window: self.flexible_time_window,
             group_name: self.group_name,

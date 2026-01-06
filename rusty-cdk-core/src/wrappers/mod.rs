@@ -595,13 +595,13 @@ pub struct RetryPolicyRetries(pub u8);
 #[derive(Debug, Clone)]
 pub struct MaxFlexibleTimeWindow(pub u16);
 
-#[derive(Debug, Clone)] // at(yyyy-mm-ddThh:mm:ss)
+#[derive(Debug, Clone)]
 pub struct ScheduleAtExpression(pub String);
 
 #[derive(Debug, Clone)]
 pub struct ScheduleRateExpression(pub u16, pub String);
 
-#[derive(Debug, Clone)] // cron expression - cron(fields)
+#[derive(Debug, Clone)]
 pub struct ScheduleCronExpression(pub String);
 
 #[derive(Debug, Clone)]
