@@ -62,7 +62,7 @@ pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> Tok
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -83,7 +83,7 @@ pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['_', '-']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -108,7 +108,7 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -139,7 +139,7 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', ' ']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', ' ']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -160,7 +160,7 @@ pub fn schedule_name(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', '.']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', '.']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -191,7 +191,7 @@ pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -215,7 +215,7 @@ pub fn string_for_secret(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    let requirements = StringRequirements::not_empty_allowed_chars(vec!['/', '_', '+', '=', '.', '@', '-']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['/', '_', '+', '=', '.', '@', '-']);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
