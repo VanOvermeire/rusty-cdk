@@ -604,5 +604,5 @@ pub struct ScheduleRateExpression(pub u16, pub String);
 #[derive(Debug, Clone)] // cron expression - cron(fields)
 pub struct ScheduleCronExpression(pub String);
 
-#[derive(Debug, Clone)] // ^[0-9a-zA-Z-_.]+$ 1-64
+#[derive(Debug, Clone)]
 pub struct ScheduleName(pub String);

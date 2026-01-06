@@ -1,6 +1,7 @@
 use syn::Error;
 use syn::__private::Span;
 
+// TODO start accepting min/max lengths
 pub(crate) struct StringRequirements {
     not_empty: bool,
     check_chars: bool,

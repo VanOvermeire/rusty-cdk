@@ -32,6 +32,7 @@ mod timeouts;
 mod transition_in_days;
 mod bucket_tiering;
 mod rate_expression;
+mod cron_validation;
 
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
@@ -47,6 +48,7 @@ use std::env;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Error, LitInt, LitStr};
 use crate::bucket_tiering::BucketTiering;
+use crate::cron_validation::validate_cron;
 use crate::rate_expression::RateExpression;
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
@@ -145,6 +147,28 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
     match check_string_requirements(&value, output.span(), requirements) {
         None => quote!(
             AppSyncApiName(#value.to_string())
+        )
+            .into(),
+        Some(e) => e.into_compile_error().into(),
+    }
+}
+
+#[proc_macro]
+pub fn schedule_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.len() > 64 {
+        return Error::new(output.span(), "name cannot be longer than 64 characters".to_string())
+            .into_compile_error()
+            .into();
+    }
+
+    let requirements = StringRequirements::not_empty_allowed_chars(vec!['-', '_', '.']);
+
+    match check_string_requirements(&value, output.span(), requirements) {
+        None => quote!(
+            ScheduleName(#value.to_string())
         )
             .into(),
         Some(e) => e.into_compile_error().into(),
@@ -1079,8 +1103,6 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
 
 const RATE_UNITS: [&str; 6] = ["minute", "minutes", "hour", "hours", "day", "days"];
 
-// TODO surround with rate( )
-// rate expression - rate(value unit) A rate expression consists of a value as a positive integer, and a unit with the following options: minute | minutes | hour | hours | day | days
 #[proc_macro]
 pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
     let RateExpression {
@@ -1095,5 +1117,18 @@ pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
 
     quote! {
         ScheduleRateExpression(#value, #unit.to_string())
+    }.into()
+}
+
+#[proc_macro]
+pub fn schedule_cron_expression(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    match validate_cron(&value, output.span()) {
+        Ok(()) => quote!(
+            ScheduleCronExpression(#value.to_string())
+        ),
+        Err(e) => e.into_compile_error(),
     }.into()
 }
