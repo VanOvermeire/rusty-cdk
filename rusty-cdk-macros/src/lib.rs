@@ -132,14 +132,7 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
 pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-
-    if value.len() > 50 {
-        return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
-            .into_compile_error()
-            .into();
-    }
-
-    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', ' ']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', ' ']).with_max_length(50);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -153,14 +146,7 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
 pub fn schedule_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-
-    if value.len() > 64 {
-        return Error::new(output.span(), "name cannot be longer than 64 characters".to_string())
-            .into_compile_error()
-            .into();
-    }
-
-    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', '.']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', '.']).with_max_length(64);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -184,14 +170,7 @@ pub fn schedule_name(input: TokenStream) -> TokenStream {
 pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-
-    if value.len() > 50 {
-        return Error::new(output.span(), "name cannot be longer than 50 characters".to_string())
-            .into_compile_error()
-            .into();
-    }
-
-    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']);
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']).with_max_length(50);
 
     match check_string_requirements(&value, output.span(), requirements) {
         Ok(()) => quote!(
@@ -880,7 +859,6 @@ pub fn cf_connection_timeout(input: TokenStream) -> TokenStream {
 pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
-
     let requirements = StringRequirements::not_empty_prefix("lambda");
 
     match check_string_requirements(&value, output.span(), requirements) {

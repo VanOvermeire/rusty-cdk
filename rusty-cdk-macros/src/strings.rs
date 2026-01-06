@@ -41,11 +41,11 @@ impl StringRequirements {
 
 pub(crate) fn check_string_requirements(value: &str, span: Span, requirements: StringRequirements) -> Result<(), Error> {
     if value.len() < requirements.min_length {
-        return Err(Error::new(span, format!("min required length is {} (was {})", requirements.min_length, value.len())));
+        return Err(Error::new(span, format!("min allowed length is {} (was {})", requirements.min_length, value.len())));
     }
     
     if let Some(max) = requirements.max_length && value.len() > max {
-        return Err(Error::new(span, format!("max required length is {} (was {})", max, value.len())));
+        return Err(Error::new(span, format!("max allowed length is {} (was {})", max, value.len())));
     }
     
     if let Some(prefix) = requirements.prefix && !value.starts_with(&prefix) {
@@ -118,7 +118,7 @@ mod tests {
 
         let output = check_string_requirements("", Span::call_site(), requirements);
 
-        assert_eq!(output.unwrap_err().to_string(), "min required length is 1 (was 0)");
+        assert_eq!(output.unwrap_err().to_string(), "min allowed length is 1 (was 0)");
     }
 
     #[test]
@@ -127,7 +127,7 @@ mod tests {
 
         let output = check_string_requirements("too long", Span::call_site(), requirements);
 
-        assert_eq!(output.unwrap_err().to_string(), "max required length is 2 (was 8)");
+        assert_eq!(output.unwrap_err().to_string(), "max allowed length is 2 (was 8)");
     }
 
     #[test]

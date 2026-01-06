@@ -1,4 +1,4 @@
-error: min required length is 1 (was 0)
+error: min allowed length is 1 (was 0)
  --> tests/fails/string_with_only_alpha_numerics_and_underscores_empty.rs:4:63
   |
 4 |     let key = string_with_only_alphanumerics_and_underscores!("");
