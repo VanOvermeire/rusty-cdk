@@ -174,6 +174,7 @@ Currently only a limited number of services are (partly) supported:
 In other words, you can create serverless applications with this library.
 
 To be added at some point:
+- EventBridge
 - Athena
 - Cloudwatch (-logs)
 - CodeBuild
@@ -181,7 +182,6 @@ To be added at some point:
 - DocumentDB
 - RDS
 - ECS
-- EventBridge
 - Kinesis
 - Step Functions
 - and additional functionality from the already supported services
@@ -288,6 +288,9 @@ async fn tagging() {
 - Improve diff
   - Show whether resource has changed
 - Ability to invoke deploy, diff and synth (?) from command line
+  - Diff is easy, deploy is doable if code produces output. But synth?
+    - One ugly (and not fail-safe) way would be to take the main.rs code and add a synth to the stack builder
+    - For now just deploy and diff
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
