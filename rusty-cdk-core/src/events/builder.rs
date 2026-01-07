@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 use serde_json::Value;
-use crate::events::{FlexibleTimeWindow, RetryPolicy, Schedule, ScheduleProperties, Target};
+use crate::events::{FlexibleTimeWindow, RetryPolicy, Schedule, ScheduleProperties, ScheduleRef, Target};
 use crate::lambda::FunctionRef;
 use crate::shared::Id;
 use crate::sns::TopicRef;
 use crate::sqs::QueueRef;
-use crate::stack::Resource;
+use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{MaxFlexibleTimeWindow, RetryPolicyEventAge, RetryPolicyRetries, ScheduleAtExpression, ScheduleCronExpression, ScheduleName, ScheduleRateExpression};
 
@@ -45,21 +45,6 @@ pub struct ScheduleBuilder<T: ScheduleBuilderState> {
 }
 
 impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
-    pub fn new(id: &str, target: Target, flexible_time_window: FlexibleTimeWindow) -> ScheduleBuilder<StartState> {
-        ScheduleBuilder {
-            phantom_data: Default::default(),
-            id: Id(id.to_string()),
-            flexible_time_window,
-            target,
-            start_date: None,
-            end_date: None,
-            group_name: None,
-            name: None,
-            state: None,
-            schedule_expression: None,
-        }
-    }
-    
     pub fn name(self, name: ScheduleName) -> Self {
         Self {
             name: Some(name.0),
@@ -81,11 +66,11 @@ impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
         }
     }
     
-    fn build_internal(self) -> Schedule {
+    fn build_internal(self, stack_builder: &mut StackBuilder) -> ScheduleRef {
         let resource_id = Resource::generate_id("Schedule");
-        Schedule {
+        stack_builder.add_resource(Schedule {
             id: self.id,
-            resource_id: resource_id,
+            resource_id: resource_id.clone(),
             r#type: "AWS::Scheduler::Schedule".to_string(),
             properties: ScheduleProperties {
                 start_date: self.start_date,
@@ -97,11 +82,28 @@ impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
                 schedule_expression: self.schedule_expression.expect("schedule expression to be present, enforced by builder"),
                 target: self.target,
             },
-        }
+        });
+        
+        ScheduleRef::new(resource_id)
     }
 }
 
 impl ScheduleBuilder<StartState> {
+    pub fn new(id: &str, target: Target, flexible_time_window: FlexibleTimeWindow) -> ScheduleBuilder<StartState> {
+        ScheduleBuilder {
+            phantom_data: Default::default(),
+            id: Id(id.to_string()),
+            flexible_time_window,
+            target,
+            start_date: None,
+            end_date: None,
+            group_name: None,
+            name: None,
+            state: None,
+            schedule_expression: None,
+        }
+    }
+    
     pub fn one_time_schedule(self, expression: ScheduleAtExpression) -> ScheduleBuilder<OneTimeScheduleState> {
         let one_time_schedule = format!("at({})", expression.0);
         ScheduleBuilder {
@@ -152,8 +154,8 @@ impl ScheduleBuilder<StartState> {
 }
 
 impl ScheduleBuilder<OneTimeScheduleState> {
-    pub fn build(self) -> Schedule {
-        self.build_internal()
+    pub fn build(self, stack_builder: &mut StackBuilder) -> ScheduleRef {
+        self.build_internal(stack_builder)
     }
 }
 
@@ -166,6 +168,7 @@ impl ScheduleBuilder<RepeatedScheduleState> {
         }
     }
 
+    // TODO better validation
     pub fn end_date(self, end_date: String) -> Self {
         Self {
             end_date: Some(end_date),
@@ -173,13 +176,14 @@ impl ScheduleBuilder<RepeatedScheduleState> {
         }
     }
     
-    pub fn build(self) -> Schedule {
-        self.build_internal()
+    pub fn build(self, stack_builder: &mut StackBuilder) -> ScheduleRef {
+        self.build_internal(stack_builder)
     }
 }
 
 type_state!(
     TargetBuilderState,
+    TargetStartState,
     JsonTargetState,
     NormalTargetState,
 );
@@ -204,8 +208,11 @@ pub enum NormalTarget<'a> {
     Other(Value)
 }
 
-impl<T: TargetBuilderState> TargetBuilder<T> {
-    /// Target that accepts any string input
+impl TargetBuilder<TargetStartState> {
+    /// Target that accepts any string input. This is all targets *except*
+    /// - Lambda
+    /// - Step Functions
+    /// - EventBridge
     pub fn new_normal_target(target: NormalTarget, role_arn: String) -> TargetBuilder<NormalTargetState> {
         let arn = match target {
             NormalTarget::Sqs(r) => r.get_arn(),
@@ -220,8 +227,11 @@ impl<T: TargetBuilderState> TargetBuilder<T> {
             retry_policy: None,
         }
     }
-    
+
     /// Target that requires the input to be valid JSON
+    /// - Lambda
+    /// - Step Functions
+    /// - EventBridge
     pub fn new_json_target(target: JsonTarget, role_arn: String) -> TargetBuilder<JsonTargetState> {
         let arn = match target {
             JsonTarget::Lambda(l) => l.get_arn(),
@@ -234,7 +244,9 @@ impl<T: TargetBuilderState> TargetBuilder<T> {
             retry_policy: None,
         }
     }
-    
+}
+
+impl<T: TargetBuilderState> TargetBuilder<T> {
     pub fn retry_policy(self, retry_policy: RetryPolicy) -> TargetBuilder<T> {
         TargetBuilder {
             retry_policy: Some(retry_policy),

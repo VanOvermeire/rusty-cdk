@@ -1,7 +1,9 @@
 use serde::Serialize;
 use serde_json::Value;
-use crate::dto_methods;
+use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
+
+ref_struct!(ScheduleRef);
 
 #[derive(Debug, Serialize)]
 pub struct Schedule {

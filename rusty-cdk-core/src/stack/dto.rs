@@ -16,6 +16,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use crate::events::Schedule;
 
 #[derive(Debug)]
 pub struct StackDiff {
@@ -293,101 +294,104 @@ impl Stack {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum Resource {
+    ApiGatewayV2Api(ApiGatewayV2Api),
+    ApiGatewayV2Integration(ApiGatewayV2Integration),
+    ApiGatewayV2Route(ApiGatewayV2Route),
+    ApiGatewayV2Stage(ApiGatewayV2Stage),
     AppSyncApi(AppSyncApi),
     Application(Application),
     Bucket(Bucket),
-    BucketPolicy(BucketPolicy),
     BucketNotification(BucketNotification),
+    BucketPolicy(BucketPolicy),
+    CachePolicy(CachePolicy),
     ChannelNamespace(ChannelNamespace),
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
+    Distribution(Distribution),
     Environment(Environment),
-    Table(Table),
+    EventSourceMapping(EventSourceMapping),
     Function(Function),
     LogGroup(LogGroup),
+    OriginAccessControl(OriginAccessControl),
+    Permission(Permission),
     Queue(Queue),
     QueuePolicy(QueuePolicy),
+    Role(Role),
+    Secret(Secret),
+    Schedule(Schedule),
+    Subscription(Subscription),
+    Table(Table),
     Topic(Topic),
     TopicPolicy(TopicPolicy),
-    Subscription(Subscription),
-    Permission(Permission),
-    EventSourceMapping(EventSourceMapping),
-    Role(Role),
-    ApiGatewayV2Api(ApiGatewayV2Api),
-    ApiGatewayV2Stage(ApiGatewayV2Stage),
-    ApiGatewayV2Route(ApiGatewayV2Route),
-    ApiGatewayV2Integration(ApiGatewayV2Integration),
-    Secret(Secret),
-    Distribution(Distribution),
-    CachePolicy(CachePolicy),
-    OriginAccessControl(OriginAccessControl),
 }
 
 impl Resource {
     pub fn get_id(&self) -> Id {
         let id = match self {
-            Resource::Bucket(r) => r.get_id(),
-            Resource::BucketPolicy(r) => r.get_id(),
-            Resource::Table(r) => r.get_id(),
-            Resource::Function(r) => r.get_id(),
-            Resource::LogGroup(r) => r.get_id(),
-            Resource::Queue(r) => r.get_id(),
-            Resource::Topic(r) => r.get_id(),
-            Resource::Subscription(r) => r.get_id(),
-            Resource::Permission(r) => r.get_id(),
-            Resource::EventSourceMapping(r) => r.get_id(),
-            Resource::Role(r) => r.get_id(),
             Resource::ApiGatewayV2Api(r) => r.get_id(),
-            Resource::ApiGatewayV2Stage(r) => r.get_id(),
-            Resource::ApiGatewayV2Route(r) => r.get_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_id(),
-            Resource::Secret(r) => r.get_id(),
-            Resource::Distribution(r) => r.get_id(),
-            Resource::CachePolicy(r) => r.get_id(),
-            Resource::OriginAccessControl(r) => r.get_id(),
+            Resource::ApiGatewayV2Route(r) => r.get_id(),
+            Resource::ApiGatewayV2Stage(r) => r.get_id(),
+            Resource::AppSyncApi(r) => r.get_id(),
             Resource::Application(r) => r.get_id(),
+            Resource::Bucket(r) => r.get_id(),
+            Resource::BucketNotification(r) => r.get_id(),
+            Resource::BucketPolicy(r) => r.get_id(),
+            Resource::CachePolicy(r) => r.get_id(),
+            Resource::ChannelNamespace(r) => r.get_id(),
             Resource::ConfigurationProfile(r) => r.get_id(),
             Resource::DeploymentStrategy(r) => r.get_id(),
+            Resource::Distribution(r) => r.get_id(),
             Resource::Environment(r) => r.get_id(),
-            Resource::BucketNotification(r) => r.get_id(),
-            Resource::TopicPolicy(r) => r.get_id(),
+            Resource::EventSourceMapping(r) => r.get_id(),
+            Resource::Function(r) => r.get_id(),
+            Resource::LogGroup(r) => r.get_id(),
+            Resource::OriginAccessControl(r) => r.get_id(),
+            Resource::Permission(r) => r.get_id(),
+            Resource::Queue(r) => r.get_id(),
             Resource::QueuePolicy(r) => r.get_id(),
-            Resource::AppSyncApi(r) => r.get_id(),
-            Resource::ChannelNamespace(r) => r.get_id(),
+            Resource::Role(r) => r.get_id(),
+            Resource::Schedule(r) => r.get_id(),
+            Resource::Secret(r) => r.get_id(),
+            Resource::Subscription(r) => r.get_id(),
+            Resource::Table(r) => r.get_id(),
+            Resource::Topic(r) => r.get_id(),
+            Resource::TopicPolicy(r) => r.get_id(),
         };
         id.clone()
     }
 
     pub fn get_resource_id(&self) -> &str {
         match self {
-            Resource::Bucket(r) => r.get_resource_id(),
-            Resource::BucketPolicy(r) => r.get_resource_id(),
-            Resource::Table(t) => t.get_resource_id(),
-            Resource::Function(r) => r.get_resource_id(),
-            Resource::Role(r) => r.get_resource_id(),
-            Resource::Queue(r) => r.get_resource_id(),
-            Resource::EventSourceMapping(r) => r.get_resource_id(),
-            Resource::LogGroup(r) => r.get_resource_id(),
-            Resource::Topic(r) => r.get_resource_id(),
-            Resource::Subscription(r) => r.get_resource_id(),
-            Resource::Permission(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Api(r) => r.get_resource_id(),
-            Resource::ApiGatewayV2Stage(r) => r.get_resource_id(),
-            Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_resource_id(),
-            Resource::Secret(r) => r.get_resource_id(),
-            Resource::Distribution(r) => r.get_resource_id(),
-            Resource::CachePolicy(r) => r.get_resource_id(),
-            Resource::OriginAccessControl(r) => r.get_resource_id(),
+            Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
+            Resource::ApiGatewayV2Stage(r) => r.get_resource_id(),
+            Resource::AppSyncApi(r) => r.get_resource_id(),
             Resource::Application(r) => r.get_resource_id(),
+            Resource::Bucket(r) => r.get_resource_id(),
+            Resource::BucketNotification(r) => r.get_resource_id(),
+            Resource::BucketPolicy(r) => r.get_resource_id(),
+            Resource::CachePolicy(r) => r.get_resource_id(),
+            Resource::ChannelNamespace(r) => r.get_resource_id(),
             Resource::ConfigurationProfile(r) => r.get_resource_id(),
             Resource::DeploymentStrategy(r) => r.get_resource_id(),
+            Resource::Distribution(r) => r.get_resource_id(),
             Resource::Environment(r) => r.get_resource_id(),
-            Resource::BucketNotification(r) => r.get_resource_id(),
-            Resource::TopicPolicy(r) => r.get_resource_id(),
+            Resource::EventSourceMapping(r) => r.get_resource_id(),
+            Resource::Function(r) => r.get_resource_id(),
+            Resource::LogGroup(r) => r.get_resource_id(),
+            Resource::OriginAccessControl(r) => r.get_resource_id(),
+            Resource::Permission(r) => r.get_resource_id(),
+            Resource::Queue(r) => r.get_resource_id(),
             Resource::QueuePolicy(r) => r.get_resource_id(),
-            Resource::AppSyncApi(r) => r.get_resource_id(),
-            Resource::ChannelNamespace(r) => r.get_resource_id(),
+            Resource::Role(r) => r.get_resource_id(),
+            Resource::Schedule(r) => r.get_resource_id(),
+            Resource::Secret(r) => r.get_resource_id(),
+            Resource::Subscription(r) => r.get_resource_id(),
+            Resource::Table(t) => t.get_resource_id(),
+            Resource::Topic(r) => r.get_resource_id(),
+            Resource::TopicPolicy(r) => r.get_resource_id(),
         }
     }
 
@@ -408,34 +412,35 @@ macro_rules! from_resource {
     };
 }
 
+from_resource!(ApiGatewayV2Api);
+from_resource!(ApiGatewayV2Integration);
+from_resource!(ApiGatewayV2Route);
+from_resource!(ApiGatewayV2Stage);
 from_resource!(AppSyncApi);
 from_resource!(Application);
 from_resource!(Bucket);
+from_resource!(BucketNotification);
 from_resource!(BucketPolicy);
-from_resource!(ConfigurationProfile);
+from_resource!(CachePolicy);
 from_resource!(ChannelNamespace);
+from_resource!(ConfigurationProfile);
 from_resource!(DeploymentStrategy);
+from_resource!(Distribution);
 from_resource!(Environment);
-from_resource!(Table);
+from_resource!(EventSourceMapping);
 from_resource!(Function);
-from_resource!(Role);
 from_resource!(LogGroup);
+from_resource!(OriginAccessControl);
+from_resource!(Permission);
 from_resource!(Queue);
 from_resource!(QueuePolicy);
+from_resource!(Role);
+from_resource!(Secret);
+from_resource!(Schedule);
+from_resource!(Subscription);
+from_resource!(Table);
 from_resource!(Topic);
 from_resource!(TopicPolicy);
-from_resource!(EventSourceMapping);
-from_resource!(Permission);
-from_resource!(Subscription);
-from_resource!(ApiGatewayV2Api);
-from_resource!(ApiGatewayV2Stage);
-from_resource!(ApiGatewayV2Route);
-from_resource!(ApiGatewayV2Integration);
-from_resource!(Secret);
-from_resource!(Distribution);
-from_resource!(CachePolicy);
-from_resource!(OriginAccessControl);
-from_resource!(BucketNotification);
 
 #[cfg(test)]
 mod tests {
