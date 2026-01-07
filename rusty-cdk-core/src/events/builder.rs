@@ -191,7 +191,7 @@ type_state!(
 pub struct TargetBuilder<T: TargetBuilderState> {
     phantom_data: PhantomData<T>,
     target_arn: Value,
-    role_arn: String,
+    role_arn: Value,
     input: Option<String>,
     retry_policy: Option<RetryPolicy>,
 }
@@ -213,7 +213,7 @@ impl TargetBuilder<TargetStartState> {
     /// - Lambda
     /// - Step Functions
     /// - EventBridge
-    pub fn new_normal_target(target: NormalTarget, role_arn: String) -> TargetBuilder<NormalTargetState> {
+    pub fn new_normal_target(target: NormalTarget, role_arn: Value) -> TargetBuilder<NormalTargetState> {
         let arn = match target {
             NormalTarget::Sqs(r) => r.get_arn(),
             NormalTarget::Sns(r) => r.get_arn(),
@@ -232,13 +232,13 @@ impl TargetBuilder<TargetStartState> {
     /// - Lambda
     /// - Step Functions
     /// - EventBridge
-    pub fn new_json_target(target: JsonTarget, role_arn: String) -> TargetBuilder<JsonTargetState> {
-        let arn = match target {
+    pub fn new_json_target(target: JsonTarget, role_arn: Value) -> TargetBuilder<JsonTargetState> {
+        let target_arn = match target {
             JsonTarget::Lambda(l) => l.get_arn(),
         };
         TargetBuilder {
             phantom_data: Default::default(),
-            target_arn: arn,
+            target_arn,
             role_arn,
             input: None,
             retry_policy: None,

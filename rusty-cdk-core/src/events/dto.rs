@@ -55,7 +55,7 @@ pub struct Target {
     #[serde(rename = "Arn")]
     pub(super) arn: Value,
     #[serde(rename = "RoleArn")]
-    pub(super) role_arn: String,
+    pub(super) role_arn: Value,
     #[serde(rename = "Input", skip_serializing_if = "Option::is_none")]
     pub(super) input: Option<String>,
     #[serde(rename = "RetryPolicy", skip_serializing_if = "Option::is_none")]
