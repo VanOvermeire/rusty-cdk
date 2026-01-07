@@ -7,7 +7,7 @@ pub(crate) struct RateExpression {
     pub(crate) unit: String,
 }
 
-// TODO ideally, this would also accept `rate(value unit)` instead of only `value unit`
+// ideally, this would also accept `rate(value unit)` instead of only `value unit`
 impl Parse for RateExpression {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let days: LitInt = input.parse()?;

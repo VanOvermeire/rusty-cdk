@@ -36,7 +36,7 @@ impl StringRequirements {
 
 }
 
-pub(crate) fn check_string_requirements(value: &str, requirements: StringRequirements) -> Result<(), String> {
+pub(crate) fn validate_string(value: &str, requirements: StringRequirements) -> Result<(), String> {
     if value.len() < requirements.min_length {
         return Err(format!("min allowed length is {} (was {})", requirements.min_length, value.len()));
     }
@@ -58,13 +58,13 @@ pub(crate) fn check_string_requirements(value: &str, requirements: StringRequire
 
 #[cfg(test)]
 mod tests {
-    use crate::strings::{check_string_requirements, StringRequirements};
+    use crate::strings::{validate_string, StringRequirements};
 
     #[test]
     fn should_return_empty_when_string_contains_prefix() {
         let requirements = StringRequirements::not_empty_prefix("some-prefix");
     
-        let output = check_string_requirements("some-prefix-and-more-text", requirements);
+        let output = validate_string("some-prefix-and-more-text", requirements);
     
         assert!(output.is_ok());
     }
@@ -73,7 +73,7 @@ mod tests {
     fn should_return_error_when_string_does_not_contain_prefix() {
     let requirements = StringRequirements::not_empty_prefix("some-prefix");
     
-        let output = check_string_requirements("just-text", requirements);
+        let output = validate_string("just-text", requirements);
     
         assert!(output.is_err());
     }
@@ -82,7 +82,7 @@ mod tests {
     fn should_return_empty_when_string_contains_only_alphanumeric_chars_and_there_are_no_additional_allowed_chars() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]);
 
-        let output = check_string_requirements("valid", requirements);
+        let output = validate_string("valid", requirements);
 
         assert!(output.is_ok());
     }
@@ -91,7 +91,7 @@ mod tests {
     fn should_return_empty_when_string_contains_allowed_special_chars() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_']);
 
-        let output = check_string_requirements("valid-name_123", requirements);
+        let output = validate_string("valid-name_123", requirements);
 
         assert!(output.is_ok());
     }
@@ -100,7 +100,7 @@ mod tests {
     fn should_return_error_when_string_contains_invalid_char() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_']);
         
-        let output = check_string_requirements("invalid-hyphen", requirements);
+        let output = validate_string("invalid-hyphen", requirements);
 
         assert!(output.is_err());
     }
@@ -109,7 +109,7 @@ mod tests {
     fn should_return_error_when_string_is_empty() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]);
 
-        let output = check_string_requirements("", requirements);
+        let output = validate_string("", requirements);
 
         assert_eq!(output.unwrap_err().to_string(), "min allowed length is 1 (was 0)");
     }
@@ -118,7 +118,7 @@ mod tests {
     fn should_return_error_when_string_is_too_long() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]).with_max_length(2);
 
-        let output = check_string_requirements("too long", requirements);
+        let output = validate_string("too long", requirements);
 
         assert_eq!(output.unwrap_err().to_string(), "max allowed length is 2 (was 8)");
     }
@@ -127,7 +127,7 @@ mod tests {
     fn should_return_error_when_string_contains_disallowed_special_char() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']);
 
-        let output = check_string_requirements("invalid_underscore", requirements);
+        let output = validate_string("invalid_underscore", requirements);
 
         assert!(output.is_err());
     }
@@ -136,7 +136,7 @@ mod tests {
     fn should_reject_spaces() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]);
 
-        let output = check_string_requirements("invalid name", requirements);
+        let output = validate_string("invalid name", requirements);
 
         assert!(output.is_err());
     }
@@ -145,7 +145,7 @@ mod tests {
     fn should_reject_special_chars_when_not_allowed() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]);
 
-        let output = check_string_requirements("invalid@email.com", requirements);
+        let output = validate_string("invalid@email.com", requirements);
 
         assert!(output.is_err());
     }

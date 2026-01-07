@@ -5,7 +5,7 @@ use crate::s3::BucketRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::IamAction;
+use crate::wrappers::{IamAction, PolicyName};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
@@ -228,7 +228,7 @@ impl RolePropertiesBuilder {
 /// ```rust
 /// use rusty_cdk_core::iam::{PolicyBuilder, PolicyDocumentBuilder, StatementBuilder, Effect};
 /// use rusty_cdk_core::wrappers::*;
-/// use rusty_cdk_macros::iam_action;
+/// use rusty_cdk_macros::{iam_action, policy_name};
 ///
 /// let statement = StatementBuilder::new(
 ///     vec![iam_action!("s3:GetObject")],
@@ -238,7 +238,7 @@ impl RolePropertiesBuilder {
 /// .build();
 ///
 /// let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
-/// let policy = PolicyBuilder::new("MyPolicy", policy_doc).build();
+/// let policy = PolicyBuilder::new(policy_name!("MyPolicy"), policy_doc).build();
 /// ```
 pub struct PolicyBuilder {
     policy_name: String,
@@ -246,11 +246,9 @@ pub struct PolicyBuilder {
 }
 
 impl PolicyBuilder {
-    // TODO policy name characters consisting of upper and lowercase alphanumeric characters with no spaces + any of the following characters: _+=,.@-; 1 - 128 chars
-    //  (but most of the time used indirectly, so not very urgent)
-    pub fn new<T: Into<String>>(policy_name: T, policy_document: PolicyDocument) -> Self {
+    pub fn new(policy_name: PolicyName, policy_document: PolicyDocument) -> Self {
         PolicyBuilder {
-            policy_name: policy_name.into(),
+            policy_name: policy_name.0,
             policy_document,
         }
     }
@@ -421,7 +419,7 @@ impl StatementBuilder {
 }
 
 pub struct CustomPermission {
-    id: String,
+    id: PolicyName,
     statement: Statement,
 }
 
@@ -429,11 +427,11 @@ impl CustomPermission {
     /// Creates a new custom IAM permission.
     ///
     /// # Arguments
-    /// * `id` - Unique identifier for the permission
+    /// * `id` - Unique name for the permission
     /// * `statement` - IAM policy statement defining the permission
-    pub fn new(id: &str, statement: Statement) -> Self {
+    pub fn new(id: PolicyName, statement: Statement) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             statement,
         }
     }
@@ -469,7 +467,7 @@ impl Permission<'_> {
                     condition: None,
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
-                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}Read", id)), policy_document).build()
             }
             Permission::DynamoDBReadWrite(table) => {
                 let id = table.get_resource_id();
@@ -492,7 +490,7 @@ impl Permission<'_> {
                     condition: None,
                 };
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
-                PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}ReadWrite", id)), policy_document).build()
             }
             Permission::SqsRead(queue) => {
                 let id = queue.get_resource_id();
@@ -509,7 +507,7 @@ impl Permission<'_> {
                 .resources(vec![get_arn(id)])
                 .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![sqs_permissions_statement]).build();
-                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}Read", id)), policy_document).build()
             }
             Permission::S3ReadWrite(bucket) => {
                 let id = bucket.get_resource_id();
@@ -533,7 +531,7 @@ impl Permission<'_> {
                 .build();
 
                 let policy_document = PolicyDocumentBuilder::new(vec![s3_permissions_statement]).build();
-                PolicyBuilder::new(format!("{}ReadWrite", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}ReadWrite", id)), policy_document).build()
             }
             Permission::SecretsManagerRead(secret) => {
                 let id = secret.get_resource_id();
@@ -541,7 +539,7 @@ impl Permission<'_> {
                     .resources(vec![secret.get_ref()])
                     .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
-                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}Read", id)), policy_document).build()
             }
             Permission::AppConfigRead(app, env, profile) => {
                 let id = app.get_resource_id();
@@ -566,7 +564,7 @@ impl Permission<'_> {
                     .resources(vec![resource])
                     .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
-                PolicyBuilder::new(format!("{}Read", id), policy_document).build()
+                PolicyBuilder::new(PolicyName(format!("{}Read", id)), policy_document).build()
             }
             Permission::Custom(CustomPermission { id, statement }) => {
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();

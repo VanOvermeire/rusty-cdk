@@ -165,8 +165,6 @@ impl Stack {
     }
 
     // TODO proper error instead of string (also for normal synth above)
-    // TODO add proper example
-
     /// Synthesizes the stack into a CloudFormation template JSON string.
     ///
     /// This method converts the stack and all its resources into a JSON-formatted

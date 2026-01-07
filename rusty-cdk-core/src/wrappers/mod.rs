@@ -606,3 +606,6 @@ pub struct ScheduleCronExpression(pub String);
 
 #[derive(Debug, Clone)]
 pub struct ScheduleName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct PolicyName(pub String);

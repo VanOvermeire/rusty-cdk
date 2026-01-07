@@ -41,7 +41,7 @@ use crate::iam_validation::{PermissionValidator, ValidationResponse};
 use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
 use crate::rate_expression::RateExpression;
-use crate::strings::{check_string_requirements, StringRequirements};
+use crate::strings::{validate_string, StringRequirements};
 use crate::timeouts::Timeouts;
 use crate::transition_in_days::TransitionInfo;
 use proc_macro::TokenStream;
@@ -64,7 +64,7 @@ pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> Tok
 
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_']);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             StringWithOnlyAlphaNumericsAndUnderscores(#value.to_string())
         ),
@@ -85,7 +85,7 @@ pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream
 
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_', '-']);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
         ),
@@ -110,7 +110,7 @@ pub fn string_with_only_alphanumerics_and_hyphens(input: TokenStream) -> TokenSt
 
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             StringWithOnlyAlphaNumericsAndHyphens(#value.to_string())
         ),
@@ -134,7 +134,7 @@ pub fn app_sync_api_name(input: TokenStream) -> TokenStream {
     let value = output.value();
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', ' ']).with_max_length(50);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             AppSyncApiName(#value.to_string())
         ),
@@ -148,7 +148,7 @@ pub fn schedule_name(input: TokenStream) -> TokenStream {
     let value = output.value();
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', '.']).with_max_length(64);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             ScheduleName(#value.to_string())
         ),
@@ -172,7 +172,7 @@ pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
     let value = output.value();
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-']).with_max_length(50);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             ChannelNamespaceName(#value.to_string())
         ),
@@ -196,7 +196,7 @@ pub fn string_for_secret(input: TokenStream) -> TokenStream {
 
     let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['/', '_', '+', '=', '.', '@', '-']);
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             StringForSecret(#value.to_string())
         ),
@@ -861,7 +861,7 @@ pub fn lambda_permission_action(input: TokenStream) -> TokenStream {
     let value = output.value();
     let requirements = StringRequirements::not_empty_prefix("lambda");
 
-    match check_string_requirements(&value, requirements) {
+    match validate_string(&value, requirements) {
         Ok(()) => quote!(
             LambdaPermissionAction(#value.to_string())
         ),
@@ -1081,5 +1081,20 @@ pub fn schedule_at_expression(input: TokenStream) -> TokenStream {
             ScheduleAtExpression(#value.to_string())
         ),
         Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }.into()
+}
+
+#[proc_macro]
+pub fn policy_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_', '+', '=', ',', '.', '@', '-', ';']).with_max_length(128);
+    
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            PolicyName(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error()
     }.into()
 }

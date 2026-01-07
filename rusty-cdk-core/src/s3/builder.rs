@@ -18,10 +18,7 @@ use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{
-    BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, RecordExpirationDays,
-    S3LifecycleObjectSizes, Timeout,
-};
+use crate::wrappers::{BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, PolicyName, RecordExpirationDays, S3LifecycleObjectSizes, Timeout};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -679,7 +676,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             .handler("index.handler")
             .runtime(Runtime::Python313)
             .add_permission(Permission::Custom(CustomPermission::new(
-                "NotificationPermission",
+                PolicyName("NotificationPermission".to_string()),
                 StatementBuilder::new(vec![IamAction("s3:PutBucketNotification".to_string())], Effect::Allow)
                     .all_resources()
                     .build(),

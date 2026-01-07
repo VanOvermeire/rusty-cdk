@@ -280,7 +280,7 @@ fn lambda_with_secret_and_custom_permissions() {
         .handler("bootstrap")
         .runtime(Runtime::ProvidedAl2023)
         .env_var(env_var_key!("SECRET"), secret.get_ref())
-        .add_permission(Permission::Custom(CustomPermission::new("my-perm", statement)))
+        .add_permission(Permission::Custom(CustomPermission::new(policy_name!("my-perm"), statement)))
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 

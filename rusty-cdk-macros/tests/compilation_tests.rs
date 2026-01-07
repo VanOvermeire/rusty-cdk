@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering, retry_policy_event_age, retry_policy_retries, max_flexible_time_window, schedule_rate_expression, schedule_name, schedule_cron_expression, schedule_at_expression};
+use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering, retry_policy_event_age, retry_policy_retries, max_flexible_time_window, schedule_rate_expression, schedule_name, schedule_cron_expression, schedule_at_expression, policy_name};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -32,6 +32,7 @@ struct ScheduleRateExpression(pub u16, pub String);
 struct ScheduleCronExpression(pub String);
 struct ScheduleAtExpression(pub String);
 struct ScheduleName(pub String);
+struct PolicyName(pub String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -225,4 +226,8 @@ fn schedule_at_expression() {
 #[test]
 fn schedule_name() {
     schedule_name!("schedule-some_name");
+}
+#[test]
+fn policy_name() {
+    policy_name!("my-valid+policy_name");
 }
