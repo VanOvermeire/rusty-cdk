@@ -283,8 +283,11 @@ async fn tagging() {
 
 - Most refs should have an 'override' for referring to resources outside the stack
   - In some cases, a macro could be used that the resource actually exists
+  - Separate crate? rusty-cdk-lookups
+  - In which case rusty-cdk-validation would be better for macros crate...
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
+- `destroy` command?
 - Improve diff
   - Show whether resource has changed
 - Ability to invoke deploy, diff and synth (?) from command line

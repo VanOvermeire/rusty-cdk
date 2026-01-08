@@ -26,6 +26,7 @@ use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
 use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
 use rusty_cdk_core::cloudwatch::LogGroupBuilder;
+use rusty_cdk_core::events::{FlexibleTimeWindowBuilder, JsonTarget, Mode, ScheduleBuilder, State, TargetBuilder};
 use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
 
 #[test]
@@ -374,6 +375,52 @@ fn lambda_with_dynamodb() {
             (r"LogGroup[0-9]+", "[LogGroup]"),
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
             (r"Asset[0-9]+\.zip", "[Asset]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+
+#[test]
+fn lambda_with_custom_log_group_and_schedule() {
+    let mut stack_builder = StackBuilder::new();
+
+    let log_group = LogGroupBuilder::new("myFunLogGroup")
+        .log_group_name_string(log_group_name!("my-fun-logs"))
+        .log_group_retention(log_retention!(7))
+        .build(&mut stack_builder);
+
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let bucket = get_bucket();
+    let (fun, _role, _log_group) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .log_group(&log_group)
+        .build(&mut stack_builder);
+
+    let scheduler_role_from_account = Value::String("arn:aws:iam::1234:role/ASchedulerToLambdaRole".to_string());
+    let target = TargetBuilder::new_json_target(JsonTarget::Lambda(&fun), scheduler_role_from_account)
+        .input(json!({ "value": "hello" }))
+        .build();
+    let flexible = FlexibleTimeWindowBuilder::new(Mode::Flexible(max_flexible_time_window!(2))).build();
+    ScheduleBuilder::new("Schedule", target, flexible).rate_schedule(schedule_rate_expression!(5, "minutes"))
+        .state(State::Enabled)
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"Schedule[0-9]+", "[Schedule]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

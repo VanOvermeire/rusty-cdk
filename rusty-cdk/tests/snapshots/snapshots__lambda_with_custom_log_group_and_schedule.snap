@@ -1,0 +1,103 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "Schedule": "[Schedule]",
+    "fun": "[LambdaFunction]",
+    "funRole": "[LambdaFunctionRole]",
+    "myFunLogGroup": "[LogGroup]"
+  },
+  "Resources": {
+    "[LambdaFunction]": {
+      "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
+        "Code": {
+          "S3Bucket": "some-bucket",
+          "S3Key": "[Asset]"
+        },
+        "Handler": "bootstrap",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "[LogGroup]"
+          }
+        },
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "[LambdaFunctionRole]",
+            "Arn"
+          ]
+        },
+        "Runtime": "provided.al2023",
+        "Timeout": 30
+      },
+      "Type": "AWS::Lambda::Function"
+    },
+    "[LambdaFunctionRole]": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Policies": []
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "[LogGroup]": {
+      "Properties": {
+        "LogGroupName": "my-fun-logs",
+        "RetentionInDays": 7
+      },
+      "Type": "AWS::Logs::LogGroup"
+    },
+    "[Schedule]": {
+      "Properties": {
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 2,
+          "Mode": "FLEXIBLE"
+        },
+        "ScheduleExpression": "rate(5 minutes)",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": {
+            "Fn::GetAtt": [
+              "[LambdaFunction]",
+              "Arn"
+            ]
+          },
+          "Input": "{\"value\":\"hello\"}",
+          "RoleArn": "arn:aws:iam::1234:role/ASchedulerToLambdaRole"
+        }
+      },
+      "Type": "AWS::Scheduler::Schedule"
+    }
+  }
+}
