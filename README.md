@@ -289,10 +289,7 @@ async fn tagging() {
   - And look where we need similar things
 - Improve diff
   - Show whether resource has changed
-- Ability to invoke deploy, diff and synth (?) from command line
-  - Diff is easy, deploy is doable if code produces output. But synth?
-    - One ugly (and not fail-safe) way would be to take the main.rs code and add a synth to the stack builder
-    - For now just deploy and diff
+- Ability to invoke deploy, diff and destroy from command line
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
