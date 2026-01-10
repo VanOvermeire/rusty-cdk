@@ -1,5 +1,6 @@
-use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
+use crate::util::{get_existing_template, get_stack_status, load_config};
 use aws_config::SdkConfig;
+use aws_sdk_cloudformation::error::{ProvideErrorMetadata, SdkError};
 use aws_sdk_cloudformation::types::{Capability, StackStatus, Tag};
 use aws_sdk_cloudformation::Client;
 use rusty_cdk_core::stack::{Asset, Stack};
@@ -9,9 +10,7 @@ use std::fmt::{Display, Formatter};
 use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
-use aws_sdk_cloudformation::error::{ProvideErrorMetadata, SdkError};
 use tokio::time::sleep;
-use crate::util::get_existing_template;
 
 #[derive(Debug)]
 pub enum DeployError {
@@ -95,11 +94,7 @@ impl Display for DeployError {
 /// - Service-specific permissions for resources being created
 pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) {
     let name = name.0;
-    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        // https://github.com/awslabs/aws-sdk-rust/issues/1146
-        .stalled_stream_protection(StalledStreamProtectionConfig::disabled())
-        .load()
-        .await;
+    let config = load_config().await;
 
     let assets = stack.get_assets();
     assets.iter().for_each(|a| {
@@ -125,13 +120,7 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
     }
 
     loop {
-        let status = cloudformation_client.describe_stacks().stack_name(&name).send().await;
-        let mut stacks = status
-            .expect("to get a describe stacks result")
-            .stacks
-            .expect("to have a list of stacks");
-        let first_stack = stacks.get_mut(0).expect("to find our stack");
-        let status = first_stack.stack_status.take().expect("stack to have status");
+        let status = get_stack_status(&name, &cloudformation_client).await.expect("status to be available for stack");
 
         match status {
             StackStatus::CreateComplete => {
@@ -178,7 +167,6 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
 /// - Monitoring deployment progress
 ///
 /// It returns a `Result`. In case of error, a `DeployError` is returned.
-/// It exits with code 0 on success, 1 on failure
 ///
 /// For a deployment method that shows updates and exits on failure, see `deploy`
 ///
@@ -231,11 +219,7 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
 /// - Service-specific permissions for resources being created
 pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) -> Result<(), DeployError> {
     let name = name.0;
-    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        // https://github.com/awslabs/aws-sdk-rust/issues/1146
-        .stalled_stream_protection(StalledStreamProtectionConfig::disabled())
-        .load()
-        .await;
+    let config = load_config().await;
 
     upload_assets(stack.get_assets(), &config).await?;
 
@@ -244,13 +228,7 @@ pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut
     create_or_update_stack(&name, &mut stack, &cloudformation_client).await?;
 
     loop {
-        let status = cloudformation_client.describe_stacks().stack_name(&name).send().await;
-        let mut stacks = status
-            .expect("to get a describe stacks result")
-            .stacks
-            .expect("to have a list of stacks");
-        let first_stack = stacks.get_mut(0).expect("to find our stack");
-        let status = first_stack.stack_status.take().expect("stack to have status");
+        let status = get_stack_status(&name, &cloudformation_client).await.expect("status to be available for stack");
 
         match status {
             StackStatus::CreateComplete => {

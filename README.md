@@ -287,7 +287,6 @@ async fn tagging() {
   - In which case rusty-cdk-validation would be better for macros crate...
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
-- `destroy` command?
 - Improve diff
   - Show whether resource has changed
 - Ability to invoke deploy, diff and synth (?) from command line
