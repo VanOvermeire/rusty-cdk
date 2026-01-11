@@ -1,0 +1,7 @@
+error: rate value should be a positive number bigger than 0
+ --> tests/fails/schedule_rate_zero_value.rs:4:5
+  |
+4 |     schedule_rate_expression!(0, "hours");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `schedule_rate_expression` (in Nightly builds, run with -Z macro-backtrace for more info)

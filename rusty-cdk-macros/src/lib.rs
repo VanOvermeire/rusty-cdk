@@ -1054,6 +1054,12 @@ pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
             .into_compile_error()
             .into();
     }
+    
+    if value == 0 {
+        return Error::new(Span::call_site(), "rate value should be a positive number bigger than 0")
+            .into_compile_error()
+            .into();
+    }
 
     quote!(ScheduleRateExpression(#value, #unit.to_string())).into()
 }

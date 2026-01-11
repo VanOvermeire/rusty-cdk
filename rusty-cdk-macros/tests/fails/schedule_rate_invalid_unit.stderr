@@ -1,0 +1,7 @@
+error: unit of at expression should be one of minutes,hours,days (was weeks)
+ --> tests/fails/schedule_rate_invalid_unit.rs:4:5
+  |
+4 |     schedule_rate_expression!(5, "weeks");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `schedule_rate_expression` (in Nightly builds, run with -Z macro-backtrace for more info)
