@@ -1041,7 +1041,7 @@ pub fn location_uri(input: TokenStream) -> TokenStream {
         .into()
 }
 
-const RATE_UNITS: [&str; 6] = ["minute", "minutes", "hour", "hours", "day", "days"];
+const RATE_UNITS: [&str; 3] = ["minutes", "hours", "days"];
 
 #[proc_macro]
 pub fn schedule_rate_expression(input: TokenStream) -> TokenStream {
