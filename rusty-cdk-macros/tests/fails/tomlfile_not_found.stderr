@@ -1,0 +1,5 @@
+error: did not find file `file_that_does_not_exist.toml`
+ --> tests/fails/tomlfile_not_found.rs:5:16
+  |
+5 |     toml_file!("file_that_does_not_exist.toml");
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

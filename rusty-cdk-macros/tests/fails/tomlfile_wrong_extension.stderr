@@ -1,0 +1,5 @@
+error: toml file should end with `.toml` (found `../../../README.md`)
+ --> tests/fails/tomlfile_wrong_extension.rs:5:16
+  |
+5 |     toml_file!("../../../README.md");
+  |                ^^^^^^^^^^^^^^^^^^^^
