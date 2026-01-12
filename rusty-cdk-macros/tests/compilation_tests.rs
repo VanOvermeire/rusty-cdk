@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, string_with_only_alphanumerics_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering, retry_policy_event_age, retry_policy_retries, max_flexible_time_window, schedule_rate_expression, schedule_name, schedule_cron_expression, schedule_at_expression, policy_name, string_for_secret, toml_file};
+use rusty_cdk_macros::{app_config_name, iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, string_with_only_alphanumerics_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering, retry_policy_event_age, retry_policy_retries, max_flexible_time_window, schedule_rate_expression, schedule_name, schedule_cron_expression, schedule_at_expression, policy_name, string_for_secret, toml_file};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -24,6 +24,7 @@ struct LambdaPermissionAction(pub String);
 struct LifecycleTransitionInDays(pub u16);
 struct LocationUri(pub String);
 struct AppSyncApiName(pub String);
+struct AppConfigName(pub String);
 struct ChannelNamespaceName(pub String);
 struct BucketTiering(pub String, pub u16);
 struct RetryPolicyEventAge(pub u32);
@@ -180,6 +181,11 @@ fn app_sync_api_name() {
 }
 
 #[test]
+fn app_config_name_valid() {
+    app_config_name!("my-app-config");
+}
+
+#[test]
 fn channel_namespace_name() {
     channel_namespace_name!("default");
 }
@@ -252,4 +258,3 @@ struct TomlFile(String);
 fn toml_file_valid() {
     toml_file!("examples/apigateway_lambda_dynamodb/Cargo.toml");
 }
-

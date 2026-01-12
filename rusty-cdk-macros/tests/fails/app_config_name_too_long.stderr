@@ -1,0 +1,7 @@
+error: app config name should be between 1 and 64 chars in length
+ --> tests/fails/app_config_name_too_long.rs:4:5
+  |
+4 |     app_config_name!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `app_config_name` (in Nightly builds, run with -Z macro-backtrace for more info)
