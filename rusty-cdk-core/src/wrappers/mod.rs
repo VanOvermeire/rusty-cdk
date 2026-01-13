@@ -576,36 +576,100 @@ pub struct AppSyncApiName(pub String);
 #[derive(Debug, Clone)]
 pub struct ChannelNamespaceName(pub String);
 
-/// AccessTier and Days
-/// 
+/// Specifies the access tier and the number of days until an object is moved to a specific S3 bucket tier.
+///
 /// # Recommended Usage
-/// Use the `bucket_tiering!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `bucket_tiering!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::BucketTiering;
+/// use rusty_cdk_macros::bucket_tiering;
+///
+/// let tiering = bucket_tiering!("DEEP_ARCHIVE_ACCESS", 180);
+/// ```
 #[derive(Debug, Clone)]
 pub struct BucketTiering(pub String, pub u16);
 
+/// Specifies the number of days until an S3 table record expires.
+///
+/// # Recommended Usage
+/// Use the `record_expiration_days!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct RecordExpirationDays(pub u32);
 
+/// Maximum age of an event in seconds for a retry policy for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `retry_policy_event_age!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct RetryPolicyEventAge(pub u32);
 
+/// Number of retries for a retry policy for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `retry_policy_retries!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct RetryPolicyRetries(pub u8);
 
+/// The maximum time window in minutes for a flexible time window for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `max_flexible_time_window!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct MaxFlexibleTimeWindow(pub u16);
 
+/// An `at` expression for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `schedule_at_expression!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ScheduleAtExpression;
+/// use rusty_cdk_macros::schedule_at_expression;
+///
+/// let at = schedule_at_expression!("2027-01-01T00:00:00");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ScheduleAtExpression(pub String);
 
+/// A `rate` expression for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `schedule_rate_expression!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ScheduleRateExpression;
+/// use rusty_cdk_macros::schedule_rate_expression;
+///
+/// let rate = schedule_rate_expression!(5, "minutes");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ScheduleRateExpression(pub u16, pub String);
 
+/// A `cron` expression for an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `schedule_cron_expression!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ScheduleCronExpression;
+/// use rusty_cdk_macros::schedule_cron_expression;
+///
+/// let cron = schedule_cron_expression!("0 12 * * ? *");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ScheduleCronExpression(pub String);
 
+/// Name of an EventBridge schedule.
+///
+/// # Recommended Usage
+/// Use the `schedule_name!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct ScheduleName(pub String);
 
+/// Name of an IAM policy.
+///
+/// # Recommended Usage
+/// Use the `policy_name!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct PolicyName(pub String);
