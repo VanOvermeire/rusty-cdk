@@ -359,7 +359,7 @@ pub struct LogGroupName(pub String);
 /// # Validation Rules (when using the macro)
 /// - Must contain only lowercase letters, numbers, periods (.), and hyphens (-)
 /// - No uppercase letters are allowed
-/// - Bucket name must be globally unique and available (verified at compile time)
+/// - Bucket name must be globally unique and available (verified at compile time by `bucket_name!`)
 /// - Must be between 3 and 63 characters long
 ///
 /// # Recommended Usage

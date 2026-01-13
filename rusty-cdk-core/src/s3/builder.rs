@@ -1,5 +1,7 @@
 use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
-use crate::iam::{CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, Statement, StatementBuilder};
+use crate::iam::{
+    CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, Statement, StatementBuilder,
+};
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
@@ -12,13 +14,16 @@ use crate::s3::{
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
-use crate::shared::{HttpMethod, Protocol};
 use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
+use crate::shared::{HttpMethod, Protocol};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, PolicyName, RecordExpirationDays, S3LifecycleObjectSizes, Timeout};
+use crate::wrappers::{
+    BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, PolicyName, RecordExpirationDays,
+    S3LifecycleObjectSizes, Timeout,
+};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
@@ -331,6 +336,9 @@ impl BucketBuilder<StartState> {
 }
 
 impl<T: BucketBuilderState> BucketBuilder<T> {
+    /// Sets the name of the bucket.
+    ///
+    /// The bucket name must be globally unique.
     pub fn name(self, name: BucketName) -> Self {
         Self {
             name: Some(name.0),
@@ -338,6 +346,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Enables or disables attribute-based access control (ABAC) for the bucket.
     pub fn abac_status(self, abac_status: AbacStatus) -> Self {
         Self {
             abac_status: Some(abac_status.into()),
@@ -345,6 +354,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Enables or disables S3 Transfer Acceleration for the bucket.
     pub fn acceleration_status(self, acceleration_status: AccelerationStatus) -> Self {
         Self {
             acceleration_status: Some(acceleration_status.into()),
@@ -352,6 +362,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures metadata for the bucket.
     pub fn metadata_configuration(self, config: MetadataConfiguration) -> Self {
         Self {
             metadata_configuration: Some(config),
@@ -359,6 +370,9 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures versioning for the bucket.
+    ///
+    /// Once enabled, versioning cannot be disabled, only suspended.
     pub fn versioning_configuration(self, config: VersioningConfiguration) -> Self {
         Self {
             versioning_configuration: Some(config),
@@ -366,6 +380,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures lifecycle rules for the bucket.
     pub fn lifecycle_configuration(self, config: LifecycleConfiguration) -> Self {
         Self {
             lifecycle_configuration: Some(config),
@@ -373,6 +388,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures the public access block for the bucket.
     pub fn public_access_block_configuration(self, access: PublicAccessBlockConfiguration) -> Self {
         Self {
             access: Some(access),
@@ -380,6 +396,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Configures server-side encryption for the bucket.
     pub fn encryption(self, encryption: Encryption) -> Self {
         Self {
             bucket_encryption: Some(encryption),
@@ -387,6 +404,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Sets the update replace policy and deletion policy for the bucket
     pub fn update_replace_and_deletion_policy(self, update_replace_policy: UpdateReplacePolicy, deletion_policy: DeletionPolicy) -> Self {
         Self {
             deletion_policy: Some(deletion_policy.into()),
@@ -395,6 +413,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         }
     }
 
+    /// Adds an intelligent tiering configuration to the S3 bucket
     pub fn add_intelligent_tiering(mut self, tiering: IntelligentTieringConfiguration) -> Self {
         if let Some(mut config) = self.intelligent_tiering_configurations {
             config.push(tiering);
@@ -405,6 +424,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         self
     }
 
+    /// Adds a notification destination to the S3 bucket
     pub fn add_notification(mut self, destination: NotificationDestination) -> Self {
         match destination {
             NotificationDestination::Lambda(l, e) => self.bucket_notification_lambda_destinations.push((l.get_arn(), e.into())),
@@ -535,7 +555,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             if let Some(additional) = self.additional_website_policy_statements {
                 statements.extend(additional);
             }
-            
+
             let policy_doc = PolicyDocumentBuilder::new(statements).build();
             let bucket_policy_id = Id::generate_id(&self.id, "S3Policy");
             let s3_policy = BucketPolicyBuilder::new(&bucket_policy_id, &bucket, policy_doc).build(stack_builder);
@@ -707,9 +727,9 @@ impl BucketBuilder<WebsiteState> {
             ..self
         }
     }
-    
+
     /// Additional statements that will be added to the bucket policy.
-    /// 
+    ///
     /// The bucket policy will by default allow GETs from anywhere.
     pub fn custom_bucket_policy_statements(self, statements: Vec<Statement>) -> Self {
         Self {
