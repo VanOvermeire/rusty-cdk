@@ -10,7 +10,6 @@ use std::time::Duration;
 use crate::type_state;
 use crate::wrappers::LambdaPermissionAction;
 
-// TODO builder for websocket stuff
 // TODO auth, api keys also still to do
 
 struct RouteInfo {
@@ -97,16 +96,16 @@ impl ApiGatewayV2Builder<StartState> {
         }
     }
 
-    pub fn websocket(self) -> ApiGatewayV2Builder<WebsocketState> {
+    pub fn websocket<T: Into<String>>(self, route_selection_expression: T) -> ApiGatewayV2Builder<WebsocketState> {
         ApiGatewayV2Builder {
             phantom_data: Default::default(),
             id: self.id,
             name: self.name,
             protocol_type: Some("WEBSOCKET".to_string()),
+            route_selection_expression: Some(route_selection_expression.into()),
             disable_execute_api_endpoint: self.disable_execute_api_endpoint,
             route_info: self.route_info,
             disable_schema_validation: self.disable_schema_validation,
-            route_selection_expression: self.route_selection_expression,
             cors_configuration: None,
         }
     }
@@ -143,17 +142,11 @@ impl ApiGatewayV2Builder<HttpState> {
         self.build_internal(stack_builder)
     }
 }
+
 impl ApiGatewayV2Builder<WebsocketState> {
     pub fn disable_schema_validation(self, disable: bool) -> Self {
         Self {
             disable_schema_validation: Some(disable),
-            ..self
-        }
-    }
-
-    pub fn route_selection_expression(self, expression: String) -> Self {
-        Self {
-            route_selection_expression: Some(expression),
             ..self
         }
     }
@@ -210,6 +203,8 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
         let stage_resource_id = Resource::generate_id("HttpApiStage");
         let stage_id = Id::generate_id(&self.id, "Stage");
 
+        let protocol_type = self.protocol_type.expect("protocol type should be present, enforced by builder");
+
         self
             .route_info
             .into_iter()
@@ -250,7 +245,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
                     properties: ApiGatewayV2IntegrationProperties {
                         api_id: get_ref(&api_resource_id),
                         integration_type: "AWS_PROXY".to_string(),
-                        payload_format_version: Some("2.0".to_string()),
+                        payload_format_version: if &protocol_type == "HTTP" { Some("2.0".to_string()) } else { Some("1.0".to_string()) },
                         integration_uri: Some(get_arn(&info.resource_id)),
                         // TODO allow passing these
                         content_handling_strategy: None, // only for websocket
@@ -293,7 +288,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
             r#type: "AWS::ApiGatewayV2::Stage".to_string(),
             properties: ApiGatewayV2StageProperties {
                 api_id: get_ref(&api_resource_id),
-                stage_name: "$default".to_string(),
+                stage_name: if &protocol_type == "HTTP" { "$default".to_string() } else { "prod".to_string() }, // in the future, expose this
                 auto_deploy: true,
                 default_route_settings: None,
                 route_settings: None,
@@ -306,7 +301,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
             r#type: "AWS::ApiGatewayV2::Api".to_string(),
             properties: ApiGatewayV2ApiProperties {
                 name: self.name,
-                protocol_type: self.protocol_type.expect("protocol type should be present, enforced by builder"),
+                protocol_type,
                 disable_execute_api_endpoint: self.disable_execute_api_endpoint,
                 disable_schema_validation: self.disable_schema_validation,
                 cors_configuration: self.cors_configuration,

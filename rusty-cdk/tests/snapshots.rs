@@ -340,6 +340,46 @@ fn lambda_with_api_gateway() {
 }
 
 #[test]
+fn lambda_with_websocket_api_gateway() {
+    let mut stack_builder = StackBuilder::new();
+
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let bucket = get_bucket();
+
+    let (fun, _role, _log_group) = FunctionBuilder::new("myFun", Architecture::ARM64, memory, timeout)
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .build(&mut stack_builder);
+
+    ApiGatewayV2Builder::new("WebSocketGW", "my-websocket-api")
+        .websocket("$request.body.action")
+        .add_route_lambda("handle", &fun)
+        .build(&mut stack_builder);
+
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"HttpApiStage[0-9]+", "[HttpApiStage]"),
+            (r"HttpApiRoute[0-9]+", "[HttpApiRoute]"),
+            (r"HttpApiIntegration[0-9]+", "[HttpApiIntegration]"),
+            (r"HttpApiGateway[0-9]+", "[HttpApiGateway]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
 fn lambda_with_dynamodb() {
     let mut stack_builder = StackBuilder::new();
 
