@@ -287,9 +287,9 @@ async fn tagging() {
   - In which case rusty-cdk-validation would be better for macros crate...
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
+- Ability to invoke deploy, diff and destroy from command line
 - Improve diff
   - Show whether resource has changed
-- Ability to invoke deploy, diff and destroy from command line
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
@@ -299,4 +299,5 @@ async fn tagging() {
 - GitHub actions
   - Testing for several platforms
   - Semver checks
+  - Publishing
 - Do some refactoring/splitting up of files

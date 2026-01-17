@@ -209,10 +209,7 @@ pub enum NormalTarget<'a> {
 }
 
 impl TargetBuilder<TargetStartState> {
-    /// Target that accepts any string input. This is all targets *except*
-    /// - Lambda
-    /// - Step Functions
-    /// - EventBridge
+    /// Target that accepts any string input. This is all targets **except** Lambda, Step Functions, and EventBridge
     pub fn new_normal_target(target: NormalTarget, role_arn: Value) -> TargetBuilder<NormalTargetState> {
         let arn = match target {
             NormalTarget::Sqs(r) => r.get_arn(),
