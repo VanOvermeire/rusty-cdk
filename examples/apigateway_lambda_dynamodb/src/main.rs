@@ -38,6 +38,7 @@ async fn main() {
         .build(&mut stack_builder);
  
     ApiGatewayV2Builder::new("myAGW", "exampleGW")
+        .http()
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);

@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
 use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM, AWS_PARTITION_PSEUDO_PARAM, AWS_REGION_PSEUDO_PARAM};
 use crate::lambda::{FunctionRef, PermissionBuilder};
@@ -6,12 +7,11 @@ use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
 use std::time::Duration;
+use crate::type_state;
 use crate::wrappers::LambdaPermissionAction;
 
-// most of the websocket stuff left out, some things specific to http (cors), others for websocket (RouteSelectionExpression)
-// auth also still to do
-
-// TODO api keys (and should check existence of the key? and actually value also has to be unique, but is it ok to test that?)
+// TODO builder for websocket stuff
+// TODO auth, api keys also still to do
 
 struct RouteInfo {
     lambda_id: Id,
@@ -19,6 +19,13 @@ struct RouteInfo {
     method: Option<HttpMethod>,
     resource_id: String,
 }
+
+type_state!(
+    ApiGatewayV2APIState,
+    StartState,
+    HttpState,
+    WebsocketState,
+);
 
 /// Builder for API Gateway V2 HTTP APIs.
 ///
@@ -39,59 +46,78 @@ struct RouteInfo {
 /// let function = unimplemented!("create a function");
 ///
 /// let (api, stage) = ApiGatewayV2Builder::new("my-api", "MyHttpApi")
+///     .http()
 ///     .add_route_lambda("/hello", HttpMethod::Get, &function)
 ///     .add_route_lambda("/world", HttpMethod::Post, &function)
 ///     .build(&mut stack_builder);
 /// ```
-pub struct ApiGatewayV2Builder {
+pub struct ApiGatewayV2Builder<T: ApiGatewayV2APIState> {
+    phantom_data: PhantomData<T>,
     id: Id,
     name: Option<String>,
+    protocol_type: Option<String>,
     disable_execute_api_endpoint: Option<bool>,
+    disable_schema_validation: Option<bool>,
     cors_configuration: Option<CorsConfiguration>,
     route_info: Vec<RouteInfo>,
+    route_selection_expression: Option<String>,
 }
 
-impl ApiGatewayV2Builder {
+impl ApiGatewayV2Builder<StartState> {
     /// Creates a new API Gateway V2 HTTP API builder.
     ///
     /// # Arguments
     /// * `id` - Unique identifier for the API Gateway
     /// * `name` - Name of the API Gateway
-    pub fn new<T: Into<String>>(id: &str, name: T) -> Self {
+    pub fn new<T: Into<String>>(id: &str, name: T) -> ApiGatewayV2Builder<StartState> {
         Self {
+            phantom_data: Default::default(),
             id: Id(id.to_string()),
-            name: Some(name.into()), // TODO name is required when not OpenAPI (so currently always)
+            name: Some(name.into()), // name is required when not OpenAPI (so currently always)
+            protocol_type: None,
             disable_execute_api_endpoint: None,
+            disable_schema_validation: None,
             cors_configuration: None,
+            route_selection_expression: None,
             route_info: vec![],
         }
     }
 
-    pub fn disable_execute_api_endpoint(self, disable_api_endpoint: bool) -> Self {
-        Self {
-            disable_execute_api_endpoint: Some(disable_api_endpoint),
-            ..self
+    pub fn http(self) -> ApiGatewayV2Builder<HttpState> {
+        ApiGatewayV2Builder {
+            phantom_data: Default::default(),
+            id: self.id,
+            name: self.name,
+            protocol_type: Some("HTTP".to_string()),
+            disable_execute_api_endpoint: self.disable_execute_api_endpoint,
+            cors_configuration: self.cors_configuration,
+            route_info: self.route_info,
+            disable_schema_validation: None,
+            route_selection_expression: None,
         }
     }
 
+    pub fn websocket(self) -> ApiGatewayV2Builder<WebsocketState> {
+        ApiGatewayV2Builder {
+            phantom_data: Default::default(),
+            id: self.id,
+            name: self.name,
+            protocol_type: Some("WEBSOCKET".to_string()),
+            disable_execute_api_endpoint: self.disable_execute_api_endpoint,
+            route_info: self.route_info,
+            disable_schema_validation: self.disable_schema_validation,
+            route_selection_expression: self.route_selection_expression,
+            cors_configuration: None,
+        }
+    }
+}
+
+impl ApiGatewayV2Builder<HttpState> {
     pub fn cors_configuration(self, config: CorsConfiguration) -> Self {
         Self {
             cors_configuration: Some(config),
             ..self
         }
-    }
-
-    /// Adds a default route that catches all requests not matching other routes.
-    ///
-    /// Automatically creates the integration and Lambda permission.
-    pub fn add_default_route_lambda(mut self, lambda: &FunctionRef) -> Self {
-        self.route_info.push(RouteInfo {
-            lambda_id: lambda.get_id().clone(),
-            path: "$default".to_string(),
-            method: None,
-            resource_id: lambda.get_resource_id().to_string(),
-        });
-        Self { ..self }
     }
 
     /// Adds a route for a specific HTTP method and path.
@@ -110,7 +136,71 @@ impl ApiGatewayV2Builder {
         Self { ..self }
     }
 
-    pub fn build(
+    pub fn build(self, stack_builder: &mut StackBuilder) -> (
+        ApiGatewayV2ApiRef,
+        ApiGatewayV2StageRef,
+    ) {
+        self.build_internal(stack_builder)
+    }
+}
+impl ApiGatewayV2Builder<WebsocketState> {
+    pub fn disable_schema_validation(self, disable: bool) -> Self {
+        Self {
+            disable_schema_validation: Some(disable),
+            ..self
+        }
+    }
+
+    pub fn route_selection_expression(self, expression: String) -> Self {
+        Self {
+            route_selection_expression: Some(expression),
+            ..self
+        }
+    }
+
+    /// Adds a route for a specific route key.
+    ///
+    /// Automatically creates the integration and Lambda permission.
+    pub fn add_route_lambda<T: Into<String>>(mut self, route_key: T, lambda: &FunctionRef) -> Self {
+        self.route_info.push(RouteInfo {
+            lambda_id: lambda.get_id().clone(),
+            path: route_key.into(),
+            method: None,
+            resource_id: lambda.get_resource_id().to_string(),
+        });
+        Self { ..self }
+    }
+    
+    pub fn build(self, stack_builder: &mut StackBuilder) -> (
+        ApiGatewayV2ApiRef,
+        ApiGatewayV2StageRef,
+    ) {
+        self.build_internal(stack_builder)
+    }
+}
+
+impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
+    pub fn disable_execute_api_endpoint(self, disable_api_endpoint: bool) -> Self {
+        Self {
+            disable_execute_api_endpoint: Some(disable_api_endpoint),
+            ..self
+        }
+    }
+
+    /// Adds a default route that catches all requests not matching other routes.
+    ///
+    /// Automatically creates the integration and Lambda permission.
+    pub fn add_default_route_lambda(mut self, lambda: &FunctionRef) -> Self {
+        self.route_info.push(RouteInfo {
+            lambda_id: lambda.get_id().clone(),
+            path: "$default".to_string(),
+            method: None,
+            resource_id: lambda.get_resource_id().to_string(),
+        });
+        Self { ..self }
+    }
+
+    fn build_internal(
         self, stack_builder: &mut StackBuilder
     ) -> (
         ApiGatewayV2ApiRef,
@@ -137,21 +227,21 @@ impl ApiGatewayV2Builder {
                     get_arn(&info.resource_id),
                     "apigateway.amazonaws.com".to_string(),
                 )
-                .source_arn(join(
-                    "",
-                    vec![
-                        Value::String("arn:".to_string()),
-                        get_ref(AWS_PARTITION_PSEUDO_PARAM),
-                        Value::String(":execute-api:".to_string()),
-                        get_ref(AWS_REGION_PSEUDO_PARAM),
-                        Value::String(":".to_string()),
-                        get_ref(AWS_ACCOUNT_PSEUDO_PARAM),
-                        Value::String(":".to_string()),
-                        get_ref(&api_resource_id),
-                        Value::String(format!("*/*{}", info.path)),
-                    ],
-                ))
-                .build(stack_builder);
+                    .source_arn(join(
+                        "",
+                        vec![
+                            Value::String("arn:".to_string()),
+                            get_ref(AWS_PARTITION_PSEUDO_PARAM),
+                            Value::String(":execute-api:".to_string()),
+                            get_ref(AWS_REGION_PSEUDO_PARAM),
+                            Value::String(":".to_string()),
+                            get_ref(AWS_ACCOUNT_PSEUDO_PARAM),
+                            Value::String(":".to_string()),
+                            get_ref(&api_resource_id),
+                            Value::String(format!("*/*{}", info.path)),
+                        ],
+                    ))
+                    .build(stack_builder);
 
                 let integration = ApiGatewayV2Integration {
                     id: route_integration_id,
@@ -162,7 +252,9 @@ impl ApiGatewayV2Builder {
                         integration_type: "AWS_PROXY".to_string(),
                         payload_format_version: Some("2.0".to_string()),
                         integration_uri: Some(get_arn(&info.resource_id)),
-                        integration_method: None,
+                        // TODO allow passing these
+                        content_handling_strategy: None, // only for websocket
+                        integration_method: None, // only for websocket - set to post for lambda integration
                         passthrough_behavior: None,
                         request_parameters: None,
                         request_templates: None,
@@ -194,7 +286,7 @@ impl ApiGatewayV2Builder {
                 };
                 stack_builder.add_resource(route);
             });
-        
+
         stack_builder.add_resource(ApiGatewayV2Stage {
             id: stage_id,
             resource_id: stage_resource_id.clone(),
@@ -214,9 +306,11 @@ impl ApiGatewayV2Builder {
             r#type: "AWS::ApiGatewayV2::Api".to_string(),
             properties: ApiGatewayV2ApiProperties {
                 name: self.name,
-                protocol_type: "HTTP".to_string(),
+                protocol_type: self.protocol_type.expect("protocol type should be present, enforced by builder"),
                 disable_execute_api_endpoint: self.disable_execute_api_endpoint,
+                disable_schema_validation: self.disable_schema_validation,
                 cors_configuration: self.cors_configuration,
+                route_selection_expression: self.route_selection_expression,
             },
         });
 

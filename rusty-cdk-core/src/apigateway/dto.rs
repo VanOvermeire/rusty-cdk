@@ -26,8 +26,15 @@ pub struct ApiGatewayV2ApiProperties {
     pub(super) protocol_type: String,
     #[serde(rename = "DisableExecuteApiEndpoint", skip_serializing_if = "Option::is_none")]
     pub(super) disable_execute_api_endpoint: Option<bool>,
+    #[serde(rename = "DisableSchemaValidation", skip_serializing_if = "Option::is_none")]
+    pub(super) disable_schema_validation: Option<bool>,
     #[serde(rename = "CorsConfiguration", skip_serializing_if = "Option::is_none")]
     pub(super) cors_configuration: Option<CorsConfiguration>,
+    #[serde(rename = "RouteSelectionExpression", skip_serializing_if = "Option::is_none")]
+    pub(super) route_selection_expression: Option<String>,
+
+    // #[serde(rename = "ApiKeySelectionExpression", skip_serializing_if = "Option::is_none")]
+    // pub(super) api_key_selection_expression: String // $request.header.x-api-key OR $context.authorizer.usageIdentifierKey
 }
 
 #[derive(Debug, Serialize)]
@@ -75,6 +82,14 @@ pub struct ApiGatewayV2StageProperties {
     pub(super) route_settings: Option<Value>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct RouteSettings {
+    #[serde(rename = "ThrottlingBurstLimit", skip_serializing_if = "Option::is_none")]
+    pub(super) throttling_burst_limit: Option<u32>,
+    #[serde(rename = "ThrottlingRateLimit", skip_serializing_if = "Option::is_none")]
+    pub(super) throttling_rate_limit: Option<f64>,
+}
+
 ref_struct!(ApiGatewayV2IntegrationRef);
 
 #[derive(Debug, Serialize)]
@@ -94,12 +109,14 @@ dto_methods!(ApiGatewayV2Integration);
 pub struct ApiGatewayV2IntegrationProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,
+    #[serde(rename = "ContentHandlingStrategy", skip_serializing_if = "Option::is_none")]
+    pub(super) content_handling_strategy: Option<String>,
     #[serde(rename = "IntegrationType")]
     pub(super) integration_type: String,
-    #[serde(rename = "CredentialsArn", skip_serializing_if = "Option::is_none")]
-    pub(super) integration_method: Option<String>,
     #[serde(rename = "IntegrationUri", skip_serializing_if = "Option::is_none")]
     pub(super) integration_uri: Option<Value>,
+    #[serde(rename = "IntegrationMethod", skip_serializing_if = "Option::is_none")]
+    pub(super) integration_method: Option<String>,
     #[serde(rename = "PassthroughBehavior", skip_serializing_if = "Option::is_none")]
     pub(super) passthrough_behavior: Option<String>,
     #[serde(rename = "PayloadFormatVersion", skip_serializing_if = "Option::is_none")]
@@ -112,6 +129,9 @@ pub struct ApiGatewayV2IntegrationProperties {
     pub(super) response_parameters: Option<Value>,
     #[serde(rename = "TimeoutInMillis", skip_serializing_if = "Option::is_none")]
     pub(super) timeout_in_millis: Option<u32>,
+
+    // #[serde(rename = "IntegrationSubtype", skip_serializing_if = "Option::is_none")]
+    // pub(super) integration_subtype: Option<String>, // only for http api aws proxy
 }
 
 ref_struct!(ApiGatewayV2RouteRef);
@@ -134,15 +154,13 @@ pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,
     #[serde(rename = "RouteKey")]
-    pub(super) route_key: String,
+    pub(super) route_key: String, // match with value for websocket api
     #[serde(rename = "Target", skip_serializing_if = "Option::is_none")]
     pub(super) target: Option<Value>,
+
+    // #[serde(rename = "ApiKeyRequired", skip_serializing_if = "Option::is_none")]
+    // pub(super) api_key_required: Option<bool>, // only for websocket
+    // #[serde(rename = "OperationName", skip_serializing_if = "Option::is_none")]
+    // pub(super) operation_name: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct RouteSettings {
-    #[serde(rename = "ThrottlingBurstLimit", skip_serializing_if = "Option::is_none")]
-    pub(super) throttling_burst_limit: Option<u32>,
-    #[serde(rename = "ThrottlingRateLimit", skip_serializing_if = "Option::is_none")]
-    pub(super) throttling_rate_limit: Option<f64>,
-}

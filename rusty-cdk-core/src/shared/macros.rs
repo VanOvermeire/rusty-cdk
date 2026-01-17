@@ -1,3 +1,4 @@
+/// Generated some methods that all resources have by passing in the resource name
 #[macro_export]
 macro_rules! dto_methods {
     ($name:ident) => {
@@ -15,6 +16,8 @@ macro_rules! dto_methods {
     };
 }
 
+/// Generated a ref struct, which is used to reference a given resource when you need it as a dependency of some other resource.
+/// To allow the other resources to depend on this one, the ref struct has methods for retrieving the Ref, ARN, and other attributes.
 #[macro_export]
 macro_rules! ref_struct {
     ($name:ident) => {
@@ -54,8 +57,11 @@ macro_rules! ref_struct {
     };
 }
 
-// most of the time, resource id is enough
-// but lambda functions, for example, needs the `id` field for creating some custom ids used by API Gateway and subscriptions
+/// Generated a ref struct, which is used to reference a given resource when you need it as a dependency of some other resource.
+/// To allow the other resources to depend on this one, the ref struct has methods for retrieving the Ref, ARN, and other attributes.
+/// 
+/// This macro also generates a method to retrieve the `id` field of the original resource, which is sometimes needed when generating custom ids based on a pre-existing id.
+/// For example, SNS subscriptions have Lambdas as a subscription destination. SNS generates an additional resource for the subscription, with an id based on the Lambda id.
 #[macro_export]
 macro_rules! ref_struct_with_id_methods {
     ($name:ident) => {
@@ -101,6 +107,8 @@ macro_rules! ref_struct_with_id_methods {
     };
 }
 
+/// Pass in the trait name, followed by names for the state structs that should implement it
+/// Values separated by commas
 #[macro_export]
 macro_rules! type_state {
     ($state_trait:ident,$($structs:ident,)*) => {
