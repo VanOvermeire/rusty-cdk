@@ -1,0 +1,7 @@
+error: default root object should not start with /
+ --> tests/fails/default_root_object_leading_slash.rs:4:5
+  |
+4 |     default_root_object!("/index.html");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `default_root_object` (in Nightly builds, run with -Z macro-backtrace for more info)

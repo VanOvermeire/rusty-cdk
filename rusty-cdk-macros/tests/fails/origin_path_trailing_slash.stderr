@@ -1,0 +1,7 @@
+error: origin path should start with a / and should not end with / (but got /trailing-slash/)
+ --> tests/fails/origin_path_trailing_slash.rs:4:5
+  |
+4 |     origin_path!("/trailing-slash/");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `origin_path` (in Nightly builds, run with -Z macro-backtrace for more info)

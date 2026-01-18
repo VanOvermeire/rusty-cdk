@@ -1,0 +1,5 @@
+error: value should only contain alphanumeric characters and ['_', '-']
+ --> tests/fails/string_with_only_alphanumerics_underscores_and_hyphens_invalid_chars.rs:4:61
+  |
+4 |     string_with_only_alphanumerics_underscores_and_hyphens!("with spaces");
+  |                                                             ^^^^^^^^^^^^^
