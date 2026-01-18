@@ -6,6 +6,20 @@ Rather, it is an attempt to make Infrastructure as Code safer and easier to use 
 
 Think of it as a safe wrapper around `unsafe` CloudFormation. Also see [this blog post](https://medium.com/@sam.van.overmeire/rusty-cdk-an-infrastructure-as-code-experiment-c10ed7804a2a).
 
+## Table of Contents
+
+- [Usage](#usage)
+- [Concepts](#concepts)
+- [Motivation](#motivation)
+  - [Motivating Example](#motivating-example)
+  - [Approach](#approach)
+  - [Usage of CloudFormation](#usage-of-cloudformation)
+  - [IDs are similar to the AWS CDK](#ids-are-similar-to-the-aws-cdk)
+- [Supported services](#supported-services)
+  - [Available builders](#available-builders)
+- [FAQ](#faq)
+- [TODO](#todo)
+
 ## Usage
 
 Install using cargo:
@@ -392,6 +406,8 @@ async fn tagging() {
 
 ## TODO
 
+- Extend the concepts sections with
+  - ids
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
 - Ability to invoke deploy, diff and destroy from command line
