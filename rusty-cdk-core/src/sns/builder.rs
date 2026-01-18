@@ -212,7 +212,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             fifo_throughput_scope: self.fifo_throughput_scope.map(Into::into),
         };
 
-        let topic_ref = TopicRef::new(self.id.clone(), topic_resource_id.to_string());
+        let topic_ref = TopicRef::internal_new(self.id.clone(), topic_resource_id.to_string());
         
         if let Some(mut policy) = self.topic_policy_doc {
             for statement in &mut policy.statements {
@@ -348,7 +348,7 @@ impl TopicPolicyBuilder {
             },
         });
         
-        TopicPolicyRef::new(self.id, resource_id)
+        TopicPolicyRef::internal_new(self.id, resource_id)
     }
 }
 

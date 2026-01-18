@@ -13,6 +13,7 @@ readme = "../README.md"
 [dependencies]
 rusty-cdk-core = { version = "0.6.0", path = "../rusty-cdk-core" }
 rusty-cdk-macros = { version = "0.6.0", path = "../rusty-cdk-macros" }
+rusty-cdk-lookups = { version = "0.6.0", path = "../rusty-cdk-lookups" }
 tokio = { version = "1", features = ["full"] }
 aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
 aws-sdk-cloudformation = "1.90.0"

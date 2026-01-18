@@ -336,7 +336,7 @@ impl CachePolicyBuilder {
                 },
             },
         });
-        CachePolicyRef::new(resource_id)
+        CachePolicyRef::internal_new(resource_id)
     }
 }
 
@@ -892,7 +892,7 @@ impl OriginAccessControlBuilder {
                 },
             },
         });
-        OriginAccessControlRef::new(resource_id)
+        OriginAccessControlRef::internal_new(resource_id)
     }
 }
 
@@ -1116,6 +1116,6 @@ impl<T: DistributionState> DistributionBuilder<T> {
             properties: DistributionProperties { config },
         });
 
-        DistributionRef::new(resource_id)
+        DistributionRef::internal_new(resource_id)
     }
 }

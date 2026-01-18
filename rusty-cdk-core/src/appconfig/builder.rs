@@ -47,7 +47,7 @@ impl ApplicationBuilder {
             properties: ApplicationProperties { name: self.name },
         });
 
-        ApplicationRef::new(resource_id)
+        ApplicationRef::internal_new(resource_id)
     }
 }
 
@@ -198,7 +198,7 @@ impl ConfigurationProfileBuilder {
             },
         });
 
-        ConfigurationProfileRef::new(resource_id)
+        ConfigurationProfileRef::internal_new(resource_id)
     }
 }
 
@@ -323,7 +323,7 @@ impl DeploymentStrategyBuilder {
             },
         });
         
-        DeploymentStrategyRef::new(resource_id)
+        DeploymentStrategyRef::internal_new(resource_id)
     }
 }
 
@@ -372,6 +372,6 @@ impl EnvironmentBuilder {
             },
         });
         
-        EnvironmentRef::new(resource_id)
+        EnvironmentRef::internal_new(resource_id)
     }
 }

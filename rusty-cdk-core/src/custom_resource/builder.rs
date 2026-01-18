@@ -170,7 +170,7 @@ impl BucketNotificationBuilder {
 
     pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> BucketNotificationRef {
         let resource_id = Resource::generate_id("BucketNotification");
-        let bucket_notification_ref = BucketNotificationRef::new(resource_id.to_string());
+        let bucket_notification_ref = BucketNotificationRef::internal_new(resource_id.to_string());
 
         let config = if let Some(arn) = self.lambda_arn {
             NotificationConfiguration {

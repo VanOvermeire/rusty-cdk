@@ -37,7 +37,7 @@ impl AppSyncApiBuilder {
         };
         stack_builder.add_resource(api);
 
-        AppSyncApiRef::new(resource_id)
+        AppSyncApiRef::internal_new(resource_id)
     }
 }
 
@@ -278,6 +278,6 @@ impl ChannelNamespaceBuilder {
         };
         stack_builder.add_resource(channel);
 
-        ChannelNamespaceRef::new(resource_id)
+        ChannelNamespaceRef::internal_new(resource_id)
     }
 }

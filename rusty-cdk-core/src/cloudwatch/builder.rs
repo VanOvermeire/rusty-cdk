@@ -102,6 +102,6 @@ impl LogGroupBuilder {
             properties,
         });
         
-        LogGroupRef::new(resource_id)
+        LogGroupRef::internal_new(resource_id)
     }
 }

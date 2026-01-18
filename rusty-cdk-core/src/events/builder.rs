@@ -84,7 +84,7 @@ impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
             },
         });
         
-        ScheduleRef::new(resource_id)
+        ScheduleRef::internal_new(resource_id)
     }
 }
 

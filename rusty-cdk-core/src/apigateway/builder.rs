@@ -309,8 +309,8 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
             },
         });
 
-        let stage = ApiGatewayV2StageRef::new(stage_resource_id);
-        let api = ApiGatewayV2ApiRef::new(api_resource_id);
+        let stage = ApiGatewayV2StageRef::internal_new(stage_resource_id);
+        let api = ApiGatewayV2ApiRef::internal_new(api_resource_id);
 
         (api, stage)
     }

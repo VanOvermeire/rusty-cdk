@@ -255,7 +255,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
             update_delete_policy_dto: UpdateDeletePolicyDTO { deletion_policy: self.deletion_policy, update_replace_policy: self.update_replace_policy },
         });
 
-        TableRef::new(resource_id)
+        TableRef::internal_new(resource_id)
     }
 }
 

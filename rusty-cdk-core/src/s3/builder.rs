@@ -105,7 +105,7 @@ impl BucketPolicyBuilder {
     pub fn build(self, stack_builder: &mut StackBuilder) -> BucketPolicyRef {
         let (resource_id, policy) = self.raw_build();
         stack_builder.add_resource(policy);
-        BucketPolicyRef::new(resource_id)
+        BucketPolicyRef::internal_new(resource_id)
     }
 }
 
@@ -541,7 +541,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
             },
         });
 
-        let bucket = BucketRef::new(resource_id);
+        let bucket = BucketRef::internal_new(resource_id);
 
         let policy = if website {
             // website needs a policy to allow GETs

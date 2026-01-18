@@ -317,7 +317,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             properties,
         });
 
-        let function = FunctionRef::new(self.id, function_resource_id);
+        let function = FunctionRef::internal_new(self.id, function_resource_id);
 
         (function, role, log_group)
     }
@@ -533,6 +533,6 @@ impl PermissionBuilder {
             },
         });
 
-        PermissionRef::new(self.id, permission_resource_id)
+        PermissionRef::internal_new(self.id, permission_resource_id)
     }
 }

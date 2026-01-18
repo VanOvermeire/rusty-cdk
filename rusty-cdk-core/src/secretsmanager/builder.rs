@@ -117,7 +117,7 @@ impl SecretBuilder<SelectedSecretTypeState> {
             },
         });
 
-        SecretRef::new(resource_id)
+        SecretRef::internal_new(resource_id)
     }
 }
 

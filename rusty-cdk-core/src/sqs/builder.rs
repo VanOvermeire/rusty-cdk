@@ -258,7 +258,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
         };
 
         let resource_id = Resource::generate_id("SqsQueue");
-        let queue_ref = QueueRef::new(self.id.clone(), resource_id.clone());
+        let queue_ref = QueueRef::internal_new(self.id.clone(), resource_id.clone());
         
         if let Some(mut policy) = self.queue_policy_doc {
             for statement in &mut policy.statements {
@@ -362,6 +362,6 @@ impl QueuePolicyBuilder {
             },
         });
 
-        QueuePolicyRef::new(self.id, resource_id)
+        QueuePolicyRef::internal_new(self.id, resource_id)
     }
 }

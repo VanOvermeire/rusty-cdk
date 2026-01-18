@@ -174,7 +174,7 @@ impl RoleBuilder {
             r#type: "AWS::IAM::Role".to_string(),
             properties: self.properties,
         });
-        RoleRef::new(resource_id)
+        RoleRef::internal_new(resource_id)
     }
 }
 
