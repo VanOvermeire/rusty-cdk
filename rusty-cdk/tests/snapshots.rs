@@ -2,32 +2,36 @@ use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::appconfig::{
     ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo,
 };
+use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
 use rusty_cdk_core::cloudfront::{
     CachePolicyBuilder, Cookies, DefaultCacheBehaviorBuilder, DistributionBuilder, Headers, OriginAccessControlBuilder,
     OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol,
     ViewerProtocolPolicy,
 };
+use rusty_cdk_core::cloudwatch::LogGroupBuilder;
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
-use rusty_cdk_core::iam::{
-    CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder,
-};
+use rusty_cdk_core::events::{FlexibleTimeWindowBuilder, JsonTarget, Mode, ScheduleBuilder, State, TargetBuilder};
+use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
-use rusty_cdk_core::s3::{BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration, IntelligentTieringConfigurationBuilder, IntelligentTieringStatus, InventoryTableConfigurationBuilder, JournalTableConfigurationBuilder, LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass, MetadataConfigurationBuilder, MetadataDestinationBuilder, NotificationDestination, NotificationEventType, PublicAccessBlockConfigurationBuilder, RecordExpirationBuilder, TableBucketType};
+use rusty_cdk_core::s3::{
+    BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration,
+    IntelligentTieringConfigurationBuilder, IntelligentTieringStatus, InventoryTableConfigurationBuilder, JournalTableConfigurationBuilder,
+    LifecycleConfigurationBuilder, LifecycleRuleBuilder, LifecycleRuleStatus, LifecycleRuleTransitionBuilder, LifecycleStorageClass,
+    MetadataConfigurationBuilder, MetadataDestinationBuilder, NotificationDestination, NotificationEventType,
+    PublicAccessBlockConfigurationBuilder, RecordExpirationBuilder, TableBucketType,
+};
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::HttpMethod;
+use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
 use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
-use rusty_cdk_core::sqs::{QueueBuilder};
+use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
 use serde_json::{json, Map, Value};
 use std::fs::read_to_string;
-use rusty_cdk_core::appsync::{AppSyncApiBuilder, AuthMode, AuthProviderBuilder, AuthType, ChannelNamespaceBuilder, EventConfigBuilder};
-use rusty_cdk_core::cloudwatch::LogGroupBuilder;
-use rusty_cdk_core::events::{FlexibleTimeWindowBuilder, JsonTarget, Mode, ScheduleBuilder, State, TargetBuilder};
-use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
 
 #[test]
 fn dynamodb() {
@@ -58,23 +62,22 @@ fn dynamodb() {
 #[test]
 fn bucket() {
     let mut stack_builder = StackBuilder::new();
-    BucketBuilder::new("bucket")
-        .update_replace_and_deletion_policy(UpdateReplacePolicy::Retain, DeletionPolicy::Retain)
-        .encryption(Encryption::S3Managed)
-        .lifecycle_configuration(
-            LifecycleConfigurationBuilder::new()
-                .add_rule(
-                    LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
-                        .prefix("/prefix")
-                        .add_transition(
-                            LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
-                                .transition_in_days(lifecycle_transition_in_days!(30, "Glacier"))
-                                .build(),
-                        )
+    let lifecycle_configuration = LifecycleConfigurationBuilder::new()
+        .add_rule(
+            LifecycleRuleBuilder::new(LifecycleRuleStatus::Enabled)
+                .prefix("/prefix")
+                .add_transition(
+                    LifecycleRuleTransitionBuilder::new(LifecycleStorageClass::Glacier)
+                        .transition_in_days(lifecycle_transition_in_days!(30, "Glacier"))
                         .build(),
                 )
                 .build(),
         )
+        .build();
+    BucketBuilder::new("bucket")
+        .update_replace_and_deletion_policy(UpdateReplacePolicy::Retain, DeletionPolicy::Retain)
+        .encryption(Encryption::S3Managed)
+        .lifecycle_configuration(lifecycle_configuration)
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
@@ -91,14 +94,15 @@ fn bucket() {
 #[test]
 fn website_bucket() {
     let mut stack_builder = StackBuilder::new();
+    let cors_configuration = CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build();
     BucketBuilder::new("buck")
         .name(bucket_name!("sams-great-website"))
         .website("index.html")
-        .cors_config(CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build())
+        .cors_config(cors_configuration)
         .custom_bucket_policy_statements(vec![
-                StatementBuilder::new(vec![iam_action!("s3:Put*")], Effect::Allow)
-                    .resources(vec!["*".into()])
-                    .build()
+            StatementBuilder::new(vec![iam_action!("s3:Put*")], Effect::Allow)
+                .resources(vec!["*".into()])
+                .build(),
         ])
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
@@ -150,7 +154,7 @@ fn lambda_with_custom_log_group() {
         .log_group_name_string(log_group_name!("custom-name"))
         .log_group_retention(log_retention!(90))
         .build(&mut stack_builder);
-    
+
     let mem = memory!(256);
     let timeout = timeout!(30);
     let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
@@ -421,7 +425,6 @@ fn lambda_with_dynamodb() {
     });
 }
 
-
 #[test]
 fn lambda_with_custom_log_group_and_schedule() {
     let mut stack_builder = StackBuilder::new();
@@ -447,7 +450,8 @@ fn lambda_with_custom_log_group_and_schedule() {
         .input(json!({ "value": "hello" }))
         .build();
     let flexible = FlexibleTimeWindowBuilder::new(Mode::Flexible(max_flexible_time_window!(2))).build();
-    ScheduleBuilder::new("Schedule", target, flexible).rate_schedule(schedule_rate_expression!(5, "minutes"))
+    ScheduleBuilder::new("Schedule", target, flexible)
+        .rate_schedule(schedule_rate_expression!(5, "minutes"))
         .state(State::Enabled)
         .build(&mut stack_builder);
 
@@ -762,7 +766,7 @@ fn bucket_with_notifications_to_sqs() {
 #[test]
 fn sns_with_policy() {
     let mut stack_builder = StackBuilder::new();
-    
+
     let condition = json!({
         "ArnLike": {
             "aws:SourceArn": "some-source-for-publishes"
@@ -807,11 +811,14 @@ fn sqs_with_policy() {
         ],
         Effect::Allow,
     )
-        .principal(principal)
-        .condition(condition)
-        .build();
+    .principal(principal)
+    .condition(condition)
+    .build();
     let doc = PolicyDocumentBuilder::new(vec![statement]).build();
-    QueueBuilder::new("queue").standard_queue().queue_policy(doc).build(&mut stack_builder);
+    QueueBuilder::new("queue")
+        .standard_queue()
+        .queue_policy(doc)
+        .build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();
 
@@ -829,10 +836,16 @@ fn sqs_with_policy() {
 #[test]
 fn app_sync_api() {
     let mut stack_builder = StackBuilder::new();
-    
+
     let auth_provider = AuthProviderBuilder::new(AuthType::ApiKey).build();
     let auth_mode = AuthMode::ApiKey;
-    let config = EventConfigBuilder::new(vec![auth_provider], vec![auth_mode.clone()], vec![auth_mode.clone()], vec![auth_mode.clone()]).build();
+    let config = EventConfigBuilder::new(
+        vec![auth_provider],
+        vec![auth_mode.clone()],
+        vec![auth_mode.clone()],
+        vec![auth_mode.clone()],
+    )
+    .build();
 
     let api_ref = AppSyncApiBuilder::new("API", app_sync_api_name!("planning-poker-api"))
         .event_config(config)
@@ -858,16 +871,28 @@ fn bucket_with_intelligent_tiering_and_metadata_table() {
     let mut stack_builder = StackBuilder::new();
 
     BucketBuilder::new("test-buck")
-        .add_intelligent_tiering(IntelligentTieringConfigurationBuilder::new("intelligent", IntelligentTieringStatus::Enabled, vec![bucket_tiering!("DEEP_ARCHIVE_ACCESS", 180)]).prefix("/test").build())
+        .add_intelligent_tiering(
+            IntelligentTieringConfigurationBuilder::new(
+                "intelligent",
+                IntelligentTieringStatus::Enabled,
+                vec![bucket_tiering!("DEEP_ARCHIVE_ACCESS", 180)],
+            )
+            .prefix("/test")
+            .build(),
+        )
         .metadata_configuration(
             MetadataConfigurationBuilder::new(
-                JournalTableConfigurationBuilder::new(RecordExpirationBuilder::new(Expiration::Enabled).days(record_expiration_days!(30)).build())
-                    .build()
+                JournalTableConfigurationBuilder::new(
+                    RecordExpirationBuilder::new(Expiration::Enabled)
+                        .days(record_expiration_days!(30))
+                        .build(),
+                )
+                .build(),
             )
-                .destination(MetadataDestinationBuilder::new(TableBucketType::Aws).build())
-                .inventory_table_configuration(InventoryTableConfigurationBuilder::new(ConfigurationState::Enabled)
-                    .build())
-                .build())
+            .destination(MetadataDestinationBuilder::new(TableBucketType::Aws).build())
+            .inventory_table_configuration(InventoryTableConfigurationBuilder::new(ConfigurationState::Enabled).build())
+            .build(),
+        )
         .build(&mut stack_builder);
 
     let stack = stack_builder.build().unwrap();

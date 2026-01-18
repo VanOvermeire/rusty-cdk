@@ -3,6 +3,7 @@
 ***This is not an official AWS project.***
 
 Rather, it is an attempt to make Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
+
 Think of it as a safe wrapper around `unsafe` CloudFormation. Also see [this blog post](https://medium.com/@sam.van.overmeire/rusty-cdk-an-infrastructure-as-code-experiment-c10ed7804a2a).
 
 ## Usage
@@ -11,7 +12,7 @@ Install using cargo:
 
 `cargo add rusty-cdk`
 
-Now create a stack, and add infrastructure to it by using builders. 
+Now create a stack. 
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
@@ -21,14 +22,16 @@ fn main() {
   // prepare a stack builder
   let mut stack_builder = StackBuilder::new();
   // create resource builders, and call `build` to add the resulting resources to the stack
-  let stack = stack_builder.build().expect("this stack to build"); // create the stack
-  // now `synth` the template or use `deploy` to deploy the stack
+  let stack = stack_builder.build().expect("this empty stack to build"); // create the stack
+  let synthesized = stack.synth().unwrap(); // synth the template and deploy it yourself
+  // or deploy it
 }
 ```
 
-For example, a queue:
+You can add infrastructure (resources) to it using builders.
+For example, to add a queue:
 
-```rust
+```rust,no_run
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::wrappers::*;
@@ -45,24 +48,132 @@ fn main() {
           .message_retention_period(message_retention_period!(600))
           .build(&mut stack_builder); // add it to the stack builder
   let stack = stack_builder.build().expect("this stack to build");
+  rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("SomeStackName"), stack).await; // deploy the stack
+  // or `synth` and deploy yourself
 }
 ```
 
 See a list of all available builders below.
 
-Once you've done that, you can either synthesize the stack and use any AWS tool (CLI, SDK, console) to deploy it:
+Once you've done that, you can either synthesize the stack to get the template as a string, and use an AWS tool (CLI, SDK, console) to deploy:
 
 ```rust,compile_fail
 let synthesized = stack.synth().unwrap();
+// pipe or write the output
+// if you have a Lambda, upload its zip file to the correct bucket 
 ```
 
-Or you can use the built-in `deploy` function:
+Or you can use the built-in `deploy` function, which does the uploading and deploying for you.
 
 ```rust,compile_fail
-rusty_cdk::deploy("MyStackName", stack).await;
+rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("MyStackName"), stack).await;
 ```
 
+## Concepts 
+
+At the core of this library are `stacks` and `resources`, two concepts from CloudFormation.
+
+A `stack` is a collection of `resources` that you want to deploy together. Those `resources` are pieces of AWS infrastructure (a bucket, queue, database) that you want to create. Within a stack, you can easily link `resources` together. E.g. you can pass the bucket name to as a Lambda environment variable.
+Or you can give that Lambda permission to send to an SNS topic.
+
+Despite their importance, you do not interact with `resources` directly, and you only use the `stack` directly if you want to retrieve its string (JSON) representation. Instead, you use `builders`. 
+
+The stack has a `builder`:
+
+```rust
+use rusty_cdk::stack::StackBuilder;
+
+fn main() {
+  let mut stack_builder = StackBuilder::new();
+  let stack = stack_builder.build().expect("building to work");
+  // ready to synth or deploy
+}
+```
+
+And every supported `resource` has one too. With these `builders` you create the infrastructure you need step by step.
+Once you're done, you call `build` and pass in a `StackBuilder`, at which point your `resource` is added to the stack.
+If the `build` method of `builder` does not require a `StackBuilder` argument, it is not a real resource. 
+It is properties/settings that needs to be passed to a proper resource to have effect.
+
+For example, an `S3 Bucket` can have a cors configuration. You create that configuration with a `builder` that needs no arguments.
+Once created, you pass the config to the bucket `builder`. When you're ready with configuring your bucket, you call `build` and are required to pass in the `StackBuilder`. This means the bucket is an actual `resource`. 
+
+```rust
+use rusty_cdk::stack::StackBuilder;
+use rusty_cdk_core::s3::*;
+
+fn main() {
+  let mut stack_builder = StackBuilder::new();
+
+  let cors_configuration = CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build(); // no param required
+  BucketBuilder::new("buck")
+          .name(bucket_name!("sams-great-website"))
+          .website("index.html")
+          .cors_config(cors_configuration)
+          .custom_bucket_policy_statements(vec![
+            StatementBuilder::new(vec![iam_action!("s3:Put*")], Effect::Allow)
+                    .resources(vec!["*".into()])
+                    .build(),
+          ])
+          .build(&mut stack_builder); // resource is added to the stack (builder)
+}
+```
+
+You can see that there are a lot of macro calls in the above code.
+Those macros enforce additional rules at compile time to make sure that you don't pass in any disallowed values that could cause issues during or after deployment. For example, the `bucket_name!` macro makes sure the naming requirements of S3 are obeyed, _and_ it checks that the bucket is available for creation (bucket names have to be globally unique!). Every one of these macro calls generates a simple 'wrapper' (often a `newtype`) in the background.
+In our example, the wrapper is called `BucketName`. If for some reason the macro does not work properly, you can fall back to direct use of these wrappers.
+The docs of the macros will point you to the correct wrapper.
+
+Finally, `refs`. While there is no need to interact with the `resources` directly, you do occasionally need to be able to reference them.
+For example, you might have a `Lambda` that needs the name of a `DynamoDB` table that it wants to store items in.
+To facilitate such interactions between `resources` (and to make it hard to make mistakes), every `resource` has a corresponding `ref` that offers
+methods to retrieve things like the resource ARN.
+
+In the below example, we create a `DynamoDB` table and get back a `ref` to that table. We use that `ref` to set the Lambda permissions, allowing it to read the table, and use `get_ref()` to get the name of the table, because that is what a `ref` in CloudFormation [would return for a DynamoDB table](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-dynamodb-table.html#aws-resource-dynamodb-table-return-values)
+
+```rust
+use rusty_cdk::stack::StackBuilder;
+use rusty_cdk_core::dynamodb::*;
+use rusty_cdk_core::lambda::*;
+
+fn main() {
+  let mut stack_builder = StackBuilder::new();
+
+  let read_capacity = non_zero_number!(1);
+  let write_capacity = non_zero_number!(1);
+  let key = string_with_only_alphanumerics_and_underscores!("test");
+  let table_name = string_with_only_alphanumerics_and_underscores!("example_remove");
+  // a table ref is returned
+  let the_table_ref = TableBuilder::new("Dynamo", Key::new(key, AttributeType::String))
+          .provisioned_billing()
+          .table_name(table_name)
+          .read_capacity(read_capacity)
+          .write_capacity(write_capacity)
+          .build(&mut stack_builder);
+
+  let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+  let memory = memory!(512);
+  let timeout = timeout!(30);
+  let bucket = get_bucket();
+  FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+          .add_permission(Permission::DynamoDBRead(&the_table_ref)) // we make sure our Lambda has permission to use the table
+          .code(Code::Zip(Zip::new(bucket, zip_file)))
+          .handler("bootstrap")
+          .runtime(Runtime::ProvidedAl2023)
+          .env_var(env_var_key!("TABLE_NAME"), the_table_ref.get_ref()) // and pass in the table name
+          .build(&mut stack_builder);
+}
+```
+
+If you need to get a reference to a resource outside of CloudFormation, there are macros that help you do that in a safe way as well.
+For example, to use the name or ARN of a role that you create manually in your account, you can use `get_role_ref!`.
+Alternatively, if you don't need this additional safety, you can create a `RoleRef` yourself using the `new` method.
+
 ## Motivation
+
+Why did I create this library? (Besides the fact that there are few tools for writing IAC in Rust.)
+
+### Motivating Example
 
 This below CDK code is valid at compile time. I.e., it synthesizes (`cdk synth`) to a CloudFormation template.
 
@@ -127,7 +238,7 @@ With this kind of tooling, making mistakes becomes much harder, as some mistakes
 
 The library does require you to be somewhat more explicit at times. For example, you have to pick a billing mode, as well as read and write capacity for provisioned billing. The CDK 'helps' you by setting sensible defaults (`5` in this particular case). Which can help you get up and running quickly, but is probably not what you want for any real application. Plus, the compile time guarantees should aid you just as much - if not more - in getting stuff deployed.
 
-## Approach
+### Approach
 
 This project intends to use the tools that Rust offers for ensuring infrastructure correctness at compile time.
 In some cases, Rust offers help out of the box. E.g., it has multiple number types (both signed and unsigned) that aren't falsy.
@@ -136,7 +247,7 @@ Const functions would be interesting as well, but they're too limited for the mo
 
 But because compile time checks are sometimes impossible or more challenging, there are also some stack level checks that happen at runtime. Which is why building a stack returns a `Result` that you unwrap at your own risk.
 
-## Usage of CloudFormation
+### Usage of CloudFormation
 
 Just like the AWS CDK, this project uses CloudFormation to actually create the AWS services you request (unlike Terraform which uses API calls).
 
@@ -146,7 +257,7 @@ It also has some disadvantages. One is that CloudFormation is slow, in part beca
 
 In time, the project might switch to using SDK calls, to try and make things faster as well as easier.
 
-## IDs are similar to the AWS CDK
+### IDs are similar to the AWS CDK
 
 In its core idea (create a programmatic interface for CloudFormation), some terminology and usage, this project is similar to the AWS CDK.
 And so, just like with the CDK, you should be careful with changing the ids you pass to the builders. 
@@ -281,10 +392,6 @@ async fn tagging() {
 
 ## TODO
 
-- Most refs should have an 'override' for referring to resources outside the stack
-  - In some cases, a macro could be used that the resource actually exists
-  - Separate crate? rusty-cdk-lookups
-  - In which case rusty-cdk-validation would be better for macros crate...
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
 - Ability to invoke deploy, diff and destroy from command line
@@ -301,3 +408,4 @@ async fn tagging() {
   - Semver checks
   - Publishing
 - Do some refactoring/splitting up of files
+- rusty-cdk-validation would be better name for the macros crate

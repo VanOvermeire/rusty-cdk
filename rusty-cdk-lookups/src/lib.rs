@@ -7,6 +7,11 @@ mod roles;
 mod cloudcontrol;
 mod parsing;
 
+/// Tries to retrieve role information from your AWS environment (the role ARN).
+/// This ensures that the role actually exists in your account and that your deployment will not fail.
+/// 
+/// You should pass on a unique id for the role, as well as the role name, separated by a comma: `get_role_ref!("SomeId","SomeRoleName")`
+/// 
 #[proc_macro]
 pub fn get_role_ref(input: TokenStream) -> TokenStream {
     let input: GenericInput = parse_macro_input!(input);
