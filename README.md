@@ -30,7 +30,7 @@ Now create a stack.
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
-use rusty_cdk_core::wrappers::*;
+use rusty_cdk::wrappers::*;
 
 fn main() {
   // prepare a stack builder
@@ -45,11 +45,11 @@ fn main() {
 You can add infrastructure (resources) to it using builders.
 For example, to add a queue:
 
-```rust,no_run
+```rust
 use rusty_cdk::stack::StackBuilder;
-use rusty_cdk_core::sqs::QueueBuilder;
-use rusty_cdk_core::wrappers::*;
-use rusty_cdk_macros::{delay_seconds,message_retention_period};
+use rusty_cdk::sqs::QueueBuilder;
+use rusty_cdk::wrappers::*;
+use rusty_cdk_macros::*;
 
 fn main() {
   let mut stack_builder = StackBuilder::new();
@@ -62,7 +62,7 @@ fn main() {
           .message_retention_period(message_retention_period!(600))
           .build(&mut stack_builder); // add it to the stack builder
   let stack = stack_builder.build().expect("this stack to build");
-  rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("SomeStackName"), stack).await; // deploy the stack
+  // deploy with `rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("SomeStackName"), stack).await` 
   // or `synth` and deploy yourself
 }
 ```
@@ -114,7 +114,13 @@ Once created, you pass the config to the bucket `builder`. When you're ready wit
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
-use rusty_cdk_core::s3::*;
+use rusty_cdk::dynamodb::*;
+use rusty_cdk::lambda::*;
+use rusty_cdk::wrappers::*;
+use rusty_cdk::s3::*;
+use rusty_cdk_macros::*;
+use rusty_cdk::shared::HttpMethod;
+use rusty_cdk::iam::{Effect,StatementBuilder};
 
 fn main() {
   let mut stack_builder = StackBuilder::new();
@@ -147,8 +153,11 @@ In the below example, we create a `DynamoDB` table and get back a `ref` to that 
 
 ```rust
 use rusty_cdk::stack::StackBuilder;
-use rusty_cdk_core::dynamodb::*;
-use rusty_cdk_core::lambda::*;
+use rusty_cdk::dynamodb::*;
+use rusty_cdk::lambda::*;
+use rusty_cdk::wrappers::*;
+use rusty_cdk_macros::*;
+use rusty_cdk::iam::{Permission};
 
 fn main() {
   let mut stack_builder = StackBuilder::new();
@@ -168,7 +177,9 @@ fn main() {
   let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
   let memory = memory!(512);
   let timeout = timeout!(30);
-  let bucket = get_bucket();
+  // not interested in testing bucket macro here, so use the wrapper directly
+  // if you want more safety, you should use `bucket!`
+  let bucket = Bucket("some-bucket".to_ascii_lowercase());
   FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
           .add_permission(Permission::DynamoDBRead(&the_table_ref)) // we make sure our Lambda has permission to use the table
           .code(Code::Zip(Zip::new(bucket, zip_file)))
@@ -180,7 +191,7 @@ fn main() {
 ```
 
 If you need to get a reference to a resource outside of CloudFormation, there are macros that help you do that in a safe way as well.
-For example, to use the name or ARN of a role that you create manually in your account, you can use `get_role_ref!`.
+For example, to use the name or ARN of a role that you create manually in your account, you can use `lookup_role_ref!`.
 Alternatively, if you don't need this additional safety, you can create a `RoleRef` yourself using the `new` method.
 
 ## Motivation
@@ -406,6 +417,7 @@ async fn tagging() {
 
 ## TODO
 
+- Check for places where we pass in a `Value` but should pass in a Ref
 - Extend the concepts sections with
   - ids
 - Check duplicate ids in intelligent tiering

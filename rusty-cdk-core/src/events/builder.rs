@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use serde_json::Value;
 use crate::events::{FlexibleTimeWindow, RetryPolicy, Schedule, ScheduleProperties, ScheduleRef, Target};
+use crate::iam::RoleRef;
 use crate::lambda::FunctionRef;
 use crate::shared::Id;
 use crate::sns::TopicRef;
@@ -229,14 +230,14 @@ impl TargetBuilder<TargetStartState> {
     /// - Lambda
     /// - Step Functions
     /// - EventBridge
-    pub fn new_json_target(target: JsonTarget, role_arn: Value) -> TargetBuilder<JsonTargetState> {
+    pub fn new_json_target(target: JsonTarget, schedule_role: &RoleRef) -> TargetBuilder<JsonTargetState> {
         let target_arn = match target {
             JsonTarget::Lambda(l) => l.get_arn(),
         };
         TargetBuilder {
             phantom_data: Default::default(),
             target_arn,
-            role_arn,
+            role_arn: schedule_role.get_arn(),
             input: None,
             retry_policy: None,
         }

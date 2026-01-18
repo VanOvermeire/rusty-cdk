@@ -13,7 +13,7 @@ use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
 use rusty_cdk_core::events::{FlexibleTimeWindowBuilder, JsonTarget, Mode, ScheduleBuilder, State, TargetBuilder};
-use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
+use rusty_cdk_core::iam::{CustomPermission, Effect, Permission, PolicyDocumentBuilder, PrincipalBuilder, RoleRef, StatementBuilder};
 use rusty_cdk_core::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk_core::s3::{
     BucketBuilder, ConfigurationState, CorsConfigurationBuilder, CorsRuleBuilder, Encryption, Expiration,
@@ -445,8 +445,10 @@ fn lambda_with_custom_log_group_and_schedule() {
         .log_group(&log_group)
         .build(&mut stack_builder);
 
-    let scheduler_role_from_account = Value::String("arn:aws:iam::1234:role/ASchedulerToLambdaRole".to_string());
-    let target = TargetBuilder::new_json_target(JsonTarget::Lambda(&fun), scheduler_role_from_account)
+    // direct construction of RoleRef to avoid depending on specific AWS env
+    // in most use cases, prefer the `lookup_role_ref` macro for safety and a bit of convenience  
+    let role_ref = RoleRef::new("RemoteScheduleRole", "ASchedulerToLambdaRole", "arn:aws:iam::1234:role/ASchedulerToLambdaRole");
+    let target = TargetBuilder::new_json_target(JsonTarget::Lambda(&fun), &role_ref)
         .input(json!({ "value": "hello" }))
         .build();
     let flexible = FlexibleTimeWindowBuilder::new(Mode::Flexible(max_flexible_time_window!(2))).build();
