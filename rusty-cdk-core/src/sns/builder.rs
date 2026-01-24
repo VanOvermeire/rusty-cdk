@@ -161,21 +161,21 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             ..self
         }
     }
-    
+
     pub fn kms_master_key(self, kms_key: &KeyRef) -> Self {
         Self {
             kms_master_key_id: Some(kms_key.get_ref()),
             ..self
         }
     }
-    
+
     pub fn tracing_config(self, tracing_config: TracingConfig) -> Self {
         Self {
             tracing_config: Some(tracing_config.into()),
             ..self
         }
     }
-    
+
     pub fn topic_name(self, topic_name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> Self {
         Self {
             topic_name: Some(topic_name.0),
@@ -284,7 +284,7 @@ impl TopicBuilder<FifoState> {
             ..self
         }
     }
-    
+
     pub fn fifo_throughput_scope(self, scope: FifoThroughputScope) -> TopicBuilder<FifoState> {
         Self {
             fifo_throughput_scope: Some(scope),
@@ -346,20 +346,7 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
 
     pub fn add_subscription(mut self, subscription: SubscriptionType) -> TopicBuilder<FifoStateWithSubscriptions> {
         self.add_subscription_internal(subscription);
-
-        TopicBuilder {
-            state: Default::default(),
-            id: self.id,
-            topic_name: self.topic_name,
-            content_based_deduplication: self.content_based_deduplication,
-            fifo_throughput_scope: self.fifo_throughput_scope,
-            topic_policy_doc: self.topic_policy_doc,
-            lambda_subscription_ids: self.lambda_subscription_ids,
-            display_name: self.display_name,
-            kms_master_key_id: self.kms_master_key_id,
-            archive_policy: self.archive_policy,
-            tracing_config: self.tracing_config,
-        }
+        self
     }
     
     /// Builds the FIFO topic with subscriptions and adds it to the stack.
