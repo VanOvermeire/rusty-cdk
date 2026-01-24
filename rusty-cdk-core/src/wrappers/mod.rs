@@ -673,3 +673,17 @@ pub struct ScheduleName(pub String);
 /// Use the `policy_name!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct PolicyName(pub String);
+
+/// DisplayName of an SNS topic
+/// 
+/// # Recommended Usage
+/// Use the `topic_display_name!` macro from `rusty-cdk-macros` for compile-time validation.
+#[derive(Debug, Clone)]
+pub struct TopicDisplayName(pub String);
+
+/// Archive policy of an SNS topic
+/// 
+/// # Recommended Usage
+/// Use the `archive_policy!` macro from `rusty-cdk-macros` for compile-time validation.
+#[derive(Debug, Clone)]
+pub struct ArchivePolicy(pub u16);

@@ -13,3 +13,11 @@ pub(crate) async fn find_role_ref(resource_id: &str, role_name: &str) -> Result<
         RoleRef::new(#resource_id, #identifier, #arn)
     ).into())
 }
+
+pub(crate) async fn find_kms_ref(resource_id: &str, key_id: &str) -> Result<TokenStream, Error> {
+    let ResourceInfo { identifier, arn } = lookup(key_id, "AWS::KMS::Key").await.map_err(|e| Error::new(Span::call_site(), e))?;
+    
+    Ok(quote!(
+        KeyRef::new(#resource_id, #identifier, #arn)
+    ).into())
+}

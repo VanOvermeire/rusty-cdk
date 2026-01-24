@@ -423,6 +423,11 @@ async fn tagging() {
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
 - Ability to invoke deploy, diff and destroy from command line
+- Destroy command
+  - Add force option that will delete resources that are normally retained
+    - Should empty bucket
+    - Should force delete secrets
+    - Should remove archive policy from topic
 - Improve diff
   - Show whether resource has changed
 - More help with IAM permissions

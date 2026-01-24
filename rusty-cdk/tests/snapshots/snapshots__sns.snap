@@ -9,10 +9,15 @@ expression: synthesized
   "Resources": {
     "[SnsTopic]": {
       "Properties": {
+        "ArchivePolicy": {
+          "MessageRetentionPeriod": "30"
+        },
         "ContentBasedDeduplication": true,
+        "DisplayName": "Some Display-Name",
         "FifoThroughputScope": "Topic",
         "FifoTopic": true,
-        "TopicName": "some-name.fifo"
+        "TopicName": "some-name.fifo",
+        "TracingConfig": "PassThrough"
       },
       "Type": "AWS::SNS::Topic"
     }

@@ -72,6 +72,28 @@ pub fn string_with_only_alphanumerics_and_underscores(input: TokenStream) -> Tok
     }.into()
 }
 
+/// Creates a validated `TopicDisplayName` wrapper at compile time.
+///
+/// # Validation Rules
+///
+/// - String must not be empty
+/// - Max length 100 characters
+/// - Only alphanumeric characters, hyphens, underscores, spaces and tabs are allowed
+#[proc_macro]
+pub fn topic_display_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['-', '_', ' ']).with_max_length(100);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            TopicDisplayName(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }.into()
+}
+
 /// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
 ///
 /// # Validation Rules
@@ -413,6 +435,7 @@ number_check!(record_expiration_days, 7, 2147483647, RecordExpirationDays, u32);
 number_check!(retry_policy_event_age, 60, 86400, RetryPolicyEventAge, u32);
 number_check!(retry_policy_retries, 0, 185, RetryPolicyRetries, u8);
 number_check!(max_flexible_time_window, 1, 1440, MaxFlexibleTimeWindow, u16);
+number_check!(archive_policy, 1, 365, ArchivePolicy, u16);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";

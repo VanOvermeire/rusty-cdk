@@ -5,9 +5,10 @@ use crate::shared::{Id, TOPIC_POLICY_ID_SUFFIX};
 use crate::sns::{SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens};
-use serde_json::Value;
+use crate::wrappers::{ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, TopicDisplayName};
+use serde_json::{json, Value};
 use std::marker::PhantomData;
+use crate::kms::KeyRef;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -26,6 +27,21 @@ impl From<FifoThroughputScope> for String {
         match value {
             FifoThroughputScope::Topic => "Topic".to_string(),
             FifoThroughputScope::MessageGroup => "MessageGroup".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum TracingConfig {
+    PassThrough,
+    Active,
+}
+
+impl From<TracingConfig> for String {
+    fn from(value: TracingConfig) -> Self {
+        match value {
+            TracingConfig::PassThrough => "PassThrough".to_string(),
+            TracingConfig::Active => "Active".to_string(),
         }
     }
 }
@@ -74,6 +90,10 @@ pub struct TopicBuilder<T: TopicBuilderState> {
     fifo_throughput_scope: Option<FifoThroughputScope>,
     topic_policy_doc: Option<PolicyDocument>,
     lambda_subscription_ids: Vec<(Id, String)>,
+    archive_policy: Option<String>,
+    display_name: Option<String>,
+    kms_master_key_id: Option<Value>,
+    tracing_config: Option<String>,
 }
 
 impl TopicBuilder<StartState> {
@@ -90,6 +110,10 @@ impl TopicBuilder<StartState> {
             fifo_throughput_scope: None,
             topic_policy_doc: None,
             lambda_subscription_ids: vec![],
+            archive_policy: None,
+            display_name: None,
+            kms_master_key_id: None,
+            tracing_config: None,
         }
     }
 
@@ -107,6 +131,10 @@ impl TopicBuilder<StartState> {
             fifo_throughput_scope: self.fifo_throughput_scope,
             topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
+            archive_policy: self.archive_policy,
+            display_name: self.display_name,
+            kms_master_key_id: self.kms_master_key_id,
+            tracing_config: self.tracing_config,
         }
     }
 
@@ -116,18 +144,9 @@ impl TopicBuilder<StartState> {
 }
 
 impl TopicBuilder<StandardStateWithSubscriptions> {
-    pub fn add_subscription(mut self, subscription: SubscriptionType) -> TopicBuilder<StandardStateWithSubscriptions> {
+    pub fn add_subscription(mut self, subscription: SubscriptionType) -> Self {
         self.add_subscription_internal(subscription);
-
-        TopicBuilder {
-            state: Default::default(),
-            id: self.id,
-            topic_name: self.topic_name,
-            content_based_deduplication: self.content_based_deduplication,
-            fifo_throughput_scope: self.fifo_throughput_scope,
-            topic_policy_doc: self.topic_policy_doc,
-            lambda_subscription_ids: self.lambda_subscription_ids,
-        }
+        self
     }
 
     pub fn build(self, stack_builder: &mut StackBuilder) -> TopicRef {
@@ -136,15 +155,31 @@ impl TopicBuilder<StandardStateWithSubscriptions> {
 }
 
 impl<T: TopicBuilderState> TopicBuilder<T> {
-    pub fn topic_name(self, topic_name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> TopicBuilder<T> {
-        TopicBuilder {
+    pub fn display_name(self, display_name: TopicDisplayName) -> Self {
+        Self {
+            display_name: Some(display_name.0),
+            ..self
+        }
+    }
+    
+    pub fn kms_master_key(self, kms_key: &KeyRef) -> Self {
+        Self {
+            kms_master_key_id: Some(kms_key.get_ref()),
+            ..self
+        }
+    }
+    
+    pub fn tracing_config(self, tracing_config: TracingConfig) -> Self {
+        Self {
+            tracing_config: Some(tracing_config.into()),
+            ..self
+        }
+    }
+    
+    pub fn topic_name(self, topic_name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> Self {
+        Self {
             topic_name: Some(topic_name.0),
-            id: self.id,
-            state: Default::default(),
-            content_based_deduplication: self.content_based_deduplication,
-            fifo_throughput_scope: self.fifo_throughput_scope,
-            topic_policy_doc: self.topic_policy_doc,
-            lambda_subscription_ids: self.lambda_subscription_ids,
+            ..self
         }
     }
 
@@ -157,20 +192,19 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             fifo_throughput_scope: self.fifo_throughput_scope,
             topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
+            display_name: self.display_name,
+            kms_master_key_id: self.kms_master_key_id,
+            archive_policy: self.archive_policy,
+            tracing_config: self.tracing_config,
         }
     }
 
     /// Adds an SNS Topic Policy for this topic.
     /// The code will automatically set the `resources` section of the `PolicyDocument` to the ARN of this queue, so there's no need to pass that in.
-    pub fn topic_policy(self, doc: PolicyDocument) -> TopicBuilder<T> {
-        TopicBuilder {
+    pub fn topic_policy(self, doc: PolicyDocument) -> Self {
+        Self {
             topic_policy_doc: Some(doc),
-            topic_name: self.topic_name,
-            id: self.id,
-            state: Default::default(),
-            content_based_deduplication: self.content_based_deduplication,
-            fifo_throughput_scope: self.fifo_throughput_scope,
-            lambda_subscription_ids: self.lambda_subscription_ids,
+            ..self
         }
     }
     
@@ -204,12 +238,22 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
 
             stack_builder.add_resource(subscription);
         });
+
+        let archive_policy = if let Some(policy_retention_time) = self.archive_policy {
+            Some(json!({ "MessageRetentionPeriod": policy_retention_time }))
+        } else {
+            None
+        };
         
         let properties = TopicProperties {
             topic_name: self.topic_name,
             fifo_topic: Some(fifo),
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope.map(Into::into),
+            archive_policy,
+            display_name: self.display_name,
+            kms_master_key_id: self.kms_master_key_id,
+            tracing_config: self.tracing_config,
         };
 
         let topic_ref = TopicRef::internal_new(self.id.clone(), topic_resource_id.to_string());
@@ -234,6 +278,13 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
 }
 
 impl TopicBuilder<FifoState> {
+    pub fn archive_policy(self, archive_policy: ArchivePolicy) -> Self {
+        Self {
+            archive_policy: Some(archive_policy.0.to_string()),
+            ..self
+        }
+    }
+    
     pub fn fifo_throughput_scope(self, scope: FifoThroughputScope) -> TopicBuilder<FifoState> {
         Self {
             fifo_throughput_scope: Some(scope),
@@ -259,6 +310,10 @@ impl TopicBuilder<FifoState> {
             fifo_throughput_scope: self.fifo_throughput_scope,
             topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
+            display_name: self.display_name,
+            kms_master_key_id: self.kms_master_key_id,
+            archive_policy: self.archive_policy,
+            tracing_config: self.tracing_config,
         }
     }
 
@@ -275,14 +330,14 @@ impl TopicBuilder<FifoState> {
 }
 
 impl TopicBuilder<FifoStateWithSubscriptions> {
-    pub fn fifo_throughput_scope(self, scope: FifoThroughputScope) -> TopicBuilder<FifoStateWithSubscriptions> {
+    pub fn fifo_throughput_scope(self, scope: FifoThroughputScope) -> Self {
         Self {
             fifo_throughput_scope: Some(scope),
             ..self
         }
     }
 
-    pub fn content_based_deduplication(self, content_based_deduplication: bool) -> TopicBuilder<FifoStateWithSubscriptions> {
+    pub fn content_based_deduplication(self, content_based_deduplication: bool) -> Self {
         Self {
             content_based_deduplication: Some(content_based_deduplication),
             ..self
@@ -300,6 +355,10 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
             fifo_throughput_scope: self.fifo_throughput_scope,
             topic_policy_doc: self.topic_policy_doc,
             lambda_subscription_ids: self.lambda_subscription_ids,
+            display_name: self.display_name,
+            kms_master_key_id: self.kms_master_key_id,
+            archive_policy: self.archive_policy,
+            tracing_config: self.tracing_config,
         }
     }
     

@@ -6,6 +6,7 @@ pub mod cloudwatch;
 pub mod dynamodb;
 pub mod events;
 pub mod iam;
+pub mod kms;
 pub mod lambda;
 pub mod s3;
 pub mod secretsmanager;

@@ -21,14 +21,26 @@ dto_methods!(Topic);
 
 #[derive(Debug, Serialize)]
 pub struct TopicProperties {
+    #[serde(rename = "ArchivePolicy", skip_serializing_if = "Option::is_none")]
+    pub(super) archive_policy: Option<Value>,
     #[serde(rename = "TopicName", skip_serializing_if = "Option::is_none")]
     pub(super) topic_name: Option<String>,
+    #[serde(rename = "DisplayName", skip_serializing_if = "Option::is_none")]
+    pub(super) display_name: Option<String>, // max 100, - _ space tabs
     #[serde(rename = "FifoTopic", skip_serializing_if = "Option::is_none")]
     pub(super) fifo_topic: Option<bool>,
     #[serde(rename = "ContentBasedDeduplication", skip_serializing_if = "Option::is_none")]
     pub(super) content_based_deduplication: Option<bool>,
     #[serde(rename = "FifoThroughputScope", skip_serializing_if = "Option::is_none")]
     pub(super) fifo_throughput_scope: Option<String>,
+    #[serde(rename = "KmsMasterKeyId", skip_serializing_if = "Option::is_none")]
+    pub(super) kms_master_key_id: Option<Value>,
+    #[serde(rename = "TracingConfig", skip_serializing_if = "Option::is_none")]
+    pub(super) tracing_config: Option<String>,
+
+    // #[serde(rename = "DataProtectionPolicy", skip_serializing_if = "Option::is_none")]
+    // pub(super) data_protection_policy: Option<Value>,
+    // DeliveryStatusLogging
 }
 
 ref_struct_with_id_methods!(TopicPolicyRef);

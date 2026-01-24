@@ -25,7 +25,7 @@ use rusty_cdk_core::s3::{
 use rusty_cdk_core::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk_core::shared::HttpMethod;
 use rusty_cdk_core::shared::{DeletionPolicy, UpdateReplacePolicy};
-use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder};
+use rusty_cdk_core::sns::{FifoThroughputScope, SubscriptionType, TopicBuilder, TracingConfig};
 use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
@@ -186,9 +186,12 @@ fn sns() {
     let mut stack_builder = StackBuilder::new();
     TopicBuilder::new("topic")
         .topic_name(string_with_only_alphanumerics_underscores_and_hyphens!("some-name"))
+        .display_name(topic_display_name!("Some Display-Name"))
+        .tracing_config(TracingConfig::PassThrough)
         .fifo()
         .fifo_throughput_scope(FifoThroughputScope::Topic)
         .content_based_deduplication(true)
+        .archive_policy(archive_policy!(30))
         .build(&mut stack_builder);
     let stack = stack_builder.build().unwrap();
 
