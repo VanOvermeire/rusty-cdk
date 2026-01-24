@@ -103,7 +103,9 @@ impl StackBuilder {
 
     /// Builds the stack and validates all resources.
     ///
-    /// Might return an error if any IAM roles are missing permissions for AWS services they need to access, based on Cargo.toml dependencies.
+    /// Might return an error if:
+    /// - there are duplicate ids
+    /// - IAM roles are missing permissions for AWS services they need to access (only when Cargo.toml dependencies were passed in)
     pub fn build(self) -> Result<Stack, StackBuilderError> {
         let (ids, resource_ids) = self.resources
             .iter()

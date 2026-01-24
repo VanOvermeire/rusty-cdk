@@ -687,3 +687,10 @@ pub struct TopicDisplayName(pub String);
 /// Use the `archive_policy!` macro from `rusty-cdk-macros` for compile-time validation.
 #[derive(Debug, Clone)]
 pub struct ArchivePolicy(pub u16);
+
+
+/// KMS Key reuse period (in seconds) for an SQS queue
+///
+/// # Recommended Usage
+/// Use the `key_reuse_period!` macro from `rusty-cdk-macros` for compile-time validation.
+pub struct KeyReusePeriod(pub u32);

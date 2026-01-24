@@ -1,16 +1,14 @@
+use crate::iam::PolicyDocument;
 use crate::shared::Id;
-use crate::sqs::{Queue, QueuePolicy, QueuePolicyProperties, QueuePolicyRef, QueueProperties, RedrivePolicy};
+use crate::shared::QUEUE_POLICY_ID_SUFFIX;
 use crate::sqs::QueueRef;
+use crate::sqs::{Queue, QueuePolicy, QueuePolicyProperties, QueuePolicyRef, QueueProperties, RedrivePolicy};
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{
-    DelaySeconds, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber, ReceiveMessageWaitTime,
-    StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout,
-};
+use crate::type_state;
+use crate::wrappers::{DelaySeconds, KeyReusePeriod, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber, ReceiveMessageWaitTime, StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout};
 use serde_json::Value;
 use std::marker::PhantomData;
-use crate::iam::PolicyDocument;
-use crate::shared::QUEUE_POLICY_ID_SUFFIX;
-use crate::type_state;
+use crate::kms::KeyRef;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
@@ -44,12 +42,7 @@ impl From<FifoThroughputLimit> for String {
     }
 }
 
-type_state!(
-    QueueBuilderState,
-    StartState,
-    StandardState,
-    FifoState,
-);
+type_state!(QueueBuilderState, StartState, StandardState, FifoState,);
 
 /// Builder for SQS queues.
 ///
@@ -71,7 +64,7 @@ type_state!(
 ///     .standard_queue()
 ///     .visibility_timeout(visibility_timeout!(60))
 ///     .build(&mut stack_builder);
-/// 
+///
 /// // Create a FIFO queue
 /// let queue = QueueBuilder::new("my-queue")
 ///     .fifo_queue()
@@ -96,6 +89,8 @@ pub struct QueueBuilder<T: QueueBuilderState> {
     redrive_policy: Option<RedrivePolicy>,
     redrive_allow_policy: Option<Value>,
     queue_policy_doc: Option<PolicyDocument>,
+    kms_data_key_reuse_period_seconds: Option<u32>,
+    kms_master_key_id: Option<Value>,
 }
 
 impl QueueBuilder<StartState> {
@@ -120,6 +115,8 @@ impl QueueBuilder<StartState> {
             redrive_policy: None,
             redrive_allow_policy: None,
             queue_policy_doc: None,
+            kms_data_key_reuse_period_seconds: None,
+            kms_master_key_id: None,
         }
     }
 
@@ -140,6 +137,8 @@ impl QueueBuilder<StartState> {
             redrive_policy: self.redrive_policy,
             redrive_allow_policy: self.redrive_allow_policy,
             queue_policy_doc: self.queue_policy_doc,
+            kms_data_key_reuse_period_seconds: self.kms_data_key_reuse_period_seconds,
+            kms_master_key_id: self.kms_master_key_id,
         }
     }
 
@@ -160,11 +159,27 @@ impl QueueBuilder<StartState> {
             redrive_policy: self.redrive_policy,
             redrive_allow_policy: self.redrive_allow_policy,
             queue_policy_doc: self.queue_policy_doc,
+            kms_data_key_reuse_period_seconds: self.kms_data_key_reuse_period_seconds,
+            kms_master_key_id: self.kms_master_key_id,
         }
     }
 }
 
 impl<T: QueueBuilderState> QueueBuilder<T> {
+    pub fn kms_data_key_reuse_period(self, reuse_period_seconds: KeyReusePeriod) -> Self {
+        Self {
+            kms_data_key_reuse_period_seconds: Some(reuse_period_seconds.0),
+            ..self
+        }
+    }
+
+    pub fn kms_master_key(self, kms_master_key: &KeyRef) -> Self {
+        Self {
+            kms_master_key_id: Some(kms_master_key.get_ref()),
+            ..self
+        }
+    }
+
     pub fn delay_seconds(self, delay: DelaySeconds) -> Self {
         Self {
             delay_seconds: Some(delay.0 as u32),
@@ -230,7 +245,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
             ..self
         }
     }
-    
+
     /// Adds an SQS Queue Policy for this queue.
     /// The code will automatically set the `resources` section of the `PolicyDocument` to the ARN of this queue, so there's no need to pass that in.
     pub fn queue_policy(self, doc: PolicyDocument) -> Self {
@@ -255,11 +270,13 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
             sqs_managed_sse_enabled: self.sqs_managed_sse_enabled,
             redrive_policy: self.redrive_policy,
             redrive_allow_policy: self.redrive_allow_policy,
+            kms_data_key_reuse_period_seconds: self.kms_data_key_reuse_period_seconds,
+            kms_master_key_id: self.kms_master_key_id,
         };
 
         let resource_id = Resource::generate_id("SqsQueue");
         let queue_ref = QueueRef::internal_new(self.id.clone(), resource_id.clone());
-        
+
         if let Some(mut policy) = self.queue_policy_doc {
             for statement in &mut policy.statements {
                 // point the statements of this policy to the queue
@@ -323,9 +340,10 @@ impl QueueBuilder<FifoState> {
     /// Automatically appends the required ".fifo" suffix to the queue name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> QueueRef {
         if let Some(ref name) = self.queue_name
-            && !name.ends_with(FIFO_SUFFIX) {
-                self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
-            }
+            && !name.ends_with(FIFO_SUFFIX)
+        {
+            self.queue_name = Some(format!("{}{}", name, FIFO_SUFFIX));
+        }
         self.build_internal(true, stack_builder)
     }
 }
@@ -333,7 +351,7 @@ impl QueueBuilder<FifoState> {
 pub(crate) struct QueuePolicyBuilder {
     id: Id,
     doc: PolicyDocument,
-    queues: Vec<Value>
+    queues: Vec<Value>,
 }
 
 impl QueuePolicyBuilder {
@@ -343,11 +361,7 @@ impl QueuePolicyBuilder {
     }
 
     pub(crate) fn new_with_values(id: Id, doc: PolicyDocument, queues: Vec<Value>) -> Self {
-        Self {
-            id,
-            doc,
-            queues,
-        }
+        Self { id, doc, queues }
     }
 
     pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> QueuePolicyRef {
