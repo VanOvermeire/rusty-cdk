@@ -23,27 +23,38 @@ dto_methods!(Topic);
 pub struct TopicProperties {
     #[serde(rename = "ArchivePolicy", skip_serializing_if = "Option::is_none")]
     pub(super) archive_policy: Option<Value>,
-    #[serde(rename = "TopicName", skip_serializing_if = "Option::is_none")]
-    pub(super) topic_name: Option<String>,
-    #[serde(rename = "DisplayName", skip_serializing_if = "Option::is_none")]
-    pub(super) display_name: Option<String>, // max 100, - _ space tabs
-    #[serde(rename = "FifoTopic", skip_serializing_if = "Option::is_none")]
-    pub(super) fifo_topic: Option<bool>,
     #[serde(rename = "ContentBasedDeduplication", skip_serializing_if = "Option::is_none")]
     pub(super) content_based_deduplication: Option<bool>,
+    #[serde(rename = "DeliveryStatusLogging", skip_serializing_if = "Option::is_none")]
+    pub(super) delivery_status_logging: Option<LoggingConfig>,
+    #[serde(rename = "DisplayName", skip_serializing_if = "Option::is_none")]
+    pub(super) display_name: Option<String>,
+    #[serde(rename = "FifoTopic", skip_serializing_if = "Option::is_none")]
+    pub(super) fifo_topic: Option<bool>,
     #[serde(rename = "FifoThroughputScope", skip_serializing_if = "Option::is_none")]
     pub(super) fifo_throughput_scope: Option<String>,
     #[serde(rename = "KmsMasterKeyId", skip_serializing_if = "Option::is_none")]
     pub(super) kms_master_key_id: Option<Value>,
+    #[serde(rename = "TopicName", skip_serializing_if = "Option::is_none")]
+    pub(super) topic_name: Option<String>,
     #[serde(rename = "TracingConfig", skip_serializing_if = "Option::is_none")]
     pub(super) tracing_config: Option<String>,
-
-    // #[serde(rename = "DataProtectionPolicy", skip_serializing_if = "Option::is_none")]
-    // pub(super) data_protection_policy: Option<Value>,
-    // DeliveryStatusLogging
+    // DataProtectionPolicy
 }
 
 ref_struct_with_id_methods!(TopicPolicyRef);
+
+#[derive(Debug, Serialize)]
+pub struct LoggingConfig {
+    #[serde(rename = "FailureFeedbackRoleArn", skip_serializing_if = "Option::is_none")]
+    pub(super) failure_feedback_role_arn: Option<Value>,
+    #[serde(rename = "Protocol")]
+    pub(super) protocol: String,
+    #[serde(rename = "SuccessFeedbackRoleArn", skip_serializing_if = "Option::is_none")]
+    pub(super) success_feedback_role_arn: Option<Value>,
+    #[serde(rename = "SuccessFeedbackSampleRate", skip_serializing_if = "Option::is_none")]
+    pub(super) success_feedback_sample_rate: Option<u8>,
+}
 
 #[derive(Debug, Serialize)]
 pub struct TopicPolicy {
@@ -81,10 +92,10 @@ dto_methods!(Subscription);
 
 #[derive(Debug, Serialize)]
 pub struct SnsSubscriptionProperties {
-    #[serde(rename = "Protocol")]
-    pub(super) protocol: String,
     #[serde(rename = "Endpoint")]
     pub(super) endpoint: Value,
+    #[serde(rename = "Protocol")]
+    pub(super) protocol: String,
     #[serde(rename = "TopicArn")]
     pub(super) topic_arn: Value
 }

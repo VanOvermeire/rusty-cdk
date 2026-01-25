@@ -437,6 +437,7 @@ number_check!(retry_policy_retries, 0, 185, RetryPolicyRetries, u8);
 number_check!(max_flexible_time_window, 1, 1440, MaxFlexibleTimeWindow, u16);
 number_check!(archive_policy, 1, 365, ArchivePolicy, u16);
 number_check!(key_reuse_period, 60, 86400, KeyReusePeriod, u32);
+number_check!(success_feedback_sample_rate, 0, 100, SuccessFeedbackSampleRate, u8);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";

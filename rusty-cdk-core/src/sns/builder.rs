@@ -1,11 +1,11 @@
-use crate::iam::PolicyDocument;
+use crate::iam::{PolicyDocument, RoleRef};
 use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::{Id, TOPIC_POLICY_ID_SUFFIX};
-use crate::sns::{SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
+use crate::sns::{LoggingConfig, SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, TopicDisplayName};
+use crate::wrappers::{ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, SuccessFeedbackSampleRate, TopicDisplayName};
 use serde_json::{json, Value};
 use std::marker::PhantomData;
 use crate::kms::KeyRef;
@@ -94,6 +94,7 @@ pub struct TopicBuilder<T: TopicBuilderState> {
     display_name: Option<String>,
     kms_master_key_id: Option<Value>,
     tracing_config: Option<String>,
+    logging_config: Option<LoggingConfig>,
 }
 
 impl TopicBuilder<StartState> {
@@ -114,6 +115,7 @@ impl TopicBuilder<StartState> {
             display_name: None,
             kms_master_key_id: None,
             tracing_config: None,
+            logging_config: None,
         }
     }
 
@@ -135,6 +137,7 @@ impl TopicBuilder<StartState> {
             display_name: self.display_name,
             kms_master_key_id: self.kms_master_key_id,
             tracing_config: self.tracing_config,
+            logging_config: self.logging_config,
         }
     }
 
@@ -158,6 +161,13 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
     pub fn display_name(self, display_name: TopicDisplayName) -> Self {
         Self {
             display_name: Some(display_name.0),
+            ..self
+        }
+    }
+    
+    pub fn logging_config(self, logging_config: LoggingConfig) -> Self {
+        Self {
+            logging_config: Some(logging_config),
             ..self
         }
     }
@@ -196,6 +206,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             kms_master_key_id: self.kms_master_key_id,
             archive_policy: self.archive_policy,
             tracing_config: self.tracing_config,
+            logging_config: self.logging_config,
         }
     }
 
@@ -254,6 +265,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             display_name: self.display_name,
             kms_master_key_id: self.kms_master_key_id,
             tracing_config: self.tracing_config,
+            delivery_status_logging: self.logging_config,
         };
 
         let topic_ref = TopicRef::internal_new(self.id.clone(), topic_resource_id.to_string());
@@ -303,8 +315,8 @@ impl TopicBuilder<FifoState> {
         self.add_subscription_internal(subscription);
 
         TopicBuilder {
-            state: Default::default(),
             id: self.id,
+            state: Default::default(),
             topic_name: self.topic_name,
             content_based_deduplication: self.content_based_deduplication,
             fifo_throughput_scope: self.fifo_throughput_scope,
@@ -314,6 +326,7 @@ impl TopicBuilder<FifoState> {
             kms_master_key_id: self.kms_master_key_id,
             archive_policy: self.archive_policy,
             tracing_config: self.tracing_config,
+            logging_config: self.logging_config,
         }
     }
 
@@ -359,6 +372,74 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
                 self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
             }
         self.build_internal(true, stack_builder)
+    }
+}
+
+pub enum Protocol {
+    HTTP,
+    SQS,
+    Lambda,
+    Firehose,
+    Application,
+}
+
+impl From<Protocol> for String {
+    fn from(value: Protocol) -> String {
+        match value {
+            Protocol::HTTP => "http".to_string(),
+            Protocol::SQS => "sqs".to_string(),
+            Protocol::Lambda => "lambda".to_string(),
+            Protocol::Firehose => "firehose".to_string(),
+            Protocol::Application => "application".to_string(),
+        }
+    }
+}
+
+pub struct LoggingConfigBuilder {
+    protocol: String,
+    success_feedback_sample_rate: Option<u8>,
+    failure_feedback_role: Option<Value>,
+    success_feedback_role: Option<Value>,
+}
+
+impl LoggingConfigBuilder {
+    pub fn new(protocol: Protocol) -> Self {
+        Self {
+            protocol: protocol.into(),
+            success_feedback_sample_rate: None,
+            failure_feedback_role: None,
+            success_feedback_role: None,
+        }
+    }
+    
+    pub fn success_feedback_role(self, role: &RoleRef) -> Self {
+        Self {
+            success_feedback_role: Some(role.get_arn()),
+            ..self
+        }
+    }
+    
+    pub fn failure_feedback_role(self, role: &RoleRef) -> Self {
+        Self {
+            failure_feedback_role: Some(role.get_arn()),
+            ..self
+        }
+    }
+    
+    pub fn success_feedback_sample_rate(self, success_feedback_sample_rate: SuccessFeedbackSampleRate) -> Self {
+        Self {
+            success_feedback_sample_rate: Some(success_feedback_sample_rate.0),
+            ..self
+        }
+    }
+    
+    pub fn build(self) -> LoggingConfig {
+        LoggingConfig {
+            failure_feedback_role_arn: self.failure_feedback_role,
+            protocol: self.protocol,
+            success_feedback_role_arn: self.success_feedback_role,
+            success_feedback_sample_rate: self.success_feedback_sample_rate,
+        }
     }
 }
 

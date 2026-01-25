@@ -324,7 +324,7 @@ To be added at some point:
 
 ### Available builders
 
-Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'`
+Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- /'` in `rusty-cdk-core`.
 
 - ApiGatewayV2Builder
 - AppSyncApiBuilder
@@ -345,6 +345,7 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - EnvironmentBuilder
 - EventConfigBuilder
 - EventLogConfigBuilder
+- FlexibleTimeWindowBuilder
 - FunctionBuilder
 - GenerateSecretStringBuilder
 - IntelligentTieringConfigurationBuilder
@@ -354,6 +355,7 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - LifecycleRuleBuilder
 - LifecycleRuleTransitionBuilder
 - LogGroupBuilder
+- LoggingConfigBuilder
 - MetadataConfigurationBuilder
 - MetadataDestinationBuilder
 - NonCurrentVersionTransitionBuilder
@@ -368,13 +370,16 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - QueueBuilder
 - QueuePolicyBuilder
 - RecordExpirationBuilder
+- RetryPolicyBuilder
 - RoleBuilder
 - RolePropertiesBuilder
+- ScheduleBuilder
 - SecretBuilder
 - StackBuilder
 - StatementBuilder
 - TableBuilder
 - TagFilterBuilder
+- TargetBuilder
 - TopicBuilder
 - TopicPolicyBuilder
 - ValidatorBuilder
@@ -441,4 +446,5 @@ async fn tagging() {
   - Semver checks
   - Publishing
 - Do some refactoring/splitting up of files
+  - s3 builder is a good candidate for splitting up
 - rusty-cdk-validation would be better name for the macros crate

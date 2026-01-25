@@ -688,9 +688,16 @@ pub struct TopicDisplayName(pub String);
 #[derive(Debug, Clone)]
 pub struct ArchivePolicy(pub u16);
 
-
 /// KMS Key reuse period (in seconds) for an SQS queue
 ///
 /// # Recommended Usage
 /// Use the `key_reuse_period!` macro from `rusty-cdk-macros` for compile-time validation.
+#[derive(Debug, Clone)]
 pub struct KeyReusePeriod(pub u32);
+
+/// Percentage of successful message deliveries to be logged in Amazon CloudWatch, for an SNS topic
+///
+/// # Recommended Usage
+/// Use the `success_feedback_sample_rate!` macro from `rusty-cdk-macros` for compile-time validation.
+#[derive(Debug, Clone)]
+pub struct SuccessFeedbackSampleRate(pub u8);
