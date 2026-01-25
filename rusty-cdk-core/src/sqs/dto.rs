@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
@@ -6,7 +6,7 @@ use crate::shared::Id;
 
 ref_struct_with_id_methods!(QueueRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Queue {
     #[serde(skip)]
     pub(super) id: Id,
@@ -22,7 +22,7 @@ dto_methods!(Queue);
 
 ref_struct_with_id_methods!(QueuePolicyRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueueProperties {
     #[serde(rename = "ContentBasedDeduplication", skip_serializing_if = "Option::is_none")]
     pub(super) content_based_deduplication: Option<bool>,
@@ -56,7 +56,7 @@ pub struct QueueProperties {
     pub(super) visibility_timeout: Option<u32>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueuePolicy {
     #[serde(skip)]
     pub(super) id: Id,
@@ -69,7 +69,7 @@ pub struct QueuePolicy {
 }
 dto_methods!(QueuePolicy);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueuePolicyProperties {
     #[serde(rename = "PolicyDocument")]
     pub(crate) doc: PolicyDocument,
@@ -77,7 +77,7 @@ pub struct QueuePolicyProperties {
     pub(super) queues: Vec<Value>,   
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RedrivePolicy {
     #[serde(rename = "deadLetterTargetArn")]
     pub(super) dead_letter_target_arn: String,

@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(RoleRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Role {
     #[serde(skip)]
     pub(crate) id: Id,
@@ -20,7 +20,7 @@ pub struct Role {
 }
 dto_methods!(Role);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IamRoleProperties {
     #[serde(rename = "AssumeRolePolicyDocument")]
     pub(crate) assumed_role_policy_document: AssumeRolePolicyDocument,
@@ -32,7 +32,7 @@ pub struct IamRoleProperties {
     pub(crate) role_name: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Policy {
     #[serde(rename = "PolicyName")]
     pub(crate) policy_name: String,
@@ -40,7 +40,7 @@ pub struct Policy {
     pub(crate) policy_document: PolicyDocument,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PolicyDocument {
     #[serde(rename = "Version")]
     pub(crate) version: String,
@@ -48,7 +48,7 @@ pub struct PolicyDocument {
     pub(crate) statements: Vec<Statement>
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AssumeRolePolicyDocument {
     #[serde(rename = "Statement")]
     pub(crate) statements: Vec<Statement>,
@@ -56,7 +56,7 @@ pub struct AssumeRolePolicyDocument {
     pub(crate) version: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Statement {
     #[serde(rename = "Action")]
     pub(crate) action: Vec<String>,
@@ -70,7 +70,7 @@ pub struct Statement {
     pub(crate) condition: Option<Value>
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Principal {
     Service(ServicePrincipal),
@@ -78,13 +78,13 @@ pub enum Principal {
     Custom(String),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServicePrincipal {
     #[serde(rename = "Service")]
     pub(crate) service: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AWSPrincipal {
     #[serde(rename = "AWS")]
     pub(crate) aws: String,

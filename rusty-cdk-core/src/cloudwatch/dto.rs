@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(LogGroupRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LogGroup {
     #[serde(skip)]
     pub(super) id: Id,
@@ -18,7 +18,7 @@ pub struct LogGroup {
 }
 dto_methods!(LogGroup);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LogGroupProperties {
     #[serde(rename = "LogGroupClass", skip_serializing_if = "Option::is_none")]
     pub(super) log_group_class: Option<String>,
@@ -30,7 +30,7 @@ pub struct LogGroupProperties {
 
 ref_struct!(AlarmRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Alarm {
     #[serde(skip)]
     pub(super) id: Id,
@@ -43,7 +43,7 @@ pub struct Alarm {
 }
 dto_methods!(Alarm);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AlarmProperties {
     #[serde(rename = "ActionsEnabled", skip_serializing_if = "Option::is_none")]
     pub(super) actions_enabled: Option<bool>,
@@ -89,7 +89,7 @@ pub struct AlarmProperties {
     pub(super) unit: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Dimension {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -97,7 +97,7 @@ pub struct Dimension {
     pub(super) value: Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MetricDataQuery {
     #[serde(rename = "AccountId", skip_serializing_if = "Option::is_none")]
     pub(super) account_id: Option<String>,
@@ -115,7 +115,7 @@ pub struct MetricDataQuery {
     pub(super) return_data: Option<bool>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MetricStat {
     #[serde(rename = "Metric")]
     pub(super) metric: Metric,
@@ -127,7 +127,7 @@ pub struct MetricStat {
     pub(super) unit: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Metric {
     #[serde(rename = "Dimensions", skip_serializing_if = "Option::is_none")]
     pub(super) dimensions: Option<Vec<Dimension>>,

@@ -1,12 +1,12 @@
 use crate::s3::BucketPolicy;
 use crate::shared::Id;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 
 ref_struct!(OriginAccessControlRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginAccessControl {
     #[serde(skip)]
     pub(super) id: Id,
@@ -19,13 +19,13 @@ pub struct OriginAccessControl {
 }
 dto_methods!(OriginAccessControl);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginControlProperties {
     #[serde(rename = "OriginAccessControlConfig")]
     pub(super) config: OriginAccessControlConfig,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginAccessControlConfig {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -39,7 +39,7 @@ pub struct OriginAccessControlConfig {
 
 ref_struct!(CachePolicyRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CachePolicy {
     #[serde(skip)]
     pub(super) id: Id,
@@ -52,13 +52,13 @@ pub struct CachePolicy {
 }
 dto_methods!(CachePolicy);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CachePolicyProperties {
     #[serde(rename = "CachePolicyConfig")]
     pub(super) config: CachePolicyConfig,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CachePolicyConfig {
     #[serde(rename = "DefaultTTL")]
     pub(super) default_ttl: u32,
@@ -72,7 +72,7 @@ pub struct CachePolicyConfig {
     pub(super) params_in_cache_key_and_forwarded: ParametersInCacheKeyAndForwardedToOrigin,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ParametersInCacheKeyAndForwardedToOrigin {
     #[serde(rename = "CookiesConfig")]
     pub(super) cookies_config: CookiesConfig,
@@ -86,7 +86,7 @@ pub struct ParametersInCacheKeyAndForwardedToOrigin {
     pub(super) query_strings_config: QueryStringsConfig,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HeadersConfig {
     #[serde(rename = "HeaderBehavior")]
     pub(super) headers_behavior: String,
@@ -94,7 +94,7 @@ pub struct HeadersConfig {
     pub(super) headers: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStringsConfig {
     #[serde(rename = "QueryStringBehavior")]
     pub(super) query_strings_behavior: String,
@@ -102,7 +102,7 @@ pub struct QueryStringsConfig {
     pub(super) query_strings: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CookiesConfig {
     #[serde(rename = "CookieBehavior")]
     pub(super) cookie_behavior: String,
@@ -112,7 +112,7 @@ pub struct CookiesConfig {
 
 ref_struct!(DistributionRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Distribution {
     #[serde(skip)]
     pub(super) id: Id,
@@ -125,13 +125,13 @@ pub struct Distribution {
 }
 dto_methods!(Distribution);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DistributionProperties {
     #[serde(rename = "DistributionConfig")]
     pub(super) config: DistributionConfig,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DistributionConfig {
     #[serde(rename = "Aliases", skip_serializing_if = "Option::is_none")]
     pub(super) aliases: Option<Vec<String>>, // probably can limit possible values this further
@@ -167,7 +167,7 @@ pub struct DistributionConfig {
     // "WebACLId" : String
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ViewerCertificate {
     #[serde(rename = "AcmCertificateArn", skip_serializing_if = "Option::is_none")]
     pub(super) acm_cert_arn: Option<String>,
@@ -181,7 +181,7 @@ pub struct ViewerCertificate {
     pub(super) ssl_support_method: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginGroups {
     #[serde(rename = "Items")]
     pub(super) items: Vec<OriginGroup>,
@@ -189,7 +189,7 @@ pub struct OriginGroups {
     pub(super) quantity: u32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginGroup {
     #[serde(rename = "Id")]
     pub(super) id: String,
@@ -201,7 +201,7 @@ pub struct OriginGroup {
     pub(super) selection_criteria: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginGroupMembers {
     #[serde(rename = "Items")]
     pub(super) items: Vec<u32>, // exactly two
@@ -209,19 +209,19 @@ pub struct OriginGroupMembers {
     pub(super) quantity: u32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginGroupMember {
     #[serde(rename = "OriginId")]
     pub(super) origin_id: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FailOverCriteria {
     #[serde(rename = "StatusCodes")]
     pub(super) status_codes: StatusCodes,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StatusCodes {
     #[serde(rename = "Items")]
     pub(super) items: Vec<u32>, // min 1
@@ -230,7 +230,7 @@ pub struct StatusCodes {
 }
 
 // should have AN origin
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Origin {
     #[serde(rename = "Id")]
     pub(super) id: String,
@@ -265,7 +265,7 @@ impl Origin {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OriginCustomHeader {
     #[serde(rename = "HeaderName")]
     pub(super) header_name: String,
@@ -273,7 +273,7 @@ pub struct OriginCustomHeader {
     pub(super) header_value: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VpcOriginConfig {
     #[serde(rename = "VpcOriginId")]
     pub(super) vpc_origin_id: String,
@@ -286,7 +286,7 @@ pub struct VpcOriginConfig {
 }
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CustomOriginConfig {
     #[serde(rename = "OriginProtocolPolicy")]
     pub(super) origin_protocol_policy: String, // http-only | match-viewer | https-only
@@ -304,13 +304,13 @@ pub struct CustomOriginConfig {
     pub(super) origin_ssl_protocols: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct S3OriginConfig {
     #[serde(rename = "OriginReadTimeout", skip_serializing_if = "Option::is_none")]
     pub(super) origin_read_timeout: Option<u8>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DefaultCacheBehavior {
     // did not add deprecated fields like MaxTTL //
     #[serde(rename = "TargetOriginId")]
@@ -337,7 +337,7 @@ pub struct DefaultCacheBehavior {
     // "SmoothStreaming" : Boolean,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CacheBehavior {
     #[serde(rename = "PathPattern")]
     pub(super) path_pattern: String,

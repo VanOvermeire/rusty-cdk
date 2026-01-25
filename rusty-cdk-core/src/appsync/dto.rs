@@ -1,11 +1,11 @@
 use serde_json::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(AppSyncApiRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AppSyncApi {
     #[serde(skip)]
     pub(crate) id: Id,
@@ -18,7 +18,7 @@ pub struct AppSyncApi {
 }
 dto_methods!(AppSyncApi);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AppSyncApiProperties {
     #[serde(rename = "Name")]
     pub(crate) name: String,
@@ -26,7 +26,7 @@ pub struct AppSyncApiProperties {
     pub(crate) event_config: Option<EventConfig>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EventConfig {
     #[serde(rename = "AuthProviders")]
     pub(crate) auth_providers: Vec<AuthProvider>,
@@ -40,7 +40,7 @@ pub struct EventConfig {
     pub(crate) log_config: Option<EventLogConfig>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AuthProvider {
     #[serde(rename = "AuthType")]
     pub(crate) auth_type: String,
@@ -52,7 +52,7 @@ pub struct AuthProvider {
     pub(crate) open_id_connect_config: Option<OpenIDConnectConfig>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CognitoConfig {
     #[serde(rename = "AwsRegion")]
     pub(crate) aws_region: String,
@@ -61,7 +61,7 @@ pub struct CognitoConfig {
     // AppIdClientRegex: String
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaAuthorizerConfig {
     #[serde(rename = "AuthorizerResultTtlInSeconds", skip_serializing_if = "Option::is_none")]
     pub(crate) authorizer_result_ttl_seconds: Option<u16>,
@@ -70,7 +70,7 @@ pub struct LambdaAuthorizerConfig {
     // IdentityValidationExpression: String
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OpenIDConnectConfig {
     #[serde(rename = "AuthTTL", skip_serializing_if = "Option::is_none")]
     pub(crate) auth_ttl_millis: Option<u32>,
@@ -82,13 +82,13 @@ pub struct OpenIDConnectConfig {
     pub(crate) issuer: String
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AppSyncAuthMode {
     #[serde(rename = "AuthType", skip_serializing_if = "Option::is_none")]
     pub(crate) auth_type: Option<String>
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EventLogConfig {
     #[serde(rename = "CloudWatchLogsRoleArn")]
     pub(crate) cloudwatch_logs_role_arn: String,
@@ -98,7 +98,7 @@ pub struct EventLogConfig {
 
 ref_struct!(ChannelNamespaceRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelNamespace {
     #[serde(skip)]
     pub(crate) id: Id,
@@ -111,7 +111,7 @@ pub struct ChannelNamespace {
 }
 dto_methods!(ChannelNamespace);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelNamespaceProperties {
     #[serde(rename = "ApiId")]
     pub(crate) api_id: Value,

@@ -81,7 +81,7 @@ impl Display for Asset {
 /// - `Resources`: The AWS resources map
 /// - `Metadata`: Additional metadata for resource management
 /// - Tags are *not* serialized directly
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Stack {
     #[serde(skip)]
     pub(crate) resource_ids_to_replace: Vec<(String, String)>,
@@ -291,7 +291,7 @@ impl Stack {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Resource {
     ApiGatewayV2Api(ApiGatewayV2Api),

@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(ScheduleRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Schedule {
     #[serde(skip)]
     pub(super) id: Id,
@@ -19,7 +19,7 @@ pub struct Schedule {
 
 dto_methods!(Schedule);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ScheduleProperties {
     #[serde(rename = "StartDate", skip_serializing_if = "Option::is_none")]
     pub(super) start_date: Option<String>,
@@ -42,7 +42,7 @@ pub struct ScheduleProperties {
 
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FlexibleTimeWindow {
     #[serde(rename = "MaximumWindowInMinutes", skip_serializing_if = "Option::is_none")]
     pub(super) maximum_window_in_minutes: Option<u16>,
@@ -50,7 +50,7 @@ pub struct FlexibleTimeWindow {
     pub(super) mode: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Target {
     #[serde(rename = "Arn")]
     pub(super) arn: Value,
@@ -68,7 +68,7 @@ pub struct Target {
     // SqsParameters: SqsParameters
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RetryPolicy {
     #[serde(rename = "MaximumEventAgeInSeconds", skip_serializing_if = "Option::is_none")]
     pub(super) maximum_event_age_in_seconds: Option<u32>,

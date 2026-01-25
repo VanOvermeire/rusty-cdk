@@ -427,7 +427,6 @@ async fn tagging() {
 - Check for places where we pass in a `Value` but should pass in a Ref
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
-- Ability to invoke deploy, diff and destroy from command line
 - Destroy command
   - Add force option that will delete resources that are normally retained
     - Should empty bucket

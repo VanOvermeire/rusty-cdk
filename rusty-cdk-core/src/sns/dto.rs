@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
@@ -6,7 +6,7 @@ use crate::shared::Id;
 
 ref_struct_with_id_methods!(TopicRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Topic {
     #[serde(skip)]
     pub(super) id: Id,
@@ -19,7 +19,7 @@ pub struct Topic {
 }
 dto_methods!(Topic);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicProperties {
     #[serde(rename = "ArchivePolicy", skip_serializing_if = "Option::is_none")]
     pub(super) archive_policy: Option<Value>,
@@ -44,7 +44,7 @@ pub struct TopicProperties {
 
 ref_struct_with_id_methods!(TopicPolicyRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LoggingConfig {
     #[serde(rename = "FailureFeedbackRoleArn", skip_serializing_if = "Option::is_none")]
     pub(super) failure_feedback_role_arn: Option<Value>,
@@ -56,7 +56,7 @@ pub struct LoggingConfig {
     pub(super) success_feedback_sample_rate: Option<u8>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicPolicy {
     #[serde(skip)]
     pub(super) id: Id,
@@ -69,7 +69,7 @@ pub struct TopicPolicy {
 }
 dto_methods!(TopicPolicy);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicPolicyProperties {
     #[serde(rename = "PolicyDocument")]
     pub(crate) doc: PolicyDocument,
@@ -77,7 +77,7 @@ pub struct TopicPolicyProperties {
     pub(super) topics: Vec<Value>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Subscription {
     #[serde(skip)]
     pub(super) id: Id,
@@ -90,7 +90,7 @@ pub struct Subscription {
 }
 dto_methods!(Subscription);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SnsSubscriptionProperties {
     #[serde(rename = "Endpoint")]
     pub(super) endpoint: Value,

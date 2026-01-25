@@ -1,11 +1,11 @@
 use serde_json::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(ApplicationRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Application {
     #[serde(skip)]
     pub(super) id: Id,
@@ -18,7 +18,7 @@ pub struct Application {
 }
 dto_methods!(Application);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApplicationProperties {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -26,7 +26,7 @@ pub struct ApplicationProperties {
 
 ref_struct!(ConfigurationProfileRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigurationProfile {
     #[serde(skip)]
     pub(super) id: Id,
@@ -39,7 +39,7 @@ pub struct ConfigurationProfile {
 }
 dto_methods!(ConfigurationProfile);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigurationProfileProperties {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -57,7 +57,7 @@ pub struct ConfigurationProfileProperties {
     // "RetrievalRoleArn" : String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Validator {
     #[serde(rename = "Content")]
     pub(super) content: String,
@@ -67,7 +67,7 @@ pub struct Validator {
 
 ref_struct!(DeploymentStrategyRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DeploymentStrategy {
     #[serde(skip)]
     pub(super) id: Id,
@@ -80,7 +80,7 @@ pub struct DeploymentStrategy {
 }
 dto_methods!(DeploymentStrategy);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DeploymentStrategyProperties {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -98,7 +98,7 @@ pub struct DeploymentStrategyProperties {
 
 ref_struct!(EnvironmentRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Environment {
     #[serde(skip)]
     pub(super) id: Id,
@@ -111,7 +111,7 @@ pub struct Environment {
 }
 dto_methods!(Environment);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EnvironmentProperties {
     #[serde(rename = "Name")]
     pub(super) name: String,

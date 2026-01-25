@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(ApiGatewayV2ApiRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Api {
     #[serde(skip)]
     pub(crate) id: Id,
@@ -18,7 +18,7 @@ pub struct ApiGatewayV2Api {
 }
 dto_methods!(ApiGatewayV2Api);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2ApiProperties {
     #[serde(rename = "Name", skip_serializing_if = "Option::is_none")]
     pub(super) name: Option<String>,
@@ -37,7 +37,7 @@ pub struct ApiGatewayV2ApiProperties {
     // pub(super) api_key_selection_expression: String // $request.header.x-api-key OR $context.authorizer.usageIdentifierKey
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CorsConfiguration {
     #[serde(rename = "AllowCredentials", skip_serializing_if = "Option::is_none")]
     pub(super) allow_credentials: Option<bool>,
@@ -55,7 +55,7 @@ pub struct CorsConfiguration {
 
 ref_struct!(ApiGatewayV2StageRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
     pub(super) id: Id,
@@ -68,7 +68,7 @@ pub struct ApiGatewayV2Stage {
 }
 dto_methods!(ApiGatewayV2Stage);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2StageProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,
@@ -82,7 +82,7 @@ pub struct ApiGatewayV2StageProperties {
     pub(super) route_settings: Option<Value>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RouteSettings {
     #[serde(rename = "ThrottlingBurstLimit", skip_serializing_if = "Option::is_none")]
     pub(super) throttling_burst_limit: Option<u32>,
@@ -92,7 +92,7 @@ pub struct RouteSettings {
 
 ref_struct!(ApiGatewayV2IntegrationRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Integration {
     #[serde(skip)]
     pub(super) id: Id,
@@ -105,7 +105,7 @@ pub struct ApiGatewayV2Integration {
 }
 dto_methods!(ApiGatewayV2Integration);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2IntegrationProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,
@@ -136,7 +136,7 @@ pub struct ApiGatewayV2IntegrationProperties {
 
 ref_struct!(ApiGatewayV2RouteRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Route {
     #[serde(skip)]
     pub(super) id: Id,
@@ -149,7 +149,7 @@ pub struct ApiGatewayV2Route {
 }
 dto_methods!(ApiGatewayV2Route);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,

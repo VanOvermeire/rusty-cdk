@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub enum UpdateReplacePolicy {
     /// `Delete` is the default, deleting the resource (if possible)
@@ -42,7 +42,7 @@ impl From<DeletionPolicy> for String {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateDeletePolicyDTO {
     #[serde(rename = "DeletionPolicy", skip_serializing_if = "Option::is_none")]
     pub(crate) deletion_policy: Option<String>,

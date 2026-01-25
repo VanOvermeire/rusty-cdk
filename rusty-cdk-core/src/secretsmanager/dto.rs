@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
 ref_struct!(SecretRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Secret {
     #[serde(skip)]
     pub(super) id: Id,
@@ -18,7 +18,7 @@ pub struct Secret {
 }
 dto_methods!(Secret);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SecretProperties {
     #[serde(rename = "Name", skip_serializing_if = "Option::is_none")]
     pub(super) name: Option<String>,
@@ -34,7 +34,7 @@ pub struct SecretProperties {
     // pub(super) replica_regions: Option<Vec<ReplicaRegion>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GenerateSecretString {
     #[serde(rename = "ExcludeCharacters", skip_serializing_if = "Option::is_none")]
     pub(super) exclude_characters: Option<String>,
@@ -58,7 +58,7 @@ pub struct GenerateSecretString {
     pub(super) secret_string_template: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReplicaRegion {
     #[serde(rename = "Region")]
     pub(super) region: String,

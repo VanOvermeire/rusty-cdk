@@ -1,12 +1,12 @@
 use crate::iam::PolicyDocument;
 use crate::shared::{Id, UpdateDeletePolicyDTO};
 use crate::{dto_methods, ref_struct};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 ref_struct!(BucketPolicyRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BucketPolicy {
     #[serde(skip)]
     pub(super) id: Id,
@@ -19,7 +19,7 @@ pub struct BucketPolicy {
 }
 dto_methods!(BucketPolicy);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct S3BucketPolicyProperties {
     #[serde(rename = "Bucket")]
     pub(crate) bucket_name: Value,
@@ -29,7 +29,7 @@ pub struct S3BucketPolicyProperties {
 
 ref_struct!(BucketRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Bucket {
     #[serde(skip)]
     pub(super) id: Id,
@@ -44,7 +44,7 @@ pub struct Bucket {
 }
 dto_methods!(Bucket);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BucketProperties {
     #[serde(rename = "AbacStatus", skip_serializing_if = "Option::is_none")]
     pub(super) abac_status: Option<String>,
@@ -82,7 +82,7 @@ pub struct BucketProperties {
     // "OwnershipControls" : OwnershipControls,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MetadataConfiguration {
     #[serde(rename = "Destination")]
     pub(super) destination: Option<MetadataDestination>,
@@ -92,7 +92,7 @@ pub struct MetadataConfiguration {
     pub(super) journal_table_configuration: JournalTableConfiguration,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MetadataDestination {
     #[serde(rename = "TableBucketArn", skip_serializing_if = "Option::is_none")]
     pub(super) table_bucket_arn: Option<Value>,
@@ -102,7 +102,7 @@ pub struct MetadataDestination {
     pub(super) table_namespace: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InventoryTableConfiguration {
     #[serde(rename = "ConfigurationState")]
     pub(super) configuration_state: String,
@@ -114,7 +114,7 @@ pub struct InventoryTableConfiguration {
     // pub(super) encryption_configuration: MetadataTableEncryptionConfiguration,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct JournalTableConfiguration {
     #[serde(rename = "RecordExpiration")]
     pub(super) record_expiration: RecordExpiration,
@@ -126,7 +126,7 @@ pub struct JournalTableConfiguration {
     // pub(super) encryption_configuration: MetadataTableEncryptionConfiguration,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RecordExpiration {
     #[serde(rename = "Days", skip_serializing_if = "Option::is_none")]
     pub(super) days: Option<u32>,
@@ -134,7 +134,7 @@ pub struct RecordExpiration {
     pub(super) expiration: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IntelligentTieringConfiguration {
     #[serde(rename = "Id")]
     pub(super) id: String,
@@ -148,7 +148,7 @@ pub struct IntelligentTieringConfiguration {
     pub(super) tierings: Vec<Tiering>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Tiering {
     #[serde(rename = "AccessTier")]
     pub(super) access_tier: String,
@@ -156,7 +156,7 @@ pub struct Tiering {
     pub(super) days: u16,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TagFilter {
     #[serde(rename = "Key")]
     pub(super) key: String,
@@ -164,19 +164,19 @@ pub struct TagFilter {
     pub(super) value: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccelerateConfiguration {
     #[serde(rename = "AccelerationStatus")]
     pub(super) acceleration_status: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BucketEncryption {
     #[serde(rename = "ServerSideEncryptionConfiguration")]
     pub(super) server_side_encryption_configuration: Vec<ServerSideEncryptionRule>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServerSideEncryptionRule {
     #[serde(rename = "ServerSideEncryptionByDefault")]
     pub(super) server_side_encryption_by_default: ServerSideEncryptionByDefault,
@@ -184,7 +184,7 @@ pub struct ServerSideEncryptionRule {
     pub(super) bucket_key_enabled: Option<bool>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServerSideEncryptionByDefault {
     #[serde(rename = "SSEAlgorithm")]
     pub(super) sse_algorithm: String,
@@ -192,13 +192,13 @@ pub struct ServerSideEncryptionByDefault {
     pub(super) kms_master_key_id: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CorsConfiguration {
     #[serde(rename = "CorsRules")]
     pub(super) cors_rules: Vec<CorsRule>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CorsRule {
     #[serde(rename = "AllowedHeaders", skip_serializing_if = "Option::is_none")]
     pub(super) allowed_headers: Option<Vec<String>>,
@@ -212,7 +212,7 @@ pub struct CorsRule {
     pub(super) max_age: Option<u64>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LifecycleConfiguration {
     #[serde(rename = "Rules")]
     pub(super) rules: Vec<LifecycleRule>,
@@ -220,7 +220,7 @@ pub struct LifecycleConfiguration {
     pub(super) transition_minimum_size: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LifecycleRuleTransition {
     #[serde(rename = "StorageClass")]
     pub(super) storage_class: String,
@@ -230,7 +230,7 @@ pub struct LifecycleRuleTransition {
                                         // pub(super transition_date: String => add and check the regex
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NonCurrentVersionTransition {
     #[serde(rename = "StorageClass")]
     pub(super) storage_class: String,
@@ -240,7 +240,7 @@ pub struct NonCurrentVersionTransition {
     pub(super) newer_non_current_versions: Option<u32>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LifecycleRule {
     #[serde(rename = "Id", skip_serializing_if = "Option::is_none")]
     pub(super) id: Option<String>,
@@ -267,7 +267,7 @@ pub struct LifecycleRule {
     // "ExpirationDate": String => check the regex
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicConfiguration {
     #[serde(rename = "Event")]
     pub(super) event: String,
@@ -277,7 +277,7 @@ pub struct TopicConfiguration {
     pub(super) filter: Option<NotificationFilter>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueueConfiguration {
     #[serde(rename = "Event")]
     pub(super) event: String,
@@ -287,7 +287,7 @@ pub struct QueueConfiguration {
     pub(super) filter: Option<NotificationFilter>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaConfiguration {
     #[serde(rename = "Event")]
     pub(super) event: String,
@@ -297,19 +297,19 @@ pub struct LambdaConfiguration {
     pub(super) filter: Option<NotificationFilter>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NotificationFilter {
     #[serde(rename = "S3Key", skip_serializing_if = "Option::is_none")]
     pub(super) s3_key: Option<S3KeyFilter>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct S3KeyFilter {
     #[serde(rename = "Rules")]
     pub(super) rules: Vec<FilterRule>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FilterRule {
     #[serde(rename = "Name")]
     pub(super) name: String,
@@ -317,7 +317,7 @@ pub struct FilterRule {
     pub(super) value: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PublicAccessBlockConfiguration {
     #[serde(rename = "BlockPublicAcls", skip_serializing_if = "Option::is_none")]
     pub(super) block_public_acls: Option<bool>,
@@ -329,13 +329,13 @@ pub struct PublicAccessBlockConfiguration {
     pub(super) restrict_public_buckets: Option<bool>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VersioningConfig {
     #[serde(rename = "Status")]
     pub(super) status: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WebsiteConfiguration {
     #[serde(rename = "IndexDocument", skip_serializing_if = "Option::is_none")]
     pub(super) index_document: Option<String>,
@@ -345,7 +345,7 @@ pub struct WebsiteConfiguration {
     pub(super) redirect_all_requests_to: Option<RedirectAllRequestsTo>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RedirectAllRequestsTo {
     #[serde(rename = "HostName")]
     pub(super) host_name: String,

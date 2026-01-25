@@ -1,5 +1,5 @@
 use crate::shared::Id;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 
@@ -7,7 +7,7 @@ ref_struct!(BucketNotificationRef);
 
 /// The code for bucket notifications is *heavily* inspired by the AWS CDK
 /// And will be needed until this is supported natively in CloudFormation (https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/79)
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BucketNotification {
     #[serde(skip)]
     pub(super) id: Id,
@@ -21,7 +21,7 @@ pub struct BucketNotification {
 
 dto_methods!(BucketNotification);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BucketNotificationProperties {
     #[serde(rename = "ServiceToken")]
     pub(super) service_token: Value,
@@ -37,7 +37,7 @@ pub struct BucketNotificationProperties {
     pub(super) depends_on: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NotificationConfiguration {
     #[serde(rename = "LambdaFunctionConfigurations", skip_serializing_if = "Option::is_none")]
     pub(super) lambda_configs: Option<Vec<LambdaFunctionConfiguration>>,
@@ -47,7 +47,7 @@ pub struct NotificationConfiguration {
     pub(super) queue_configs: Option<Vec<QueueConfiguration>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaFunctionConfiguration {
     #[serde(rename = "Events")]
     pub(super) events: Vec<String>,
@@ -55,7 +55,7 @@ pub struct LambdaFunctionConfiguration {
     pub(super) arn: Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicConfiguration {
     #[serde(rename = "Events")]
     pub(super) events: Vec<String>,
@@ -63,7 +63,7 @@ pub struct TopicConfiguration {
     pub(super) arn: Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueueConfiguration {
     #[serde(rename = "Events")]
     pub(super) events: Vec<String>,

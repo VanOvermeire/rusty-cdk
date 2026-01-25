@@ -1,13 +1,13 @@
 use crate::{dto_methods, ref_struct, ref_struct_with_id_methods};
 use crate::shared::Id;
 use crate::stack::Asset;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
 ref_struct_with_id_methods!(FunctionRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Function {
     #[serde(skip)]
     pub(super) id: Id,
@@ -31,7 +31,7 @@ impl Function {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaFunctionProperties {
     #[serde(rename = "Code")]
     pub(super) code: LambdaCode,
@@ -59,7 +59,7 @@ pub struct LambdaFunctionProperties {
     // "VpcConfig": VpcConfig
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaCode {
     #[serde(rename = "S3Bucket", skip_serializing_if = "Option::is_none")]
     pub(super) s3_bucket: Option<String>,
@@ -72,13 +72,13 @@ pub struct LambdaCode {
     // source_kmskey_arn: String
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Environment {
     #[serde(rename = "Variables")]
     pub(super) variables: HashMap<String, Value>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LoggingInfo {
     #[serde(rename = "LogGroup")]
     pub(super) log_group: Option<Value>,
@@ -89,7 +89,7 @@ pub struct LoggingInfo {
 
 ref_struct!(EventSourceMappingRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EventSourceMapping {
     #[serde(skip)]
     pub(super) id: Id,
@@ -102,7 +102,7 @@ pub struct EventSourceMapping {
 }
 dto_methods!(EventSourceMapping);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EventSourceProperties {
     #[serde(rename = "EventSourceArn", skip_serializing_if = "Option::is_none")]
     pub(super) event_source_arn: Option<Value>,
@@ -112,7 +112,7 @@ pub struct EventSourceProperties {
     pub(super) scaling_config: Option<ScalingConfig>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ScalingConfig {
     #[serde(rename = "MaximumConcurrency")]
     pub(super) max_concurrency: u16,
@@ -120,7 +120,7 @@ pub struct ScalingConfig {
 
 ref_struct_with_id_methods!(PermissionRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Permission {
     #[serde(skip)]
     pub(super) id: Id,
@@ -133,7 +133,7 @@ pub struct Permission {
 }
 dto_methods!(Permission);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaPermissionProperties {
     #[serde(rename = "Action")]
     pub(super) action: String,

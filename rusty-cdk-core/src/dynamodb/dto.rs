@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::{Id, UpdateDeletePolicyDTO};
 
 ref_struct!(TableRef);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Table {
     #[serde(skip)]
     pub(super) id: Id,
@@ -20,7 +20,7 @@ pub struct Table {
 }
 dto_methods!(Table);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TableProperties {
     #[serde(rename = "KeySchema")]
     pub(super) key_schema: Vec<KeySchema>,
@@ -41,7 +41,7 @@ pub struct TableProperties {
     // "TimeToLiveSpecification" : TimeToLiveSpecification,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AttributeDefinition {
     #[serde(rename = "AttributeName")]
     pub(super) attribute_name: String,
@@ -49,7 +49,7 @@ pub struct AttributeDefinition {
     pub(super) attribute_type: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct KeySchema {
     #[serde(rename = "AttributeName")]
     pub(super) attribute_name: String,
@@ -57,7 +57,7 @@ pub struct KeySchema {
     pub(super) key_type: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProvisionedThroughput {
     #[serde(rename = "ReadCapacityUnits")]
     pub(super) read_capacity: u32,
@@ -65,7 +65,7 @@ pub struct ProvisionedThroughput {
     pub(super) write_capacity: u32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OnDemandThroughput {
     #[serde(rename = "MaxReadRequestUnits", skip_serializing_if = "Option::is_none")]
     pub(super) max_read_capacity: Option<u32>,

@@ -12,7 +12,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// A user should not change an id if he/she does not want to replace an existing resource.
 /// This behavior is similar to that of the AWS CDK
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Id(pub String);
 
 impl Deref for Id {
