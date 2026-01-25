@@ -3,13 +3,17 @@ use aws_config::stalled_stream_protection::StalledStreamProtectionConfig;
 use aws_sdk_cloudformation::Client;
 use aws_sdk_cloudformation::types::StackStatus;
 
-pub async fn load_config() -> SdkConfig {
-    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+pub async fn load_config(with_stall_protection: bool) -> SdkConfig {
+    let mut config = aws_config::defaults(aws_config::BehaviorVersion::latest());
+    
+    if with_stall_protection {
         // https://github.com/awslabs/aws-sdk-rust/issues/1146
-        .stalled_stream_protection(StalledStreamProtectionConfig::disabled())
-        .load()
-        .await;
+        config = config.stalled_stream_protection(StalledStreamProtectionConfig::disabled());
+    }
+
     config
+        .load()
+        .await
 }
 
 pub async fn get_existing_template(client: &Client, stack_name: &str) -> Option<String> {

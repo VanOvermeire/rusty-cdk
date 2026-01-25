@@ -92,70 +92,13 @@ impl Display for DeployError {
 /// - `s3:PutObject` (for Lambda asset uploads)
 /// - IAM permissions if creating roles (`iam:CreateRole`, `iam:PutRolePolicy`, etc.)
 /// - Service-specific permissions for resources being created
-pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) {
-    let name = name.0;
-    let config = load_config().await;
-
-    let assets = stack.get_assets();
-    assets.iter().for_each(|a| {
-        println!("uploading {}", a);
-    });
-
-    match upload_assets(assets, &config).await {
-        Ok(_) => {}
+pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
+    match deploy_with_result(name, stack, true).await {
+        Ok(message) => println!("{message}"),
         Err(e) => {
-            eprintln!("{e:#?}");
+            eprintln!("{e}");
             exit(1);
         }
-    }
-
-    let cloudformation_client = Client::new(&config);
-
-    match create_or_update_stack(&name, &mut stack, &cloudformation_client).await {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("{e:#?}");
-            exit(1);
-        }
-    }
-
-    loop {
-        let status = get_stack_status(&name, &cloudformation_client).await.expect("status to be available for stack");
-
-        match status {
-            StackStatus::CreateComplete => {
-                println!("creation completed successfully!");
-                exit(0);
-            }
-            StackStatus::CreateFailed => {
-                println!("creation failed");
-                exit(1);
-            }
-            StackStatus::CreateInProgress => {
-                println!("creating...");
-            }
-            StackStatus::UpdateComplete | StackStatus::UpdateCompleteCleanupInProgress => {
-                println!("update completed successfully!");
-                exit(0);
-            }
-            StackStatus::UpdateRollbackComplete
-            | StackStatus::UpdateRollbackCompleteCleanupInProgress
-            | StackStatus::UpdateRollbackFailed
-            | StackStatus::UpdateRollbackInProgress
-            | StackStatus::UpdateFailed => {
-                println!("update failed");
-                exit(1);
-            }
-            StackStatus::UpdateInProgress => {
-                println!("updating...");
-            }
-            _ => {
-                println!("encountered unexpected cloudformation status: {status}");
-                exit(1);
-            }
-        }
-
-        sleep(Duration::from_secs(10)).await;
     }
 }
 
@@ -200,7 +143,7 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
 ///
 ///     let stack = stack_builder.build().expect("Stack to build successfully");
 ///
-///     let result = deploy_with_result(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack).await;
+///     let result = deploy_with_result(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack, false).await;
 /// }
 /// ```
 ///
@@ -217,9 +160,9 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stac
 /// - `s3:PutObject` (for Lambda asset uploads)
 /// - IAM permissions if creating roles (`iam:CreateRole`, `iam:PutRolePolicy`, etc.)
 /// - Service-specific permissions for resources being created
-pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack) -> Result<(), DeployError> {
+pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack, print_progress: bool) -> Result<String, DeployError> {
     let name = name.0;
-    let config = load_config().await;
+    let config = load_config(true).await;
 
     upload_assets(stack.get_assets(), &config).await?;
 
@@ -232,13 +175,21 @@ pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut
 
         match status {
             StackStatus::CreateComplete => {
-                return Ok(());
+                return Ok("created successfully".to_string());
             }
             StackStatus::UpdateComplete | StackStatus::UpdateCompleteCleanupInProgress => {
-                return Ok(());
+                return Ok("updated successfully".to_string());
             }
-            StackStatus::CreateInProgress => {}
-            StackStatus::UpdateInProgress => {}
+            StackStatus::CreateInProgress => {
+                if print_progress {
+                    println!("creating...");
+                }
+            }
+            StackStatus::UpdateInProgress => {
+                if print_progress {
+                    println!("updating...");
+                }
+            }
             StackStatus::CreateFailed => {
                 return Err(DeployError::StackCreateError(format!("{status}")));
             }

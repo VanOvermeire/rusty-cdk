@@ -1,0 +1,9 @@
+[package]
+name = "rusty-cdk-tool"
+version = "0.6.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.54", features = ["derive"] }
+tokio = { version = "1.41.1", features = ["macros", "rt-multi-thread"] }
+rusty-cdk = { version = "0.6.0", path = "../rusty-cdk" }

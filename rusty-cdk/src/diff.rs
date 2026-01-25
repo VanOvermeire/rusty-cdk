@@ -2,7 +2,7 @@ use std::process::exit;
 use aws_sdk_cloudformation::Client;
 use rusty_cdk_core::stack::{Stack, StackDiff};
 use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
-use crate::util::get_existing_template;
+use crate::util::{get_existing_template, load_config};
 
 /// Creates a diff that will show what ids are being added / removed to an existing stack, as well as showing ids that remain without being added or removed.
 /// Currently, the diff does not show modifications to resources.
@@ -19,29 +19,36 @@ use crate::util::get_existing_template;
 /// - `cloudformation:DescribeStacks`, `cloudformation:GetTemplate`
 #[allow(unused)]
 pub async fn diff(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
-    let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        .load()
-        .await;
+    match diff_with_result(name, stack).await {
+        Ok(res) => {
+            println!("{res}");
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            exit(1);
+        }
+    }
+}
+
+pub async fn diff_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) -> Result<String, String> {
+    let config = load_config(false).await;
     let cloudformation_client = Client::new(&config);
-    
+
     match get_existing_template(&cloudformation_client, &name.0).await {
         None => {
-            eprintln!("could not find existing stack with name {}", name.0);
-            exit(1);
+            Err(format!("could not find existing stack with name {}", name.0))
         }
         Some(existing) => {
             let diff = stack.get_diff(&existing);
-            
+
             match diff {
                 Ok(diff) => {
                     let StackDiff { new_ids, unchanged_ids, ids_to_be_removed} = diff;
-                    println!("- added ids: {}", print_ids(new_ids));
-                    println!("- removed ids: {}", print_ids(ids_to_be_removed));
-                    println!("- id that stay: {}", print_ids(unchanged_ids));
+                    let output = format!("- added ids: {}\n- removed ids: {}\n- ids that stay: {}", print_ids(new_ids), print_ids(ids_to_be_removed), print_ids(unchanged_ids));
+                    Ok(output)
                 }
                 Err(e) => {
-                    eprintln!("{}", e);
-                    exit(1);
+                    Err(e)
                 }
             }
         }
