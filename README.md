@@ -107,7 +107,7 @@ fn main() {
 And every supported `resource` has one too. With these `builders` you create the infrastructure you need step by step.
 Once you're done, you call `build` and pass in a `StackBuilder`, at which point your `resource` is added to the stack.
 If the `build` method of `builder` does not require a `StackBuilder` argument, it is not a real resource. 
-It is properties/settings that needs to be passed to a proper resource to have effect.
+It is a property that needs to be passed to a proper resource to have effect. Another clue is that only resources require an id when you call `new`.
 
 For example, an `S3 Bucket` can have a cors configuration. You create that configuration with a `builder` that needs no arguments.
 Once created, you pass the config to the bucket `builder`. When you're ready with configuring your bucket, you call `build` and are required to pass in the `StackBuilder`. This means the bucket is an actual `resource`. 
@@ -126,7 +126,7 @@ fn main() {
   let mut stack_builder = StackBuilder::new();
 
   let cors_configuration = CorsConfigurationBuilder::new(vec![CorsRuleBuilder::new(vec!["*"], vec![HttpMethod::Get]).build()]).build(); // no param required
-  BucketBuilder::new("buck")
+  BucketBuilder::new("buck") // a real resource requires an id
           .name(bucket_name!("sams-great-website"))
           .website("index.html")
           .cors_config(cors_configuration)
@@ -143,6 +143,8 @@ You can see that there are a lot of macro calls in the above code.
 Those macros enforce additional rules at compile time to make sure that you don't pass in any disallowed values that could cause issues during or after deployment. For example, the `bucket_name!` macro makes sure the naming requirements of S3 are obeyed, _and_ it checks that the bucket is available for creation (bucket names have to be globally unique!). Every one of these macro calls generates a simple 'wrapper' (often a `newtype`) in the background.
 In our example, the wrapper is called `BucketName`. If for some reason the macro does not work properly, you can fall back to direct use of these wrappers.
 The docs of the macros will point you to the correct wrapper.
+
+As noted, `resources` require a unique identifier, an `id`. These ids are very similar to those of the AWS CDK. They are used as a convenience to link a resource you created to the one described in the deployed CloudFormation template (stack). This also means that if you change an id, that's interpreted as a delete/create, and will throw away the existing resource to create a brand new one.
 
 Finally, `refs`. While there is no need to interact with the `resources` directly, you do occasionally need to be able to reference them.
 For example, you might have a `Lambda` that needs the name of a `DynamoDB` table that it wants to store items in.
@@ -423,8 +425,6 @@ async fn tagging() {
 ## TODO
 
 - Check for places where we pass in a `Value` but should pass in a Ref
-- Extend the concepts sections with
-  - ids
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
 - Ability to invoke deploy, diff and destroy from command line
