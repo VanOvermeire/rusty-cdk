@@ -1,6 +1,5 @@
 use std::ops::Deref;
 use std::fmt::{Display, Formatter};
-use serde::{Deserialize, Serialize};
 
 /// `Id` is a unique identifier for a resource within a stack, chosen by the user (if it's a root resource), or by the library itself.
 /// E.g., when a user adds a bucket, he/she will pick the id of that bucket.

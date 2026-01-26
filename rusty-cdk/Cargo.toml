@@ -1,6 +1,6 @@
 [package]
 name = "rusty-cdk"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2024"
 
 description = "A safer alternative to the AWS CDK"
@@ -11,9 +11,9 @@ keywords = ["AWS", "CDK", "CloudFormation", "IAC"]
 readme = "../README.md"
 
 [dependencies]
-rusty-cdk-core = { version = "0.6.2", path = "../rusty-cdk-core" }
-rusty-cdk-macros = { version = "0.6.2", path = "../rusty-cdk-macros" }
-rusty-cdk-lookups = { version = "0.6.2", path = "../rusty-cdk-lookups" }
+rusty-cdk-core = { version = "0.6.3", path = "../rusty-cdk-core" }
+rusty-cdk-macros = { version = "0.6.3", path = "../rusty-cdk-macros" }
+rusty-cdk-lookups = { version = "0.6.3", path = "../rusty-cdk-lookups" }
 tokio = { version = "1", features = ["full"] }
 aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
 aws-sdk-cloudformation = "1.90.0"

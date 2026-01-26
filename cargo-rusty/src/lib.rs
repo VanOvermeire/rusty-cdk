@@ -79,7 +79,7 @@ pub async fn entry_point(command: RustyCommand) {
                     exit(1);
                 }
             }
-            
+
             if cleanup {
                 remove_fill_or_exit(&path).await;
             }
