@@ -133,15 +133,12 @@ impl StackBuilder {
                 roles_with_potentially_missing_services,
             ));
         }
-        
 
         let metadata = self
             .resources
             .iter()
             .map(|r| (r.get_id().to_string(), r.get_resource_id().to_string()))
             .collect();
-
-
 
         let resources = self.resources.into_iter().map(|r| (r.get_resource_id().to_string(), r)).collect();
         Ok(Stack {

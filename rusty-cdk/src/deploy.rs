@@ -12,6 +12,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 
+// TODO here and elsewhere: remove the 'normal' deploy/diff methods - use cargo rusty for those
+
 #[derive(Debug)]
 pub enum DeployError {
     SynthError(String),

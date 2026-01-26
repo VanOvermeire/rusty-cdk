@@ -5,6 +5,7 @@ use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::cloudwatch::LogGroup;
 use crate::custom_resource::BucketNotification;
 use crate::dynamodb::Table;
+use crate::events::Schedule;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
 use crate::s3::{Bucket, BucketPolicy};
@@ -16,7 +17,6 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use crate::events::Schedule;
 
 #[derive(Debug)]
 pub struct StackDiff {
@@ -223,7 +223,7 @@ impl Stack {
         let meta = Self::get_metadata(existing_stack)?;
         let existing_meta = meta.metadata;
         let existing_ids: Vec<_> = existing_meta.keys().cloned().collect();
-        
+
         let new_meta = &self.metadata;
         let new_ids: Vec<_> = new_meta.keys().cloned().collect();
 
@@ -260,34 +260,29 @@ impl Stack {
     }
 
     fn update_resource_ids_for_existing_stack(&mut self, existing_ids_with_resource_ids: HashMap<String, String>) {
-        // TODO can't I just use metadata instead of iterating through the resources?
-        let current_ids: HashMap<String, String> = self
-            .resources
-            .iter()
-            .map(|(resource_id, resource)| (resource.get_id().0, resource_id.to_string()))
+        let still_existing_after_proposed_changes: Vec<_> = existing_ids_with_resource_ids
+            .into_iter()
+            .filter(|(existing_id, _)| self.metadata.contains_key(existing_id))
+            .map(|existing| {
+                let current_stack_resource_id = self.metadata.get(&existing.0).expect("existence to be checked by filter").to_string();
+                (existing.0, existing.1, current_stack_resource_id)
+            })
             .collect();
 
-        existing_ids_with_resource_ids
-            .into_iter()
-            .filter(|(existing_id, _)| current_ids.contains_key(existing_id))
-            .for_each(|(existing_id, existing_resource_id)| {
-                let current_stack_resource_id = current_ids.get(&existing_id).expect("existence to be checked by filter");
-                let removed = self
-                    .resources
-                    .remove(current_stack_resource_id)
-                    .expect("resource to exist in stack resources");
-                self.resources.insert(existing_resource_id.clone(), removed);
-                self.metadata.insert(existing_id, existing_resource_id.clone());
-                self.resource_ids_to_replace
-                    .push((current_stack_resource_id.to_string(), existing_resource_id));
-            });
+        still_existing_after_proposed_changes.into_iter().for_each(|(existing_id, existing_resource_id, current_stack_resource_id)| {
+            let removed = self
+                .resources
+                .remove(&current_stack_resource_id)
+                .expect("resource to exist in stack resources");
+            self.resources.insert(existing_resource_id.clone(), removed);
+            self.metadata.insert(existing_id, existing_resource_id.clone());
+            self.resource_ids_to_replace
+                .push((current_stack_resource_id.to_string(), existing_resource_id));
+        });
     }
 
     fn get_metadata(existing_stack: &str) -> Result<StackOnlyMetadata, String> {
-        serde_json::from_str(existing_stack).map_err(|e| {
-            println!("{}", e);
-            "Could not retrieve resource info from existing stack".to_string()
-        })
+        serde_json::from_str(existing_stack).map_err(|e| format!("Could not retrieve resource info from existing stack: {}", e))
     }
 }
 
@@ -513,10 +508,15 @@ mod tests {
         TopicBuilder::new("topic").build(&mut stack_builder);
         QueueBuilder::new("queue").standard_queue().build(&mut stack_builder);
         let stack = stack_builder.build().unwrap();
-        
-        let diff = stack.get_diff(r#"{"Metadata": { "queue": "Queue123", "bucket": "Bucket234" } }"#).expect("diff to work");
 
-        assert_eq!(diff.new_ids, vec![("topic".to_string(), stack.metadata.get("topic").unwrap().to_string())]);
+        let diff = stack
+            .get_diff(r#"{"Metadata": { "queue": "Queue123", "bucket": "Bucket234" } }"#)
+            .expect("diff to work");
+
+        assert_eq!(
+            diff.new_ids,
+            vec![("topic".to_string(), stack.metadata.get("topic").unwrap().to_string())]
+        );
         assert_eq!(diff.ids_to_be_removed, vec![("bucket".to_string(), "Bucket234".to_string())]);
         assert_eq!(diff.unchanged_ids, vec![("queue".to_string(), "Queue123".to_string())]);
     }

@@ -2,6 +2,7 @@ use std::fs::{read_dir, read_to_string};
 use std::process::exit;
 use clap::Parser;
 use clap::Subcommand;
+use tokio::fs::remove_file;
 use tokio::process::Command;
 use rusty_cdk::{deploy, destroy, diff};
 use rusty_cdk::stack::Stack;
@@ -20,6 +21,9 @@ pub enum RustyCommand {
         /// If no path is passed in, the command will generate a synthesized stack using `cargo run` 
         #[clap(short, long)]
         synth_path: Option<String>,
+        /// Cleans up the generated or passed-in synth file
+        #[clap(short, long)]
+        cleanup: bool
     },
     #[clap(about = "Generate diff with a deployed template with the given name")]
     Diff {
@@ -30,11 +34,18 @@ pub enum RustyCommand {
         /// If no path is passed in, the command will generate a synthesized stack using `cargo run`
         #[clap(short, long)]
         synth_path: Option<String>,
+        /// Cleans up the generated or passed-in synth file
+        #[clap(short, long, default_missing_value="false")]
+        cleanup: bool
     },
     #[clap(about = "Destroy a stack with the give name")]
     Destroy {
         /// Name of the (deployed) stack that you want to delete
         name: String,
+        /// In addition to deleting the stack, `force` will also
+        /// - empty S3 buckets that do not have a 'retain'
+        #[clap(short, long, default_missing_value="false")]
+        force: bool
     },
 }
 
@@ -47,7 +58,7 @@ pub struct Args {
 
 pub async fn entry_point(command: RustyCommand) {
     match command {
-        RustyCommand::Deploy { name, synth_path } => {
+        RustyCommand::Deploy { name, synth_path, cleanup } => {
             println!("deploying stack with name {name}");
 
             let path = if let Some(path) = synth_path {
@@ -68,8 +79,12 @@ pub async fn entry_point(command: RustyCommand) {
                     exit(1);
                 }
             }
+            
+            if cleanup {
+                remove_fill_or_exit(&path).await;
+            }
         }
-        RustyCommand::Diff { name, synth_path } => {
+        RustyCommand::Diff { name, synth_path, cleanup } => {
             println!("creating a diff with an existing stack (name {name})");
 
             let path = if let Some(path) = synth_path {
@@ -90,8 +105,12 @@ pub async fn entry_point(command: RustyCommand) {
                     exit(1);
                 }
             }
+
+            if cleanup {
+                remove_fill_or_exit(&path).await;
+            }
         }
-        RustyCommand::Destroy { name } => {
+        RustyCommand::Destroy { name, force } => {
             println!("destroying stack with name {name}");
             destroy(StringWithOnlyAlphaNumericsAndHyphens(name)).await;
         }
@@ -139,5 +158,14 @@ fn get_path_as_stack(path: &str) -> Result<Stack, String> {
             }
         }
         Err(e) => Err(format!("could not read file with path {path}: {e}")),
+    }
+}
+
+async fn remove_fill_or_exit(path: &String) {
+    let removed = remove_file(&path).await;
+
+    if let Err(e) = removed {
+        eprintln!("error cleaning up file at {path}: {e}");
+        exit(1);
     }
 }
