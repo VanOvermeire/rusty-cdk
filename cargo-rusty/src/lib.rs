@@ -112,10 +112,10 @@ async fn run_synth_in_current_path() -> Result<String, String> {
 
             if is_rust_project {
                 match Command::new("sh")
-                    .args(&["-c", "cargo run > rusty-cdk-tool-temporary-synth.json"])
+                    .args(&["-c", "cargo run > cargo-rusty-temporary-synth.json"])
                     .output()
                     .await {
-                    Ok(_) => Ok("./rusty-cdk-tool-temporary-synth.json".to_string()),
+                    Ok(_) => Ok("./cargo-rusty-temporary-synth.json".to_string()),
                     Err(e) => {
                         Err(format!("Could not run `cargo run` (required to synth when no synth_path is passed in): {e}"))
                     }
