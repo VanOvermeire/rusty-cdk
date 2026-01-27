@@ -110,7 +110,7 @@ pub async fn entry_point(command: RustyCommand) {
                 remove_fill_or_exit(&path).await;
             }
         }
-        RustyCommand::Destroy { name, force } => {
+        RustyCommand::Destroy { name, force: _force } => {
             println!("destroying stack with name {name}");
             destroy(StringWithOnlyAlphaNumericsAndHyphens(name)).await;
         }
