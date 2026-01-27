@@ -20,16 +20,7 @@ pub struct Function {
     #[serde(rename = "Properties")]
     pub(super) properties: LambdaFunctionProperties,
 }
-
-impl Function {
-    pub fn get_id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn get_resource_id(&self) -> &str {
-        self.resource_id.as_str()
-    }
-}
+dto_methods!(Function);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LambdaFunctionProperties {

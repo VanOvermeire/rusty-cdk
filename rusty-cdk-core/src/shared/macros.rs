@@ -12,6 +12,11 @@ macro_rules! dto_methods {
             pub fn get_resource_id(&self) -> &str {
                 self.resource_id.as_str()
             }
+        
+            #[allow(dead_code)]
+            pub fn get_type(&self) -> &str {
+                self.r#type.as_str()
+            }
         }
     };
 }

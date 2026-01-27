@@ -40,7 +40,7 @@ pub struct Bucket {
     #[serde(rename = "Properties")]
     pub(super) properties: BucketProperties,
     #[serde(flatten)]
-    pub(super) update_delete_policy_dto: UpdateDeletePolicyDTO
+    pub(crate) update_delete_policy_dto: UpdateDeletePolicyDTO
 }
 dto_methods!(Bucket);
 

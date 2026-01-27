@@ -42,6 +42,18 @@ impl From<DeletionPolicy> for String {
     }
 }
 
+impl From<&String> for DeletionPolicy {
+    fn from(value: &String) -> DeletionPolicy {
+        match value.as_str() {
+            "Delete" => DeletionPolicy::Delete,
+            "Snapshot" => DeletionPolicy::Snapshot,
+            "Retain" => DeletionPolicy::Retain,
+            "RetainExceptOnCreate" => DeletionPolicy::RetainExceptOnCreate,
+            _ => unreachable!("all deletion policy options to be covered")
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateDeletePolicyDTO {
     #[serde(rename = "DeletionPolicy", skip_serializing_if = "Option::is_none")]

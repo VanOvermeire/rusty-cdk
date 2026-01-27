@@ -8,15 +8,20 @@ use crate::dynamodb::Table;
 use crate::events::Schedule;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
-use crate::s3::{Bucket, BucketPolicy};
+use crate::s3::{Bucket, BucketPolicy, BUCKET_TYPE};
 use crate::secretsmanager::Secret;
-use crate::shared::Id;
+use crate::shared::{DeletionPolicy, Id};
 use crate::sns::{Subscription, Topic, TopicPolicy};
 use crate::sqs::{Queue, QueuePolicy};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+
+#[derive(Debug)]
+pub enum Cleanable<'a> {
+    Bucket(&'a str)
+}
 
 #[derive(Debug)]
 pub struct StackDiff {
@@ -219,6 +224,31 @@ impl Stack {
         self.synth()
     }
 
+    pub fn get_cleanable_resources(&'_ self) -> Vec<Cleanable<'_>> {
+        self.resources.iter().flat_map(|(k, r)| {
+            // unfortunately, with Resource being untagged, matching might give back the wrong type of Resource, so we go by resource type
+            let resource_type = r.get_type();
+            if resource_type == BUCKET_TYPE {
+                match r {
+                    Resource::Bucket(b) => {
+                    if let Some(pol) = &b.update_delete_policy_dto.deletion_policy {
+                        let pol: DeletionPolicy = pol.into();
+                        match pol {
+                            DeletionPolicy::Retain => None,
+                            _ => Some(Cleanable::Bucket(k))
+                        }
+                    } else {
+                        Some(Cleanable::Bucket(k))
+                    }
+                    }
+                    _ => unreachable!("already established that this is a bucket")
+                }
+            } else {
+                None
+            }
+        }).collect()
+    }
+
     pub fn get_diff(&self, existing_stack: &str) -> Result<StackDiff, String> {
         let meta = Self::get_metadata(existing_stack)?;
         let existing_meta = meta.metadata;
@@ -264,21 +294,27 @@ impl Stack {
             .into_iter()
             .filter(|(existing_id, _)| self.metadata.contains_key(existing_id))
             .map(|existing| {
-                let current_stack_resource_id = self.metadata.get(&existing.0).expect("existence to be checked by filter").to_string();
+                let current_stack_resource_id = self
+                    .metadata
+                    .get(&existing.0)
+                    .expect("existence to be checked by filter")
+                    .to_string();
                 (existing.0, existing.1, current_stack_resource_id)
             })
             .collect();
 
-        still_existing_after_proposed_changes.into_iter().for_each(|(existing_id, existing_resource_id, current_stack_resource_id)| {
-            let removed = self
-                .resources
-                .remove(&current_stack_resource_id)
-                .expect("resource to exist in stack resources");
-            self.resources.insert(existing_resource_id.clone(), removed);
-            self.metadata.insert(existing_id, existing_resource_id.clone());
-            self.resource_ids_to_replace
-                .push((current_stack_resource_id.to_string(), existing_resource_id));
-        });
+        still_existing_after_proposed_changes
+            .into_iter()
+            .for_each(|(existing_id, existing_resource_id, current_stack_resource_id)| {
+                let removed = self
+                    .resources
+                    .remove(&current_stack_resource_id)
+                    .expect("resource to exist in stack resources");
+                self.resources.insert(existing_resource_id.clone(), removed);
+                self.metadata.insert(existing_id, existing_resource_id.clone());
+                self.resource_ids_to_replace
+                    .push((current_stack_resource_id.to_string(), existing_resource_id));
+            });
     }
 
     fn get_metadata(existing_stack: &str) -> Result<StackOnlyMetadata, String> {
@@ -387,6 +423,40 @@ impl Resource {
             Resource::Table(t) => t.get_resource_id(),
             Resource::Topic(r) => r.get_resource_id(),
             Resource::TopicPolicy(r) => r.get_resource_id(),
+        }
+    }
+
+    pub(crate) fn get_type(&self) -> &str {
+        match self {
+            Resource::ApiGatewayV2Api(r) => r.get_type(),
+            Resource::ApiGatewayV2Integration(r) => r.get_type(),
+            Resource::ApiGatewayV2Route(r) => r.get_type(),
+            Resource::ApiGatewayV2Stage(r) => r.get_type(),
+            Resource::AppSyncApi(r) => r.get_type(),
+            Resource::Application(r) => r.get_type(),
+            Resource::Bucket(r) => r.get_type(),
+            Resource::BucketNotification(r) => r.get_type(),
+            Resource::BucketPolicy(r) => r.get_type(),
+            Resource::CachePolicy(r) => r.get_type(),
+            Resource::ChannelNamespace(r) => r.get_type(),
+            Resource::ConfigurationProfile(r) => r.get_type(),
+            Resource::DeploymentStrategy(r) => r.get_type(),
+            Resource::Distribution(r) => r.get_type(),
+            Resource::Environment(r) => r.get_type(),
+            Resource::EventSourceMapping(r) => r.get_type(),
+            Resource::Function(r) => r.get_type(),
+            Resource::LogGroup(r) => r.get_type(),
+            Resource::OriginAccessControl(r) => r.get_type(),
+            Resource::Permission(r) => r.get_type(),
+            Resource::Queue(r) => r.get_type(),
+            Resource::QueuePolicy(r) => r.get_type(),
+            Resource::Role(r) => r.get_type(),
+            Resource::Secret(r) => r.get_type(),
+            Resource::Schedule(r) => r.get_type(),
+            Resource::Subscription(r) => r.get_type(),
+            Resource::Table(r) => r.get_type(),
+            Resource::Topic(r) => r.get_type(),
+            Resource::TopicPolicy(r) => r.get_type(),
         }
     }
 

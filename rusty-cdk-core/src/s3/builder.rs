@@ -28,6 +28,8 @@ use serde_json::{json, Value};
 use std::marker::PhantomData;
 use std::time::Duration;
 
+pub(crate) const BUCKET_TYPE: &'static str = "AWS::S3::Bucket";
+
 /// Builder for S3 bucket policies.
 ///
 /// Creates a policy document that controls access to an S3 bucket.
@@ -533,7 +535,7 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
         stack_builder.add_resource(Bucket {
             id: self.id.clone(),
             resource_id: resource_id.clone(),
-            r#type: "AWS::S3::Bucket".to_string(),
+            r#type: BUCKET_TYPE.to_string(),
             properties,
             update_delete_policy_dto: UpdateDeletePolicyDTO {
                 deletion_policy: self.deletion_policy,
