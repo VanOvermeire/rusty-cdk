@@ -429,7 +429,7 @@ pub struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 /// This wrapper ensures type safety when specifying paths to TOML configuration files used in infrastructure definitions.
 /// 
 /// # Recommended Usage
-/// Use the `toml_file!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `toml_file!` macro from `rusty-cdk-macros` for compile-time validation:
 #[derive(Debug, Clone)]
 pub struct TomlFile(pub String);
 
@@ -441,7 +441,14 @@ pub struct TomlFile(pub String);
 /// - Determines retry behavior for origin connection failures
 ///
 /// # Recommended Usage
-/// Use the `connection_attempts!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `connection_attempts!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ConnectionAttempts;
+/// use rusty_cdk_macros::connection_attempts;
+///
+/// let attempts = connection_attempts!(3);
+/// ```
 #[derive(Debug, Clone)]
 pub struct ConnectionAttempts(pub u8);
 
@@ -469,7 +476,14 @@ pub struct CfConnectionTimeout(pub Option<u16>, pub Option<u16>);
 /// Path prefix for CloudFront origin requests.
 ///
 /// # Recommended Usage
-/// Use the `origin_path!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `origin_path!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::OriginPath;
+/// use rusty_cdk_macros::origin_path;
+///
+/// let path = origin_path!("/images");
+/// ```
 #[derive(Debug, Clone)]
 pub struct OriginPath(pub String);
 
@@ -479,7 +493,14 @@ pub struct OriginPath(pub String);
 /// the root URL of your distribution (e.g., http://example.com/ instead of http://example.com/index.html).
 /// 
 /// # Recommended Usage
-/// Use the `default_root_object!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `default_root_object!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::DefaultRootObject;
+/// use rusty_cdk_macros::default_root_object;
+///
+/// let root_obj = default_root_object!("index.html");
+/// ```
 #[derive(Debug, Clone)]
 pub struct DefaultRootObject(pub String);
 
@@ -491,28 +512,56 @@ pub struct DefaultRootObject(pub String);
 /// - Determines maximum wait time for S3 to respond
 ///
 /// # Recommended Usage
-/// Use the `s3_origin_read_timeout!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `s3_origin_read_timeout!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::S3OriginReadTimeout;
+/// use rusty_cdk_macros::s3_origin_read_timeout;
+///
+/// let timeout = s3_origin_read_timeout!(60);
+/// ```
 #[derive(Debug, Clone)]
 pub struct S3OriginReadTimeout(pub u8);
 
 /// Action specification for AWS Lambda resource-based policy permissions.
 ///
 /// # Recommended Usage
-/// Use the `lambda_permission_action!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `lambda_permission_action!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::LambdaPermissionAction;
+/// use rusty_cdk_macros::lambda_permission_action;
+///
+/// let action = lambda_permission_action!("lambda:InvokeFunction");
+/// ```
 #[derive(Debug, Clone)]
 pub struct LambdaPermissionAction(pub String);
 
 /// Name for AWS AppConfig applications, environments, or configuration profiles.
 ///
 /// # Recommended Usage
-/// Use the `app_config_name!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `app_config_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::AppConfigName;
+/// use rusty_cdk_macros::app_config_name;
+///
+/// let name = app_config_name!("my-app");
+/// ```
 #[derive(Debug, Clone)]
 pub struct AppConfigName(pub String);
 
 /// Deployment duration for AWS AppConfig deployments, specified in minutes.
 ///
 /// # Recommended Usage
-/// Use the `deployment_duration_in_minutes!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `deployment_duration_in_minutes!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::DeploymentDurationInMinutes;
+/// use rusty_cdk_macros::deployment_duration_in_minutes;
+///
+/// let duration = deployment_duration_in_minutes!(15);
+/// ```
 ///
 #[derive(Debug, Clone)]
 pub struct DeploymentDurationInMinutes(pub u16);
@@ -523,7 +572,14 @@ pub struct DeploymentDurationInMinutes(pub u16);
 /// during each deployment interval. AppConfig uses this to gradually roll out changes.
 ///
 /// # Recommended Usage
-/// Use the `growth_factor!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `growth_factor!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::GrowthFactor;
+/// use rusty_cdk_macros::growth_factor;
+///
+/// let factor = growth_factor!(10);
+/// ```
 ///
 #[derive(Debug, Clone)]
 pub struct GrowthFactor(pub u8);
@@ -565,14 +621,28 @@ pub struct LocationUri(pub String);
 /// Name of an AppSync Api
 ///
 /// # Recommended Usage
-/// Use the `app_sync_api_name!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `app_sync_api_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::AppSyncApiName;
+/// use rusty_cdk_macros::app_sync_api_name;
+///
+/// let name = app_sync_api_name!("my-api");
+/// ```
 #[derive(Debug, Clone)]
 pub struct AppSyncApiName(pub String);
 
 /// ChannelNamespace name for AppSync
 ///
 /// # Recommended Usage
-/// Use the `channel_namespace_name!` macro from `rusty-cdk-macros` for compile-time validation
+/// Use the `channel_namespace_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ChannelNamespaceName;
+/// use rusty_cdk_macros::channel_namespace_name;
+///
+/// let namespace = channel_namespace_name!("my-namespace");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ChannelNamespaceName(pub String);
 
@@ -593,28 +663,56 @@ pub struct BucketTiering(pub String, pub u16);
 /// Specifies the number of days until an S3 table record expires.
 ///
 /// # Recommended Usage
-/// Use the `record_expiration_days!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `record_expiration_days!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::RecordExpirationDays;
+/// use rusty_cdk_macros::record_expiration_days;
+///
+/// let expiration = record_expiration_days!(365);
+/// ```
 #[derive(Debug, Clone)]
 pub struct RecordExpirationDays(pub u32);
 
 /// Maximum age of an event in seconds for a retry policy for an EventBridge schedule.
 ///
 /// # Recommended Usage
-/// Use the `retry_policy_event_age!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `retry_policy_event_age!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::RetryPolicyEventAge;
+/// use rusty_cdk_macros::retry_policy_event_age;
+///
+/// let age = retry_policy_event_age!(3600);
+/// ```
 #[derive(Debug, Clone)]
 pub struct RetryPolicyEventAge(pub u32);
 
 /// Number of retries for a retry policy for an EventBridge schedule.
 ///
 /// # Recommended Usage
-/// Use the `retry_policy_retries!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `retry_policy_retries!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::RetryPolicyRetries;
+/// use rusty_cdk_macros::retry_policy_retries;
+///
+/// let retries = retry_policy_retries!(5);
+/// ```
 #[derive(Debug, Clone)]
 pub struct RetryPolicyRetries(pub u8);
 
 /// The maximum time window in minutes for a flexible time window for an EventBridge schedule.
 ///
 /// # Recommended Usage
-/// Use the `max_flexible_time_window!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `max_flexible_time_window!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::MaxFlexibleTimeWindow;
+/// use rusty_cdk_macros::max_flexible_time_window;
+///
+/// let window = max_flexible_time_window!(15);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MaxFlexibleTimeWindow(pub u16);
 
@@ -663,41 +761,83 @@ pub struct ScheduleCronExpression(pub String);
 /// Name of an EventBridge schedule.
 ///
 /// # Recommended Usage
-/// Use the `schedule_name!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `schedule_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ScheduleName;
+/// use rusty_cdk_macros::schedule_name;
+///
+/// let name = schedule_name!("my-schedule");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ScheduleName(pub String);
 
 /// Name of an IAM policy.
 ///
 /// # Recommended Usage
-/// Use the `policy_name!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `policy_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::PolicyName;
+/// use rusty_cdk_macros::policy_name;
+///
+/// let name = policy_name!("my-policy");
+/// ```
 #[derive(Debug, Clone)]
 pub struct PolicyName(pub String);
 
 /// DisplayName of an SNS topic
 /// 
 /// # Recommended Usage
-/// Use the `topic_display_name!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `topic_display_name!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::TopicDisplayName;
+/// use rusty_cdk_macros::topic_display_name;
+///
+/// let name = topic_display_name!("my-topic");
+/// ```
 #[derive(Debug, Clone)]
 pub struct TopicDisplayName(pub String);
 
 /// Archive policy of an SNS topic
 /// 
 /// # Recommended Usage
-/// Use the `archive_policy!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `archive_policy!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::ArchivePolicy;
+/// use rusty_cdk_macros::archive_policy;
+///
+/// let policy = archive_policy!(30);
+/// ```
 #[derive(Debug, Clone)]
 pub struct ArchivePolicy(pub u16);
 
 /// KMS Key reuse period (in seconds) for an SQS queue
 ///
 /// # Recommended Usage
-/// Use the `key_reuse_period!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `key_reuse_period!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::KeyReusePeriod;
+/// use rusty_cdk_macros::key_reuse_period;
+///
+/// let period = key_reuse_period!(300);
+/// ```
 #[derive(Debug, Clone)]
 pub struct KeyReusePeriod(pub u32);
 
 /// Percentage of successful message deliveries to be logged in Amazon CloudWatch, for an SNS topic
 ///
 /// # Recommended Usage
-/// Use the `success_feedback_sample_rate!` macro from `rusty-cdk-macros` for compile-time validation.
+/// Use the `success_feedback_sample_rate!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::SuccessFeedbackSampleRate;
+/// use rusty_cdk_macros::success_feedback_sample_rate;
+///
+/// let rate = success_feedback_sample_rate!(100);
+/// ```
 #[derive(Debug, Clone)]
 pub struct SuccessFeedbackSampleRate(pub u8);

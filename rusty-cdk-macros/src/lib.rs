@@ -791,10 +791,7 @@ pub fn origin_path(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    quote! {
-        OriginPath(#value)
-    }
-        .into()
+    quote!(OriginPath(#value.to_string())).into()
 }
 
 /// Creates a validated `DefaultRootObject` wrapper for CloudFront default root objects at compile time.
@@ -817,10 +814,7 @@ pub fn default_root_object(input: TokenStream) -> TokenStream {
             .into();
     }
 
-    quote! {
-        DefaultRootObject(#value)
-    }
-        .into()
+    quote!(DefaultRootObject(#value.to_string())).into()
 }
 
 /// Creates a validated `CfConnectionTimeout` wrapper for CloudFront origin connection timeouts at compile time.

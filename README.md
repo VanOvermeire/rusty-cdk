@@ -427,11 +427,8 @@ async fn tagging() {
 - Check for places where we pass in a `Value` but should pass in a Ref
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
-- Destroy command
-  - Add force option that will delete resources that are normally retained
-    - Should empty bucket
-    - Should force delete secrets
-    - Should remove archive policy from topic
+- Clean command
+  - Should remove archive policy from topic
 - Improve diff
   - Show whether resource has changed
 - More help with IAM permissions
