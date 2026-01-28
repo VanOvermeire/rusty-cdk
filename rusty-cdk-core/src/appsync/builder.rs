@@ -1,5 +1,5 @@
 use serde_json::Value;
-use crate::appsync::{AppSyncApi, AppSyncApiProperties, AppSyncApiRef, AppSyncAuthMode, AuthProvider, ChannelNamespace, ChannelNamespaceProperties, ChannelNamespaceRef, CognitoConfig, EventConfig, EventLogConfig, LambdaAuthorizerConfig, OpenIDConnectConfig};
+use crate::appsync::{AppSyncApi, AppSyncApiProperties, AppSyncApiRef, AppSyncApiType, AppSyncAuthMode, AuthProvider, ChannelNamespace, ChannelNamespaceProperties, ChannelNamespaceRef, ChannelNamespaceType, CognitoConfig, EventConfig, EventLogConfig, LambdaAuthorizerConfig, OpenIDConnectConfig};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{AppSyncApiName, ChannelNamespaceName};
@@ -29,7 +29,7 @@ impl AppSyncApiBuilder {
         let api = AppSyncApi {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppSync::Api".to_string(),
+            r#type: AppSyncApiType::AppSyncApiType,
             properties: AppSyncApiProperties {
                 name: self.name,
                 event_config: self.event_config,
@@ -268,7 +268,7 @@ impl ChannelNamespaceBuilder {
         let channel = ChannelNamespace {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppSync::ChannelNamespace".to_string(),
+            r#type: ChannelNamespaceType::ChannelNamespaceType,
             properties: ChannelNamespaceProperties {
                 api_id: self.api_id,
                 name: self.name,

@@ -3,6 +3,12 @@ use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum RoleType {
+    #[serde(rename = "AWS::IAM::Role")]
+    RoleType
+}
+
 ref_struct!(RoleRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,7 +20,7 @@ pub struct Role {
     #[serde(skip)]
     pub(crate) potentially_missing_services: Vec<String>,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(crate) r#type: RoleType,
     #[serde(rename = "Properties")]
     pub(crate) properties: IamRoleProperties,
 }

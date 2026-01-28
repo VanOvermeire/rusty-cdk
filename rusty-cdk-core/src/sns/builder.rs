@@ -2,7 +2,7 @@ use crate::iam::{PolicyDocument, RoleRef};
 use crate::intrinsic::{get_arn, get_ref};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::{Id, TOPIC_POLICY_ID_SUFFIX};
-use crate::sns::{LoggingConfig, SnsSubscriptionProperties, Subscription, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicProperties, TopicRef};
+use crate::sns::{LoggingConfig, SnsSubscriptionProperties, Subscription, SubscriptionDtoType, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicPolicyType, TopicProperties, TopicRef, TopicType};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, SuccessFeedbackSampleRate, TopicDisplayName};
@@ -239,7 +239,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             let subscription = Subscription {
                 id: subscription_id,
                 resource_id: subscription_resource_id,
-                r#type: "AWS::SNS::Subscription".to_string(),
+                r#type: SubscriptionDtoType::SubscriptionType,
                 properties: SnsSubscriptionProperties {
                     protocol: "lambda".to_string(),
                     endpoint: get_arn(to_subscribe_resource_id),
@@ -281,7 +281,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
         stack_builder.add_resource(Topic {
             id: self.id,
             resource_id: topic_resource_id,
-            r#type: "AWS::SNS::Topic".to_string(),
+            r#type: TopicType::TopicType,
             properties,
         });
         
@@ -468,7 +468,7 @@ impl TopicPolicyBuilder {
         stack_builder.add_resource(TopicPolicy {
             id: self.id.clone(),
             resource_id: resource_id.clone(),
-            r#type: "AWS::SNS::TopicPolicy".to_string(),
+            r#type: TopicPolicyType::TopicPolicyType,
             properties: TopicPolicyProperties {
                 doc: self.doc,
                 topics: self.topics,

@@ -4,7 +4,7 @@ use clap::Parser;
 use clap::Subcommand;
 use tokio::fs::remove_file;
 use tokio::process::Command;
-use rusty_cdk::{deploy, destroy, diff};
+use rusty_cdk::{clean, deploy, destroy, diff};
 use rusty_cdk::stack::Stack;
 use rusty_cdk::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 
@@ -42,8 +42,12 @@ pub enum RustyCommand {
     Destroy {
         /// Name of the (deployed) stack that you want to delete
         name: String,
-        /// In addition to deleting the stack, `force` will also
+        /// Force tries to make sure your stack deletes, avoiding common things that can throw a `DeleteFailed` error.
+        /// To do this, `force` will:
         /// - empty S3 buckets that do not have a 'retain'
+        /// - remove any archival policies from SNS topics
+        /// As resources with a 'retain' policy are not deleted and cause no deletion issues, these are ignored.
+        /// *Use with caution*, and only if you don't need to retain anything from your stack (that is not set to 'retain')
         #[clap(short, long, default_missing_value="false")]
         force: bool
     },
@@ -110,8 +114,18 @@ pub async fn entry_point(command: RustyCommand) {
                 remove_fill_or_exit(&path).await;
             }
         }
-        RustyCommand::Destroy { name, force: _force } => {
+        RustyCommand::Destroy { name, force } => {
             println!("destroying stack with name {name}");
+            
+            if force {
+                match clean(StringWithOnlyAlphaNumericsAndHyphens(name.to_string()), true).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("{e}");
+                        exit(1);
+                    }
+                }
+            }
             destroy(StringWithOnlyAlphaNumericsAndHyphens(name)).await;
         }
     }

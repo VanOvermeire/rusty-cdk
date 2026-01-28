@@ -4,6 +4,12 @@ use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum BucketPolicyType {
+    #[serde(rename = "AWS::S3::BucketPolicy")]
+    BucketPolicyType
+}
+
 ref_struct!(BucketPolicyRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,7 +19,7 @@ pub struct BucketPolicy {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: BucketPolicyType,
     #[serde(rename = "Properties")]
     pub(crate) properties: S3BucketPolicyProperties,
 }
@@ -27,6 +33,12 @@ pub struct S3BucketPolicyProperties {
     pub(crate) policy_document: PolicyDocument,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum BucketType {
+    #[serde(rename = "AWS::S3::Bucket")]
+    BucketType
+}
+
 ref_struct!(BucketRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,7 +48,7 @@ pub struct Bucket {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: BucketType,
     #[serde(rename = "Properties")]
     pub(super) properties: BucketProperties,
     #[serde(flatten)]

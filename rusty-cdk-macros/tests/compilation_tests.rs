@@ -19,22 +19,25 @@ struct ReceiveMessageWaitTime(u8);
 struct SqsEventSourceMaxConcurrency(u16);
 struct RetentionInDays(u16);
 struct LogGroupName(String);
-struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
-struct LambdaPermissionAction(pub String);
-struct LifecycleTransitionInDays(pub u16);
-struct LocationUri(pub String);
-struct AppSyncApiName(pub String);
-struct AppConfigName(pub String);
-struct ChannelNamespaceName(pub String);
-struct BucketTiering(pub String, pub u16);
-struct RetryPolicyEventAge(pub u32);
-struct RetryPolicyRetries(pub u8);
-struct MaxFlexibleTimeWindow(pub u16);
-struct ScheduleRateExpression(pub u16, pub String);
-struct ScheduleCronExpression(pub String);
-struct ScheduleAtExpression(pub String);
-struct ScheduleName(pub String);
-struct PolicyName(pub String);
+struct S3LifecycleObjectSizes(Option<u32>, Option<u32>);
+struct LambdaPermissionAction(String);
+struct LifecycleTransitionInDays(u16);
+struct LocationUri(String);
+struct AppSyncApiName(String);
+struct AppConfigName(String);
+struct ChannelNamespaceName(String);
+struct BucketTiering(String, u16);
+struct RetryPolicyEventAge(u32);
+struct RetryPolicyRetries(u8);
+struct MaxFlexibleTimeWindow(u16);
+struct ScheduleRateExpression(u16, String);
+struct ScheduleCronExpression(String);
+struct ScheduleAtExpression(String);
+struct ScheduleName(String);
+struct PolicyName(String);
+struct OriginPath(String);
+struct ZipFile(String);
+struct DefaultRootObject(String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -259,14 +262,6 @@ fn toml_file_valid() {
     toml_file!("examples/apigateway_lambda_dynamodb/Cargo.toml");
 }
 
-struct OriginPath<
-'a>(
-&'a str);
-struct DefaultRootObject<
-'a>(
-&'a str);
-
-
 #[test]
 fn origin_path_valid() {
     origin_path!("/my-path");
@@ -276,9 +271,6 @@ fn origin_path_valid() {
 fn default_root_object_valid() {
     default_root_object!("index.html");
 }
-
-
-struct ZipFile(String);
 
 #[test]
 fn zip_file_valid() {

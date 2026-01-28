@@ -4,10 +4,7 @@ use crate::iam::{
     RoleBuilder, RolePropertiesBuilder, RoleRef, StatementBuilder,
 };
 use crate::intrinsic::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
-use crate::lambda::{
-    Environment, EventSourceMapping, EventSourceProperties, Function, FunctionRef, LambdaCode, LambdaFunctionProperties,
-    LambdaPermissionProperties, LoggingInfo, Permission, PermissionRef, ScalingConfig,
-};
+use crate::lambda::{Environment, EventSourceMapping, EventSourceMappingType, EventSourceProperties, Function, FunctionRef, FunctionType, LambdaCode, LambdaFunctionProperties, LambdaPermissionProperties, LoggingInfo, Permission, PermissionRef, PermissionType, ScalingConfig};
 use crate::shared::Id;
 use crate::sqs::QueueRef;
 use crate::stack::{Asset, Resource, StackBuilder};
@@ -237,7 +234,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             let event_source_mapping = EventSourceMapping {
                 id: event_id,
                 resource_id: event_resource_id.clone(),
-                r#type: "AWS::Lambda::EventSourceMapping".to_string(),
+                r#type: EventSourceMappingType::EventSourceMappingType,
                 properties: EventSourceProperties {
                     event_source_arn: Some(get_arn(&mapping.id)),
                     function_name: Some(get_ref(&function_resource_id)),
@@ -313,7 +310,7 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
             id: self.id.clone(),
             resource_id: function_resource_id.clone(),
             asset: code.0,
-            r#type: "AWS::Lambda::Function".to_string(),
+            r#type: FunctionType::FunctionType,
             properties,
         });
 
@@ -523,7 +520,7 @@ impl PermissionBuilder {
         stack_builder.add_resource(Permission {
             id: self.id.clone(),
             resource_id: permission_resource_id.clone(),
-            r#type: "AWS::Lambda::Permission".to_string(),
+            r#type: PermissionType::PermissionType,
             properties: LambdaPermissionProperties {
                 action: self.action,
                 function_name: self.function_name,

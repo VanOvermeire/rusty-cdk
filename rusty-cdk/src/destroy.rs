@@ -94,9 +94,9 @@ pub async fn clean(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: 
     let stack = get_existing_template(&cloudformation_client, &name.0).await.ok_or_else(|| {
         DestroyError::UnknownStack(format!("could not retrieve stack with name {}", &name.0))
     })?;
-
+    
     let stack: Stack = serde_json::from_str(&stack).expect("to transform template into stack");
-
+ 
     for resource in stack.get_cleanable_resources() {
         match resource {
             Cleanable::Bucket(id) => {
@@ -107,12 +107,25 @@ pub async fn clean(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: 
                     .await
                     .expect("to find resource that's mentioned in the template");
                 let physical_id = bucket_info.stack_resource_detail.expect("stack resource output to have detail").physical_resource_id.expect("physical id to be present");
-
+    
                 if print_progress {
                     println!("found bucket {id} (name {physical_id}) that will be deleted - emptying")
                 }
-
                 empty_bucket(physical_id).await?
+            }
+            Cleanable::Topic(id) => {
+                let bucket_info = cloudformation_client.describe_stack_resource()
+                    .stack_name(&name.0)
+                    .logical_resource_id(id)
+                    .send()
+                    .await
+                    .expect("to find resource that's mentioned in the template");
+                let physical_id = bucket_info.stack_resource_detail.expect("stack resource output to have detail").physical_resource_id.expect("physical id to be present");
+    
+                if print_progress {
+                    println!("found topic {id} (arn {physical_id}) that will be deleted - remove archival policy")
+                }
+                remove_archive_policy(physical_id).await?;
             }
         }
     }
@@ -120,15 +133,30 @@ pub async fn clean(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: 
     Ok(())
 }
 
+async fn remove_archive_policy(arn: String) -> Result<(), DestroyError> {
+    let config = load_config(false).await;
+    let client = aws_sdk_sns::Client::new(&config);
+
+    client.set_topic_attributes()
+        .topic_arn(arn)
+        .attribute_name("ArchivePolicy")
+        .attribute_value("{}")
+        .send()
+        .await
+        .map_err(|e| DestroyError::EmptyError(format!("could not remove archive policy from topic: {:?}", e)))?;
+
+    Ok(())
+}
+
 async fn empty_bucket(name: String) -> Result<(), DestroyError> {
     let config = load_config(false).await;
-    let s3_client = aws_sdk_s3::Client::new(&config);
+    let client = aws_sdk_s3::Client::new(&config);
 
-    let mut marker_response = delete_objects(&s3_client, &name, None).await?;
+    let mut marker_response = delete_objects(&client, &name, None).await?;
 
     while let Some(marker) = marker_response {
         println!("more cleanup required for {name}...");
-        marker_response = delete_objects(&s3_client, &name, Some(marker)).await?;
+        marker_response = delete_objects(&client, &name, Some(marker)).await?;
     }
 
     Ok(())

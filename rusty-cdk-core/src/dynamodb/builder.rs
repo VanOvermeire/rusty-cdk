@@ -1,4 +1,4 @@
-use crate::dynamodb::{AttributeDefinition, KeySchema, Table, TableProperties};
+use crate::dynamodb::{AttributeDefinition, KeySchema, Table, TableProperties, TableType};
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput, TableRef};
 use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy};
 use crate::stack::{Resource, StackBuilder};
@@ -250,7 +250,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
         stack_builder.add_resource(Table {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::DynamoDB::Table".to_string(),
+            r#type: TableType::TableType,
             properties,
             update_delete_policy_dto: UpdateDeletePolicyDTO { deletion_policy: self.deletion_policy, update_replace_policy: self.update_replace_policy },
         });

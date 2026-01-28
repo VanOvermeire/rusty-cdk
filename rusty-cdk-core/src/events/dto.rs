@@ -3,6 +3,12 @@ use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ScheduleType {
+    #[serde(rename = "AWS::Scheduler::Schedule")]
+    ScheduleType
+}
+
 ref_struct!(ScheduleRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,7 +18,7 @@ pub struct Schedule {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: ScheduleType,
     #[serde(rename = "Properties")]
     pub(super) properties: ScheduleProperties,
 }

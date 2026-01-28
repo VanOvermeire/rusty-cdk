@@ -1,4 +1,4 @@
-use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
+use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CachePolicyType, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, DistributionType, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlDtoType, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
 use crate::iam::{Effect, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
 use crate::intrinsic::{get_att, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketPolicyBuilder;
@@ -325,7 +325,7 @@ impl CachePolicyBuilder {
         stack_builder.add_resource(CachePolicy {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::CloudFront::CachePolicy".to_string(),
+            r#type: CachePolicyType::CachePolicyType,
             properties: CachePolicyProperties {
                 config: CachePolicyConfig {
                     default_ttl: self.default_ttl,
@@ -882,7 +882,7 @@ impl OriginAccessControlBuilder {
         stack_builder.add_resource(OriginAccessControl {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::CloudFront::OriginAccessControl".to_string(),
+            r#type: OriginAccessControlDtoType::OriginAccessControlType,
             properties: OriginControlProperties {
                 config: OriginAccessControlConfig {
                     name: self.name,
@@ -1112,7 +1112,7 @@ impl<T: DistributionState> DistributionBuilder<T> {
         stack_builder.add_resource(Distribution {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::CloudFront::Distribution".to_string(),
+            r#type: DistributionType::DistributionType,
             properties: DistributionProperties { config },
         });
 

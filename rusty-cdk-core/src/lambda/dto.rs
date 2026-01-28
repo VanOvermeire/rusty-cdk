@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum FunctionType {
+    #[serde(rename = "AWS::Lambda::Function")]
+    FunctionType
+}
+
 ref_struct_with_id_methods!(FunctionRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,7 +22,7 @@ pub struct Function {
     #[serde(skip)]
     pub(crate) asset: Option<Asset>,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: FunctionType,
     #[serde(rename = "Properties")]
     pub(super) properties: LambdaFunctionProperties,
 }
@@ -78,6 +84,12 @@ pub struct LoggingInfo {
     // "SystemLogLevel" : String
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum EventSourceMappingType {
+    #[serde(rename = "AWS::Lambda::EventSourceMapping")]
+    EventSourceMappingType
+}
+
 ref_struct!(EventSourceMappingRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,7 +99,7 @@ pub struct EventSourceMapping {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: EventSourceMappingType,
     #[serde(rename = "Properties")]
     pub(super) properties: EventSourceProperties,
 }
@@ -109,6 +121,12 @@ pub struct ScalingConfig {
     pub(super) max_concurrency: u16,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum PermissionType {
+    #[serde(rename = "AWS::Lambda::Permission")]
+    PermissionType
+}
+
 ref_struct_with_id_methods!(PermissionRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -118,7 +136,7 @@ pub struct Permission {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: PermissionType,
     #[serde(rename = "Properties")]
     pub(super) properties: LambdaPermissionProperties,
 }

@@ -3,6 +3,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum BucketNotificationType {
+    #[serde(rename = "Custom::S3BucketNotifications")]
+    BucketNotificationType
+}
+
 ref_struct!(BucketNotificationRef);
 
 /// The code for bucket notifications is *heavily* inspired by the AWS CDK
@@ -14,7 +20,7 @@ pub struct BucketNotification {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: BucketNotificationType,
     #[serde(rename = "Properties")]
     pub(super) properties: BucketNotificationProperties,
 }

@@ -4,6 +4,12 @@ use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
 use crate::shared::Id;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum QueueType {
+    #[serde(rename = "AWS::SQS::Queue")]
+    QueueType
+}
+
 ref_struct_with_id_methods!(QueueRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,7 +19,7 @@ pub struct Queue {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: QueueType,
     #[serde(rename = "Properties")]
     pub(super) properties: QueueProperties,
 }
@@ -57,13 +63,19 @@ pub struct QueueProperties {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum QueuePolicyType {
+    #[serde(rename = "AWS::SQS::QueuePolicy")]
+    QueuePolicyType
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueuePolicy {
     #[serde(skip)]
     pub(super) id: Id,
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: QueuePolicyType,
     #[serde(rename = "Properties")]
     pub(crate) properties: QueuePolicyProperties,
 }

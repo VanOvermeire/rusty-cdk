@@ -3,6 +3,12 @@ use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 use crate::shared::{Id, UpdateDeletePolicyDTO};
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum TableType {
+    #[serde(rename = "AWS::DynamoDB::Table")]
+    TableType
+}
+
 ref_struct!(TableRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,7 +18,7 @@ pub struct Table {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: TableType,
     #[serde(rename = "Properties")]
     pub(super) properties: TableProperties,
     #[serde(flatten)]

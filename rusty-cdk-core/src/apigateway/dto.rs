@@ -6,13 +6,19 @@ use crate::shared::Id;
 ref_struct!(ApiGatewayV2ApiRef);
 
 #[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ApiGatewayV2ApiType {
+    #[serde(rename = "AWS::ApiGatewayV2::Api")]
+    ApiGatewayV2ApiType
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Api {
     #[serde(skip)]
     pub(crate) id: Id,
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(crate) r#type: ApiGatewayV2ApiType,
     #[serde(rename = "Properties")]
     pub(crate) properties: ApiGatewayV2ApiProperties,
 }
@@ -56,13 +62,19 @@ pub struct CorsConfiguration {
 ref_struct!(ApiGatewayV2StageRef);
 
 #[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ApiGatewayV2StageType {
+    #[serde(rename = "AWS::ApiGatewayV2::Stage")]
+    ApiGatewayV2StageType
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiGatewayV2Stage {
     #[serde(skip)]
     pub(super) id: Id,
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: ApiGatewayV2StageType,
     #[serde(rename = "Properties")]
     pub(super) properties: ApiGatewayV2StageProperties,
 }
@@ -90,6 +102,12 @@ pub struct RouteSettings {
     pub(super) throttling_rate_limit: Option<f64>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ApiGatewayV2IntegrationType {
+    #[serde(rename = "AWS::ApiGatewayV2::Integration")]
+    ApiGatewayV2IntegrationType
+}
+
 ref_struct!(ApiGatewayV2IntegrationRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -99,7 +117,7 @@ pub struct ApiGatewayV2Integration {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: ApiGatewayV2IntegrationType,
     #[serde(rename = "Properties")]
     pub(super) properties: ApiGatewayV2IntegrationProperties,
 }
@@ -134,6 +152,12 @@ pub struct ApiGatewayV2IntegrationProperties {
     // pub(super) integration_subtype: Option<String>, // only for http api aws proxy
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ApiGatewayV2RouteType {
+    #[serde(rename = "AWS::ApiGatewayV2::Route")]
+    ApiGatewayV2RouteType
+}
+
 ref_struct!(ApiGatewayV2RouteRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -143,7 +167,7 @@ pub struct ApiGatewayV2Route {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: ApiGatewayV2RouteType,
     #[serde(rename = "Properties")]
     pub(super) properties: ApiGatewayV2RouteProperties,
 }

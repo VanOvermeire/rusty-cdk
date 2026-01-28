@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use serde_json::Value;
-use crate::events::{FlexibleTimeWindow, RetryPolicy, Schedule, ScheduleProperties, ScheduleRef, Target};
+use crate::events::{FlexibleTimeWindow, RetryPolicy, Schedule, ScheduleProperties, ScheduleRef, ScheduleType, Target};
 use crate::iam::RoleRef;
 use crate::lambda::FunctionRef;
 use crate::shared::Id;
@@ -72,7 +72,7 @@ impl<T: ScheduleBuilderState> ScheduleBuilder<T> {
         stack_builder.add_resource(Schedule {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::Scheduler::Schedule".to_string(),
+            r#type: ScheduleType::ScheduleType,
             properties: ScheduleProperties {
                 start_date: self.start_date,
                 end_date: self.end_date,

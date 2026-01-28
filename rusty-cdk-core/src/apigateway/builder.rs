@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, CorsConfiguration};
+use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2ApiProperties, ApiGatewayV2ApiRef, ApiGatewayV2ApiType, ApiGatewayV2Integration, ApiGatewayV2IntegrationProperties, ApiGatewayV2IntegrationType, ApiGatewayV2Route, ApiGatewayV2RouteProperties, ApiGatewayV2RouteType, ApiGatewayV2Stage, ApiGatewayV2StageProperties, ApiGatewayV2StageRef, ApiGatewayV2StageType, CorsConfiguration};
 use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM, AWS_PARTITION_PSEUDO_PARAM, AWS_REGION_PSEUDO_PARAM};
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::HttpMethod;
@@ -241,7 +241,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
                 let integration = ApiGatewayV2Integration {
                     id: route_integration_id,
                     resource_id: integration_resource_id.clone(),
-                    r#type: "AWS::ApiGatewayV2::Integration".to_string(),
+                    r#type: ApiGatewayV2IntegrationType::ApiGatewayV2IntegrationType,
                     properties: ApiGatewayV2IntegrationProperties {
                         api_id: get_ref(&api_resource_id),
                         integration_type: "AWS_PROXY".to_string(),
@@ -269,7 +269,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
                 let route = ApiGatewayV2Route {
                     id: route_id,
                     resource_id: route_resource_id.clone(),
-                    r#type: "AWS::ApiGatewayV2::Route".to_string(),
+                    r#type: ApiGatewayV2RouteType::ApiGatewayV2RouteType,
                     properties: ApiGatewayV2RouteProperties {
                         api_id: get_ref(&api_resource_id),
                         route_key,
@@ -285,7 +285,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
         stack_builder.add_resource(ApiGatewayV2Stage {
             id: stage_id,
             resource_id: stage_resource_id.clone(),
-            r#type: "AWS::ApiGatewayV2::Stage".to_string(),
+            r#type: ApiGatewayV2StageType::ApiGatewayV2StageType,
             properties: ApiGatewayV2StageProperties {
                 api_id: get_ref(&api_resource_id),
                 stage_name: if &protocol_type == "HTTP" { "$default".to_string() } else { "prod".to_string() }, // in the future, expose this
@@ -298,7 +298,7 @@ impl<T: ApiGatewayV2APIState> ApiGatewayV2Builder<T> {
         stack_builder.add_resource(ApiGatewayV2Api {
             id: self.id,
             resource_id: api_resource_id.clone(),
-            r#type: "AWS::ApiGatewayV2::Api".to_string(),
+            r#type: ApiGatewayV2ApiType::ApiGatewayV2ApiType,
             properties: ApiGatewayV2ApiProperties {
                 name: self.name,
                 protocol_type,

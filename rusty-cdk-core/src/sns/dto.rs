@@ -4,6 +4,12 @@ use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
 use crate::shared::Id;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum TopicType {
+    #[serde(rename = "AWS::SNS::Topic")]
+    TopicType
+}
+
 ref_struct_with_id_methods!(TopicRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,16 +19,16 @@ pub struct Topic {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: TopicType,
     #[serde(rename = "Properties")]
-    pub(super) properties: TopicProperties,
+    pub(crate) properties: TopicProperties,
 }
 dto_methods!(Topic);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TopicProperties {
     #[serde(rename = "ArchivePolicy", skip_serializing_if = "Option::is_none")]
-    pub(super) archive_policy: Option<Value>,
+    pub(crate) archive_policy: Option<Value>,
     #[serde(rename = "ContentBasedDeduplication", skip_serializing_if = "Option::is_none")]
     pub(super) content_based_deduplication: Option<bool>,
     #[serde(rename = "DeliveryStatusLogging", skip_serializing_if = "Option::is_none")]
@@ -57,13 +63,19 @@ pub struct LoggingConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum TopicPolicyType {
+    #[serde(rename = "AWS::SNS::TopicPolicy")]
+    TopicPolicyType
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TopicPolicy {
     #[serde(skip)]
     pub(super) id: Id,
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: TopicPolicyType,
     #[serde(rename = "Properties")]
     pub(crate) properties: TopicPolicyProperties,
 }
@@ -78,13 +90,19 @@ pub struct TopicPolicyProperties {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum SubscriptionDtoType {
+    #[serde(rename = "AWS::SNS::Subscription")]
+    SubscriptionType
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Subscription {
     #[serde(skip)]
     pub(super) id: Id,
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: SubscriptionDtoType,
     #[serde(rename = "Properties")]
     pub(super) properties: SnsSubscriptionProperties,
 }

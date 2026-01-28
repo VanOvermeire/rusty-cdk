@@ -1,5 +1,5 @@
 use serde_json::Value;
-use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, Environment, EnvironmentProperties, EnvironmentRef, Validator};
+use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ApplicationType, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, ConfigurationProfileType, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, DeploymentStrategyType, Environment, EnvironmentProperties, EnvironmentRef, EnvironmentType, Validator};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor, LocationUri};
@@ -43,7 +43,7 @@ impl ApplicationBuilder {
         stack_builder.add_resource(Application {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppConfig::Application".to_string(),
+            r#type: ApplicationType::ApplicationType,
             properties: ApplicationProperties { name: self.name },
         });
 
@@ -187,7 +187,7 @@ impl ConfigurationProfileBuilder {
         stack_builder.add_resource(ConfigurationProfile {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppConfig::ConfigurationProfile".to_string(),
+            r#type: ConfigurationProfileType::ConfigurationProfileType,
             properties: ConfigurationProfileProperties {
                 name: self.name,
                 application_id: self.application_id,
@@ -313,7 +313,7 @@ impl DeploymentStrategyBuilder {
         stack_builder.add_resource(DeploymentStrategy {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppConfig::DeploymentStrategy".to_string(),
+            r#type: DeploymentStrategyType::DeploymentStrategyType,
             properties: DeploymentStrategyProperties {
                 name: self.name,
                 deployment_duration_in_minutes: self.deployment_duration_in_minutes,
@@ -364,7 +364,7 @@ impl EnvironmentBuilder {
         stack_builder.add_resource(Environment {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::AppConfig::Environment".to_string(),
+            r#type: EnvironmentType::EnvironmentType,
             properties: EnvironmentProperties {
                 name: self.name,
                 application_id: self.application_id,

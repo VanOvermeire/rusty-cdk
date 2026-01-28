@@ -1,7 +1,7 @@
 use crate::iam::PolicyDocument;
 use crate::shared::Id;
 use crate::shared::QUEUE_POLICY_ID_SUFFIX;
-use crate::sqs::QueueRef;
+use crate::sqs::{QueuePolicyType, QueueRef, QueueType};
 use crate::sqs::{Queue, QueuePolicy, QueuePolicyProperties, QueuePolicyRef, QueueProperties, RedrivePolicy};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
@@ -288,7 +288,7 @@ impl<T: QueueBuilderState> QueueBuilder<T> {
         stack_builder.add_resource(Queue {
             id: self.id,
             resource_id,
-            r#type: "AWS::SQS::Queue".to_string(),
+            r#type: QueueType::QueueType,
             properties,
         });
 
@@ -369,7 +369,7 @@ impl QueuePolicyBuilder {
         stack_builder.add_resource(QueuePolicy {
             id: self.id.clone(),
             resource_id: resource_id.clone(),
-            r#type: "AWS::SQS::QueuePolicy".to_string(),
+            r#type: QueuePolicyType::QueuePolicyType,
             properties: QueuePolicyProperties {
                 doc: self.doc,
                 queues: self.queues,

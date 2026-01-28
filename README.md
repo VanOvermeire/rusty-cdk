@@ -312,12 +312,12 @@ Currently only a limited number of services are (partly) supported:
 In other words, you can create serverless applications with this library.
 
 To be added at some point:
-- EventBridge
-- Athena
-- Cloudwatch (-logs)
+- DocumentDB
 - CodeBuild
 - CodePipeline
-- DocumentDB
+- Cloudwatch (-logs)
+- EventBridge
+- Athena
 - RDS
 - ECS
 - Kinesis
@@ -429,18 +429,19 @@ async fn tagging() {
   - And look where we need similar things
 - Clean command
   - Should remove archive policy from topic
+- Allow imports and exports
+  - Though probably don't allow hard coupling between stacks
+- Do some refactoring/splitting up of files
+  - s3 builder is a good candidate for splitting up
 - Improve diff
   - Show whether resource has changed
 - More help with IAM permissions
   - Additional checks for structure of iam policies
     - For example `resources` is not required in all cases, but in most contexts it is
 - Try to replace `syn` with more something more compile-time lightweight - `facet`?
-- Switch to uploading template to s3? helps avoid the 51 kb limit
-  - Or at least offer that option
 - GitHub actions
   - Testing for several platforms
   - Semver checks
   - Publishing
-- Do some refactoring/splitting up of files
-  - s3 builder is a good candidate for splitting up
-- rusty-cdk-validation would be better name for the macros crate
+- Switch to uploading template to s3? helps avoid the 51 kb limit
+  - Or at least offer that option

@@ -1,4 +1,4 @@
-use crate::cloudwatch::{LogGroup, LogGroupProperties, LogGroupRef};
+use crate::cloudwatch::{LogGroup, LogGroupProperties, LogGroupRef, LogGroupType};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{LogGroupName, RetentionInDays};
@@ -98,7 +98,7 @@ impl LogGroupBuilder {
         stack_builder.add_resource(LogGroup {
             id: self.id,
             resource_id: resource_id.clone(),
-            r#type: "AWS::Logs::LogGroup".to_string(),
+            r#type: LogGroupType::LogGroupType,
             properties,
         });
         

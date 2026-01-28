@@ -1,7 +1,4 @@
-use crate::custom_resource::{
-    BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration,
-    TopicConfiguration, QueueConfiguration
-};
+use crate::custom_resource::{BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration, TopicConfiguration, QueueConfiguration, BucketNotificationType};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;
@@ -206,7 +203,7 @@ impl BucketNotificationBuilder {
         stack_builder.add_resource(BucketNotification {
             id: self.id,
             resource_id,
-            r#type: "Custom::S3BucketNotifications".to_string(),
+            r#type: BucketNotificationType::BucketNotificationType,
             properties: BucketNotificationProperties {
                 notification_configuration: config,
                 service_token: self.handler_arn,

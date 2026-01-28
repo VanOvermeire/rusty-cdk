@@ -8,7 +8,7 @@ use crate::dynamodb::Table;
 use crate::events::Schedule;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
-use crate::s3::{Bucket, BucketPolicy, BUCKET_TYPE};
+use crate::s3::{Bucket, BucketPolicy};
 use crate::secretsmanager::Secret;
 use crate::shared::{DeletionPolicy, Id};
 use crate::sns::{Subscription, Topic, TopicPolicy};
@@ -20,7 +20,8 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Cleanable<'a> {
-    Bucket(&'a str)
+    Bucket(&'a str),
+    Topic(&'a str),
 }
 
 #[derive(Debug)]
@@ -226,11 +227,8 @@ impl Stack {
 
     pub fn get_cleanable_resources(&'_ self) -> Vec<Cleanable<'_>> {
         self.resources.iter().flat_map(|(k, r)| {
-            // unfortunately, with Resource being untagged, matching might give back the wrong type of Resource, so we go by resource type
-            let resource_type = r.get_type();
-            if resource_type == BUCKET_TYPE {
-                match r {
-                    Resource::Bucket(b) => {
+            match r {
+                Resource::Bucket(b) => {
                     if let Some(pol) = &b.update_delete_policy_dto.deletion_policy {
                         let pol: DeletionPolicy = pol.into();
                         match pol {
@@ -240,11 +238,16 @@ impl Stack {
                     } else {
                         Some(Cleanable::Bucket(k))
                     }
-                    }
-                    _ => unreachable!("already established that this is a bucket")
                 }
-            } else {
-                None
+                Resource::Topic(t) => {
+                    // note: no update/delete policy yet, so only check archive property
+                    if t.properties.archive_policy.is_some() {
+                        Some(Cleanable::Topic(k))
+                    } else {
+                        None
+                    }
+                }
+                _ => None
             }
         }).collect()
     }
@@ -423,40 +426,6 @@ impl Resource {
             Resource::Table(t) => t.get_resource_id(),
             Resource::Topic(r) => r.get_resource_id(),
             Resource::TopicPolicy(r) => r.get_resource_id(),
-        }
-    }
-
-    pub(crate) fn get_type(&self) -> &str {
-        match self {
-            Resource::ApiGatewayV2Api(r) => r.get_type(),
-            Resource::ApiGatewayV2Integration(r) => r.get_type(),
-            Resource::ApiGatewayV2Route(r) => r.get_type(),
-            Resource::ApiGatewayV2Stage(r) => r.get_type(),
-            Resource::AppSyncApi(r) => r.get_type(),
-            Resource::Application(r) => r.get_type(),
-            Resource::Bucket(r) => r.get_type(),
-            Resource::BucketNotification(r) => r.get_type(),
-            Resource::BucketPolicy(r) => r.get_type(),
-            Resource::CachePolicy(r) => r.get_type(),
-            Resource::ChannelNamespace(r) => r.get_type(),
-            Resource::ConfigurationProfile(r) => r.get_type(),
-            Resource::DeploymentStrategy(r) => r.get_type(),
-            Resource::Distribution(r) => r.get_type(),
-            Resource::Environment(r) => r.get_type(),
-            Resource::EventSourceMapping(r) => r.get_type(),
-            Resource::Function(r) => r.get_type(),
-            Resource::LogGroup(r) => r.get_type(),
-            Resource::OriginAccessControl(r) => r.get_type(),
-            Resource::Permission(r) => r.get_type(),
-            Resource::Queue(r) => r.get_type(),
-            Resource::QueuePolicy(r) => r.get_type(),
-            Resource::Role(r) => r.get_type(),
-            Resource::Secret(r) => r.get_type(),
-            Resource::Schedule(r) => r.get_type(),
-            Resource::Subscription(r) => r.get_type(),
-            Resource::Table(r) => r.get_type(),
-            Resource::Topic(r) => r.get_type(),
-            Resource::TopicPolicy(r) => r.get_type(),
         }
     }
 

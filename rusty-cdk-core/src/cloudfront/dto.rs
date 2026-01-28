@@ -4,6 +4,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use crate::{dto_methods, ref_struct};
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum OriginAccessControlDtoType {
+    #[serde(rename = "AWS::CloudFront::OriginAccessControl")]
+    OriginAccessControlType
+}
+
 ref_struct!(OriginAccessControlRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,7 +19,7 @@ pub struct OriginAccessControl {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: OriginAccessControlDtoType,
     #[serde(rename = "Properties")]
     pub(super) properties: OriginControlProperties,
 }
@@ -37,6 +43,12 @@ pub struct OriginAccessControlConfig {
     pub(super) signing_protocol: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum CachePolicyType {
+    #[serde(rename = "AWS::CloudFront::CachePolicy")]
+    CachePolicyType
+}
+
 ref_struct!(CachePolicyRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,7 +58,7 @@ pub struct CachePolicy {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: CachePolicyType,
     #[serde(rename = "Properties")]
     pub(super) properties: CachePolicyProperties,
 }
@@ -110,6 +122,12 @@ pub struct CookiesConfig {
     pub(super) cookies: Option<Vec<String>>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum DistributionType {
+    #[serde(rename = "AWS::CloudFront::Distribution")]
+    DistributionType
+}
+
 ref_struct!(DistributionRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -119,7 +137,7 @@ pub struct Distribution {
     #[serde(skip)]
     pub(super) resource_id: String,
     #[serde(rename = "Type")]
-    pub(super) r#type: String,
+    pub(super) r#type: DistributionType,
     #[serde(rename = "Properties")]
     pub(super) properties: DistributionProperties,
 }

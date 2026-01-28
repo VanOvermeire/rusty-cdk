@@ -1,4 +1,4 @@
-use crate::secretsmanager::{GenerateSecretString, Secret, SecretProperties, SecretRef};
+use crate::secretsmanager::{GenerateSecretString, Secret, SecretProperties, SecretRef, SecretType};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
@@ -108,7 +108,7 @@ impl SecretBuilder<SelectedSecretTypeState> {
         stack_builder.add_resource(Secret {
             id: self.id,
             resource_id: resource_id.to_string(),
-            r#type: "AWS::SecretsManager::Secret".to_string(),
+            r#type: SecretType::SecretType,
             properties: SecretProperties {
                 name: self.name,
                 description: self.description,

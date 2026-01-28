@@ -3,6 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum AppSyncApiType {
+    #[serde(rename = "AWS::AppSync::Api")]
+    AppSyncApiType
+}
+
 ref_struct!(AppSyncApiRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,7 +18,7 @@ pub struct AppSyncApi {
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(crate) r#type: AppSyncApiType,
     #[serde(rename = "Properties")]
     pub(crate) properties: AppSyncApiProperties,
 }
@@ -96,6 +102,12 @@ pub struct EventLogConfig {
     pub(crate) log_level: String
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) enum ChannelNamespaceType {
+    #[serde(rename = "AWS::AppSync::ChannelNamespace")]
+    ChannelNamespaceType
+}
+
 ref_struct!(ChannelNamespaceRef);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -105,7 +117,7 @@ pub struct ChannelNamespace {
     #[serde(skip)]
     pub(crate) resource_id: String,
     #[serde(rename = "Type")]
-    pub(crate) r#type: String,
+    pub(crate) r#type: ChannelNamespaceType,
     #[serde(rename = "Properties")]
     pub(crate) properties: ChannelNamespaceProperties,
 }

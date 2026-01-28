@@ -1,5 +1,5 @@
 use crate::dynamodb::TableRef;
-use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, ServicePrincipal, Statement};
+use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, RoleType, ServicePrincipal, Statement};
 use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
 use crate::s3::BucketRef;
 use crate::shared::Id;
@@ -171,7 +171,7 @@ impl RoleBuilder {
             id: self.id,
             resource_id: resource_id.clone(),
             potentially_missing_services: self.potentially_missing,
-            r#type: "AWS::IAM::Role".to_string(),
+            r#type: RoleType::RoleType,
             properties: self.properties,
         });
         RoleRef::internal_new(resource_id)
