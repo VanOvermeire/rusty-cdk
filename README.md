@@ -427,8 +427,6 @@ async fn tagging() {
 - Check for places where we pass in a `Value` but should pass in a Ref
 - Check duplicate ids in intelligent tiering
   - And look where we need similar things
-- Clean command
-  - Should remove archive policy from topic
 - Allow imports and exports
   - Though probably don't allow hard coupling between stacks
 - Do some refactoring/splitting up of files

@@ -1,18 +1,15 @@
 use crate::util::{get_existing_template, get_stack_status, load_config};
 use aws_config::SdkConfig;
+use aws_sdk_cloudformation::Client;
 use aws_sdk_cloudformation::error::{ProvideErrorMetadata, SdkError};
 use aws_sdk_cloudformation::types::{Capability, StackStatus, Tag};
-use aws_sdk_cloudformation::Client;
 use rusty_cdk_core::stack::{Asset, Stack};
 use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-
-// TODO here and elsewhere: remove the 'normal' deploy/diff methods - use cargo rusty for those
 
 #[derive(Debug)]
 pub enum DeployError {
@@ -42,73 +39,6 @@ impl Display for DeployError {
 /// This function handles the complete deployment lifecycle:
 /// - Uploading Lambda function assets to S3
 /// - Creating or updating the CloudFormation stack
-/// - Monitoring deployment progress with real-time status updates
-///
-/// It exits with code 0 on success, 1 on failure
-/// 
-/// For a deployment method that returns a Result, see `deploy_with_result`
-///
-/// # Parameters
-///
-/// * `name` - The CloudFormation stack name (alphanumeric characters and hyphens only)
-/// * `stack` - The stack to deploy, created using `StackBuilder`
-///
-/// # Tags
-///
-/// If tags were added to the stack using `StackBuilder::add_tag()`, they will be
-/// applied to the CloudFormation stack and propagated to resources where supported.
-///
-/// # Example
-///
-/// ```no_run
-/// use rusty_cdk::deploy;
-/// use rusty_cdk::stack::StackBuilder;
-/// use rusty_cdk::sqs::QueueBuilder;
-/// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
-/// use rusty_cdk::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
-///
-/// #[tokio::main]
-/// async fn main() {
-///
-/// let mut stack_builder = StackBuilder::new();
-///     QueueBuilder::new("my-queue")
-///         .standard_queue()
-///         .build(&mut stack_builder);
-///
-///     let stack = stack_builder.build().expect("Stack to build successfully");
-///
-///     deploy(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack).await;
-/// }
-/// ```
-///
-/// # AWS Credentials
-///
-/// This function requires valid AWS credentials configured through:
-/// - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-/// - AWS credentials file (`~/.aws/credentials`)
-/// - IAM role (when running on EC2, ECS, Lambda, etc.)
-/// - ...
-///
-/// The AWS credentials must have permissions for:
-/// - `cloudformation:CreateStack`, `cloudformation:UpdateStack`, `cloudformation:DescribeStacks`, `cloudformation:GetTemplate`
-/// - `s3:PutObject` (for Lambda asset uploads)
-/// - IAM permissions if creating roles (`iam:CreateRole`, `iam:PutRolePolicy`, etc.)
-/// - Service-specific permissions for resources being created
-pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
-    match deploy_with_result(name, stack, true).await {
-        Ok(message) => println!("{message}"),
-        Err(e) => {
-            eprintln!("{e}");
-            exit(1);
-        }
-    }
-}
-
-/// Deploys a stack to AWS using CloudFormation.
-///
-/// This function handles the complete deployment lifecycle:
-/// - Uploading Lambda function assets to S3
-/// - Creating or updating the CloudFormation stack
 /// - Monitoring deployment progress
 ///
 /// It returns a `Result`. In case of error, a `DeployError` is returned.
@@ -128,7 +58,7 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
 /// # Example
 ///
 /// ```no_run
-/// use rusty_cdk::deploy;
+/// use rusty_cdk::deploy_with_result;
 /// use rusty_cdk::stack::StackBuilder;
 /// use rusty_cdk::sqs::QueueBuilder;
 /// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
@@ -137,7 +67,6 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
 /// #[tokio::main]
 /// async fn main() {
 ///
-/// use rusty_cdk::deploy_with_result;
 /// let mut stack_builder = StackBuilder::new();
 ///     QueueBuilder::new("my-queue")
 ///         .standard_queue()
@@ -158,11 +87,18 @@ pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
 /// - ...
 ///
 /// The AWS credentials must have permissions for:
-/// - `cloudformation:CreateStack`, `cloudformation:UpdateStack`, `cloudformation:DescribeStacks`, `cloudformation:GetTemplate`
-/// - `s3:PutObject` (for Lambda asset uploads)
-/// - IAM permissions if creating roles (`iam:CreateRole`, `iam:PutRolePolicy`, etc.)
+/// - `cloudformation:CreateStack`
+/// - `cloudformation:UpdateStack`
+/// - `cloudformation:DescribeStacks`
+/// - `cloudformation:GetTemplate`
+/// - `s3:PutObject` (if you have Lambdas)
+/// - IAM permissions for creating roles
 /// - Service-specific permissions for resources being created
-pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack, print_progress: bool) -> Result<String, DeployError> {
+pub async fn deploy_with_result(
+    name: StringWithOnlyAlphaNumericsAndHyphens,
+    mut stack: Stack,
+    print_progress: bool,
+) -> Result<String, DeployError> {
     let name = name.0;
     let config = load_config(true).await;
 
@@ -173,7 +109,9 @@ pub async fn deploy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, mut
     create_or_update_stack(&name, &mut stack, &cloudformation_client).await?;
 
     loop {
-        let status = get_stack_status(&name, &cloudformation_client).await.expect("status to be available for stack");
+        let status = get_stack_status(&name, &cloudformation_client)
+            .await
+            .expect("status to be available for stack");
 
         match status {
             StackStatus::CreateComplete => {
@@ -233,24 +171,25 @@ async fn create_or_update_stack(name: &String, stack: &mut Stack, cloudformation
                 .capabilities(Capability::CapabilityNamedIam)
                 .set_tags(tags)
                 .send()
-                .await {
+                .await
+            {
                 Ok(_) => Ok(()),
-                Err(e) => {
-                    match e {
-                        SdkError::ServiceError(ref s) => {
-                            let update_stack_error = s.err();
-                            if update_stack_error.message().map(|v| v.contains("No updates are to be performed")).unwrap_or(false) {
-                                Ok(())   
-                            } else {
-                                Err(DeployError::StackUpdateError(format!("{e:?}")))
-                            }
-                        }
-                        _ => {
+                Err(e) => match e {
+                    SdkError::ServiceError(ref s) => {
+                        let update_stack_error = s.err();
+                        if update_stack_error
+                            .message()
+                            .map(|v| v.contains("No updates are to be performed"))
+                            .unwrap_or(false)
+                        {
+                            Ok(())
+                        } else {
                             Err(DeployError::StackUpdateError(format!("{e:?}")))
                         }
                     }
-                }
-            }
+                    _ => Err(DeployError::StackUpdateError(format!("{e:?}"))),
+                },
+            };
         }
         None => {
             let body = stack.synth().map_err(|e| DeployError::SynthError(format!("{e:?}")))?;
