@@ -1,6 +1,6 @@
 [package]
 name = "rusty-cdk-lookups"
-version = "0.6.3"
+version = "0.7.0"
 edition = "2024"
 description = "Lookup macros of the rusty-cdk"
 license = "MIT"
