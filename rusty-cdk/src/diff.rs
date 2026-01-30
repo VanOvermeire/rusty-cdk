@@ -1,22 +1,7 @@
-use std::process::exit;
 use aws_sdk_cloudformation::Client;
 use rusty_cdk_core::stack::{Stack, StackDiff};
 use rusty_cdk_core::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 use crate::util::{get_existing_template, load_config};
-
-
-#[allow(unused)]
-pub async fn diff(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
-    match diff_with_result(name, stack).await {
-        Ok(res) => {
-            println!("{res}");
-        }
-        Err(e) => {
-            eprintln!("{e}");
-            exit(1);
-        }
-    }
-}
 
 /// Creates a diff that will show what ids are being added / removed to an existing stack, as well as showing ids that remain without being added or removed.
 /// Currently, the diff does not show modifications to resources.
@@ -25,6 +10,7 @@ pub async fn diff(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
 ///
 /// * `name` - The existing CloudFormation stack name
 /// * `stack` - The new stack
+/// * `print_progress` - Print progress updates to standard out
 ///
 /// # AWS Credentials
 ///
@@ -32,7 +18,7 @@ pub async fn diff(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) {
 /// The AWS credentials must have permissions for:
 /// - `cloudformation:DescribeStacks`
 /// - `cloudformation:GetTemplate`
-pub async fn diff_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) -> Result<String, String> {
+pub async fn diff(name: StringWithOnlyAlphaNumericsAndHyphens, stack: Stack) -> Result<String, String> {
     let config = load_config(false).await;
     let cloudformation_client = Client::new(&config);
 

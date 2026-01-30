@@ -1,8 +1,8 @@
 use clap::Parser;
 use clap::Subcommand;
-use rusty_cdk::deploy_with_result;
-use rusty_cdk::destroy_with_result;
-use rusty_cdk::diff_with_result;
+use rusty_cdk::deploy;
+use rusty_cdk::destroy;
+use rusty_cdk::diff;
 use rusty_cdk::stack::Stack;
 use rusty_cdk::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
 use rusty_cdk::clean;
@@ -79,7 +79,7 @@ pub async fn entry_point(command: RustyCommand) {
             };
             match get_path_as_stack(&path) {
                 Ok(stack) => {
-                    match deploy_with_result(StringWithOnlyAlphaNumericsAndHyphens(name), stack, true).await {
+                    match deploy(StringWithOnlyAlphaNumericsAndHyphens(name), stack, true).await {
                         Ok(_) => {},
                         Err(e) => print_err_and_exit(e)
                     }
@@ -104,7 +104,7 @@ pub async fn entry_point(command: RustyCommand) {
             };
             match get_path_as_stack(&path) {
                 Ok(stack) => {
-                    match diff_with_result(StringWithOnlyAlphaNumericsAndHyphens(name), stack).await {
+                    match diff(StringWithOnlyAlphaNumericsAndHyphens(name), stack).await {
                         Ok(_) => {},
                         Err(e) => print_err_and_exit(e),
                     }
@@ -125,7 +125,7 @@ pub async fn entry_point(command: RustyCommand) {
                     Err(e) => print_err_and_exit(e)
                 }
             }
-            match destroy_with_result(StringWithOnlyAlphaNumericsAndHyphens(name), true).await {
+            match destroy(StringWithOnlyAlphaNumericsAndHyphens(name), true).await {
                 Ok(_) => {},
                 Err(e) => print_err_and_exit(e),
             }

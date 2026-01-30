@@ -26,6 +26,10 @@ Install using cargo:
 
 `cargo add rusty-cdk`
 
+Optionally, install the cargo plugin as well:
+
+`cargo install cargo-rusty`
+
 Now create a stack. 
 
 ```rust
@@ -38,7 +42,7 @@ fn main() {
   // create resource builders, and call `build` to add the resulting resources to the stack
   let stack = stack_builder.build().expect("this empty stack to build"); // create the stack
   let synthesized = stack.synth().unwrap(); // synth the template and deploy it yourself
-  // or deploy it
+  // or deploy it using the `deploy` function or `cargo-rusty`
 }
 ```
 
@@ -62,26 +66,31 @@ fn main() {
           .message_retention_period(message_retention_period!(600))
           .build(&mut stack_builder); // add it to the stack builder
   let stack = stack_builder.build().expect("this stack to build");
-  // deploy with `rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("SomeStackName"), stack).await` 
-  // or `synth` and deploy yourself
+  // `synth` and deploy yourself
+  // or deploy with `deploy(string_with_only_alphanumerics_and_hyphens!("SomeStackName"), stack, false).await`
+  // or use `cargo-rusty deploy`
 }
 ```
 
 See a list of all available builders below.
 
-Once you've done that, you can either synthesize the stack to get the template as a string, and use an AWS tool (CLI, SDK, console) to deploy:
+Once you've done that, you can synthesize the stack to get the template as a string, and print it to standard out.
 
 ```rust,compile_fail
 let synthesized = stack.synth().unwrap();
-// pipe or write the output
-// if you have a Lambda, upload its zip file to the correct bucket 
+println!("{}", synthesized);
 ```
 
-Or you can use the built-in `deploy` function, which does the uploading and deploying for you.
+With `cargo rusty deploy`, you can use that output to deploy your infrastructure to AWS.
+
+Alternatively, you can also the built-in `deploy` function, which uses the stack and does the synth internally.
 
 ```rust,compile_fail
-rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("MyStackName"), stack).await;
+rusty_cdk::deploy(string_with_only_alphanumerics_and_hyphens!("MyStackName"), stack, false).await;
 ```
+
+Or use your choice of an AWS tool (CLI, SDK, console) to deploy the synth output.
+If you have Lambdas, you will have to upload the zip files to the correct bucket if you go for this route.
 
 ## Concepts 
 
@@ -418,7 +427,7 @@ async fn tagging() {
   let mut stack_builder = StackBuilder::new();
   // add your resources
   stack_builder.add_tag("OWNER", "me").build();
-  // and deploy
+  // ...
 }
 ```
 

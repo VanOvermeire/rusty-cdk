@@ -49,6 +49,7 @@ impl Display for DeployError {
 ///
 /// * `name` - The CloudFormation stack name (alphanumeric characters and hyphens only)
 /// * `stack` - The stack to deploy, created using `StackBuilder`
+/// * `print_progress` - Print progress updates to standard out
 ///
 /// # Tags
 ///
@@ -58,7 +59,7 @@ impl Display for DeployError {
 /// # Example
 ///
 /// ```no_run
-/// use rusty_cdk::deploy_with_result;
+/// use rusty_cdk::deploy;
 /// use rusty_cdk::stack::StackBuilder;
 /// use rusty_cdk::sqs::QueueBuilder;
 /// use rusty_cdk_macros::string_with_only_alphanumerics_and_hyphens;
@@ -74,7 +75,7 @@ impl Display for DeployError {
 ///
 ///     let stack = stack_builder.build().expect("Stack to build successfully");
 ///
-///     let result = deploy_with_result(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack, false).await;
+///     let result = deploy(string_with_only_alphanumerics_and_hyphens!("my-application-stack"), stack, false).await;
 /// }
 /// ```
 ///
@@ -94,7 +95,7 @@ impl Display for DeployError {
 /// - `s3:PutObject` (if you have Lambdas)
 /// - IAM permissions for creating roles
 /// - Service-specific permissions for resources being created
-pub async fn deploy_with_result(
+pub async fn deploy(
     name: StringWithOnlyAlphaNumericsAndHyphens,
     mut stack: Stack,
     print_progress: bool,

@@ -31,9 +31,15 @@ impl Display for DestroyError {
 }
 
 /// Destroy a deployed stack
-///
 /// It returns a `Result`. In case of error, a `DestroyError` is returned.
-pub async fn destroy_with_result(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: bool) -> Result<(), DestroyError> {
+///
+/// # Parameters
+///
+/// * `name` - The CloudFormation stack name (alphanumeric characters and hyphens only)
+/// * `stack` - The stack to deploy, created using `StackBuilder`
+/// * `print_progress` - Print progress updates to standard out
+/// 
+pub async fn destroy(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: bool) -> Result<(), DestroyError> {
     let name = name.0;
     let config = load_config(false).await;
     let cloudformation_client = Client::new(&config);
