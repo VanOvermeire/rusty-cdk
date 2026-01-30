@@ -28,6 +28,7 @@ type_state!(
 
 /// Builder for API Gateway V2 HTTP APIs.
 ///
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigatewayv2-api.html
 /// Creates an HTTP API with routes to Lambda functions. Automatically creates integrations and permissions for each route.
 ///
 /// # Example

@@ -744,7 +744,9 @@ impl BucketBuilder<WebsiteState> {
     }
 }
 
-/// Builder for S3 CORS configuration.
+/// Builder for S3 CORS configuration 
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-corsconfiguration.html
 pub struct CorsConfigurationBuilder {
     rules: Vec<CorsRule>,
 }
@@ -760,6 +762,8 @@ impl CorsConfigurationBuilder {
 }
 
 /// Builder for individual CORS rules.
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-corsrule.html
 pub struct CorsRuleBuilder {
     allow_origins: Vec<String>,
     allow_methods: Vec<HttpMethod>,
@@ -1167,6 +1171,9 @@ impl From<IntelligentTieringStatus> for String {
     }
 }
 
+/// Builder for TagFilters of IntelligentTiering
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-tagfilter.html
 pub struct TagFilterBuilder {
     key: String,
     value: String,
@@ -1188,6 +1195,9 @@ impl TagFilterBuilder {
     }
 }
 
+/// Builder for IntelligentTiering Configuration
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-intelligenttieringconfiguration.html
 pub struct IntelligentTieringConfigurationBuilder {
     id: String,
     status: String,
@@ -1270,6 +1280,9 @@ impl From<Expiration> for String {
     }
 }
 
+/// Builder for the Record Expiration of Bucket Metadataconfiguration
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-metadataconfiguration-journaltableconfiguration.html
 pub struct RecordExpirationBuilder {
     days: Option<u32>,
     expiration: String,
@@ -1336,6 +1349,9 @@ impl JournalTableConfigurationBuilder {
     }
 }
 
+/// Builder for the metadata destination of Bucket Metadataconfiguration
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-metadatadestination.html
 pub struct MetadataDestinationBuilder {
     table_bucket_type: String,
     table_bucket_arn: Option<Value>,
@@ -1388,6 +1404,9 @@ impl From<ConfigurationState> for String {
     }
 }
 
+/// Builder for the InventoryTable Config
+/// 
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-inventorytableconfiguration.html
 pub struct InventoryTableConfigurationBuilder {
     configuration_state: String,
     table_arn: Option<Value>,

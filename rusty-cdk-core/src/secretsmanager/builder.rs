@@ -10,6 +10,7 @@ type_state!(SecretBuilderState, StartState, SelectedSecretTypeState,);
 
 /// Builder for AWS Secrets Manager secrets.
 ///
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-secretsmanager-secret.html
 /// Supports both static secret strings and automatically generated secrets.
 ///
 /// # Example

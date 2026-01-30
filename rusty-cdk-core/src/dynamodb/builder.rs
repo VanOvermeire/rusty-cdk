@@ -60,6 +60,8 @@ type_state!(
 
 /// Builder for DynamoDB tables.
 ///
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html
+///
 /// Supports both pay-per-request and provisioned billing modes. The builder enforces the correct configuration based on the chosen billing mode.
 ///
 /// # Example
@@ -126,6 +128,7 @@ impl TableBuilder<StartState> {
 }
 
 impl<T: TableBuilderState> TableBuilder<T> {
+    /// Sets the sort key for the table. The sort key is also known as the range key.
     pub fn sort_key(self, key: Key) -> Self {
         Self {
             sort_key: Some(key),
@@ -133,6 +136,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
         }
     }
 
+    /// Sets the name of the table. If not specified, a name will be generated.
     pub fn table_name(self, name: StringWithOnlyAlphaNumericsAndUnderscores) -> Self {
         Self {
             table_name: Some(name.0),
@@ -260,6 +264,7 @@ impl<T: TableBuilderState> TableBuilder<T> {
 }
 
 impl TableBuilder<PayPerRequestState> {
+    /// Sets the maximum read capacity for a pay-per-request table. This is an optional property.
     pub fn max_read_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
             max_read_capacity: Some(capacity.0),
@@ -267,6 +272,7 @@ impl TableBuilder<PayPerRequestState> {
         }
     }
 
+    /// Sets the maximum write capacity for a pay-per-request table. This is an optional property.
     pub fn max_write_capacity(self, capacity: NonZeroNumber) -> Self {
         Self {
             max_write_capacity: Some(capacity.0),
@@ -280,6 +286,7 @@ impl TableBuilder<PayPerRequestState> {
 }
 
 impl TableBuilder<ProvisionedStateStart> {
+    /// Sets the read capacity for a provisioned table. This is a required property for provisioned tables.
     pub fn read_capacity(self, capacity: NonZeroNumber) -> TableBuilder<ProvisionedStateReadSet> {
         TableBuilder {
             read_capacity: Some(capacity.0),
@@ -299,6 +306,7 @@ impl TableBuilder<ProvisionedStateStart> {
 }
 
 impl TableBuilder<ProvisionedStateReadSet> {
+    /// Sets the write capacity for a provisioned table. This is a required property for provisioned tables.
     pub fn write_capacity(self, capacity: NonZeroNumber) -> TableBuilder<ProvisionedStateWriteSet> {
         TableBuilder {
             write_capacity: Some(capacity.0),

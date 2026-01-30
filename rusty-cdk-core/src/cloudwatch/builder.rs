@@ -21,6 +21,7 @@ impl From<LogGroupClass> for String {
 
 /// Builder for CloudWatch log groups.
 ///
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
 /// # Example
 ///
 /// ```rust
