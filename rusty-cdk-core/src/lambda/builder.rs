@@ -145,6 +145,13 @@ pub struct FunctionBuilder<T: FunctionBuilderState> {
 }
 
 impl<T: FunctionBuilderState> FunctionBuilder<T> {
+    /// Sets a custom name for the function.
+    ///
+    /// If not specified, a name will be generated automatically.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name for the function.
     pub fn function_name(self, name: StringWithOnlyAlphaNumericsUnderscoresAndHyphens) -> FunctionBuilder<T> {
         Self {
             function_name: Some(name.0),
@@ -152,6 +159,11 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
 
+    /// Adds an IAM permission to the functions execution role.
+    ///
+    /// # Arguments
+    ///
+    /// * `permission` - The IAM permission to add.
     pub fn add_permission(mut self, permission: IamPermission) -> FunctionBuilder<T> {
         self.additional_policies.push(permission.into_policy());
         Self { ..self }
@@ -170,16 +182,34 @@ impl<T: FunctionBuilderState> FunctionBuilder<T> {
         }
     }
 
+    /// Adds an environment variable to the function.
+    /// If you just want to set a string as the environment variable value, use `env_var_string`
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The name of the environment variable.
+    /// * `value` - The value of the environment variable, as a `serde_json::Value`.
     pub fn env_var(mut self, key: EnvVarKey, value: Value) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, value));
         Self { ..self }
     }
 
+    /// Adds a string environment variable to the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The name of the environment variable.
+    /// * `value` - The string value of the environment variable.
     pub fn env_var_string<V: Into<String>>(mut self, key: EnvVarKey, value: V) -> FunctionBuilder<T> {
         self.env_vars.push((key.0, Value::String(value.into())));
         Self { ..self }
     }
 
+    /// Sets the number of reserved concurrent executions for the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `executions` - The number of reserved concurrent executions.
     pub fn reserved_concurrent_executions(self, executions: u32) -> FunctionBuilder<T> {
         Self {
             reserved_concurrent_executions: Some(executions),
@@ -350,6 +380,13 @@ impl FunctionBuilder<StartState> {
         }
     }
 
+    /// Sets the source code for the function.
+    ///
+    /// This can either be a zip file from S3 or inline code.
+    ///
+    /// # Arguments
+    ///
+    /// * `code` - The functions source code.
     pub fn code(self, code: Code) -> FunctionBuilder<CodeState> {
         FunctionBuilder {
             code: Some(code),
@@ -372,6 +409,13 @@ impl FunctionBuilder<StartState> {
 }
 
 impl FunctionBuilder<CodeState> {
+    /// Sets the functions handler.
+    ///
+    /// This is the entry point for the function, e.g., "index.handler", "bootstrap" (for 'provided' runtimes), etc.
+    ///
+    /// # Arguments
+    ///
+    /// * `handler` - The function handler.
     pub fn handler<T: Into<String>>(self, handler: T) -> FunctionBuilder<ZipStateWithHandler> {
         FunctionBuilder {
             id: self.id,
@@ -394,6 +438,11 @@ impl FunctionBuilder<CodeState> {
 }
 
 impl FunctionBuilder<ZipStateWithHandler> {
+    /// Sets the functions runtime.
+    ///
+    /// # Arguments
+    ///
+    /// * `runtime` - The runtime environment for the function.
     pub fn runtime(self, runtime: Runtime) -> FunctionBuilder<ZipStateWithHandlerAndRuntime> {
         FunctionBuilder {
             id: self.id,
