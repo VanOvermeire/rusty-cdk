@@ -126,6 +126,7 @@ struct EventSourceMappingInfo {
 ///     .env_var_string(env_var_key!("TABLE_NAME"), "my-table")
 ///     .build(&mut stack_builder);
 /// ```
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html
 pub struct FunctionBuilder<T: FunctionBuilderState> {
     state: PhantomData<T>,
     id: Id,
@@ -521,6 +522,7 @@ impl FunctionBuilder<EventSourceMappingState> {
 /// Builder for Lambda function permissions.
 ///
 /// Creates permission resources that allow other AWS services to invoke a Lambda function.
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-permission.html
 pub struct PermissionBuilder {
     id: Id,
     action: String,

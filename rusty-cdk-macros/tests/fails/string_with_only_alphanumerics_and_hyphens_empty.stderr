@@ -1,0 +1,5 @@
+error: min allowed length is 1 (was 0)
+ --> tests/fails/string_with_only_alphanumerics_and_hyphens_empty.rs:4:49
+  |
+4 |     string_with_only_alphanumerics_and_hyphens!("");
+  |                                                 ^^

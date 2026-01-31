@@ -56,6 +56,7 @@ use std::time::Duration;
 /// let policy = BucketPolicyBuilder::new("bucket-policy", &bucket, policy_doc)
 ///     .build(&mut stack_builder);
 /// ```
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucketpolicy.html
 pub struct BucketPolicyBuilder {
     id: Id,
     bucket_name: Value,
@@ -271,6 +272,7 @@ type_state!(BucketBuilderState, StartState, WebsiteState,);
 ///     .error_document("error.html")
 ///     .build(&mut stack_builder);
 /// ```
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html
 pub struct BucketBuilder<T: BucketBuilderState> {
     phantom_data: PhantomData<T>,
     id: Id,
@@ -1052,6 +1054,7 @@ impl LifecycleRuleBuilder {
 /// Builder for S3 lifecycle configuration.
 ///
 /// Combines multiple lifecycle rules into a configuration for a bucket.
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-lifecycleconfiguration.html
 pub struct LifecycleConfigurationBuilder {
     rules: Vec<LifecycleRule>,
     transition_minimum_size: Option<TransitionDefaultMinimumObjectSize>,
@@ -1095,6 +1098,7 @@ impl LifecycleConfigurationBuilder {
 /// Builder for S3 public access block configuration.
 ///
 /// Controls public access to the bucket at the bucket level.
+/// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-publicaccessblockconfiguration.html
 pub struct PublicAccessBlockConfigurationBuilder {
     block_public_acls: Option<bool>,
     block_public_policy: Option<bool>,

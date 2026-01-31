@@ -1,0 +1,5 @@
+error: value should only contain alphanumeric characters and ['-']
+ --> tests/fails/string_with_only_alphanumerics_and_hyphens_invalid_chars.rs:4:49
+  |
+4 |     string_with_only_alphanumerics_and_hyphens!("invalid_string");
+  |                                                 ^^^^^^^^^^^^^^^^

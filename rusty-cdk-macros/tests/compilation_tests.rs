@@ -284,3 +284,19 @@ fn topic_display_name_valid() {
     topic_display_name!("my-topic_display name");
 }
 
+
+#[test]
+fn create_string_with_only_alphanumerics_and_hyphens_alpha() {
+    string_with_only_alphanumerics_and_hyphens!("validalpha");
+}
+
+#[test]
+fn create_string_with_only_alphanumerics_and_hyphens_numeric() {
+    string_with_only_alphanumerics_and_hyphens!("12345");
+}
+
+#[test]
+fn create_string_with_only_alphanumerics_and_hyphens_mixed() {
+    string_with_only_alphanumerics_and_hyphens!("another-valid-id-456");
+}
+

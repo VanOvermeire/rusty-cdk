@@ -1,0 +1,5 @@
+error: min allowed length is 1 (was 0)
+ --> tests/fails/topic_display_name_empty.rs:4:25
+  |
+4 |     topic_display_name!("");
+  |                         ^^
