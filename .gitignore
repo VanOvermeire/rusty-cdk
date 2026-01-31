@@ -4,3 +4,5 @@ time
 cdk
 output
 Cargo.lock
+
+.gemini
