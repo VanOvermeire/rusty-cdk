@@ -433,6 +433,15 @@ async fn tagging() {
 
 ## TODO
 
+- Write parser that goes through the AWS docs and retrieves info
+  - Name for the mod (S3 for example)
+  - Name of the resource
+  - Properties with type (if it needs to be checked, add warning)
+  - Comments
+- Write another script that
+  - generates them as structs with SerDe
+  - puts the selected dtos in the right location (as dto.rs under name-of-resource folder, with a mod.rs that makes it public)
+  - adds the mod to lib.rs
 - Additional stack build checks
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
