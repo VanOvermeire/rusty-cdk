@@ -1,6 +1,6 @@
 [package]
 name = "cargo-rusty"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 description = "Tooling to deploy, diff, destroy... the rusty-cdk"
 license = "MIT"
@@ -16,4 +16,4 @@ path = "src/main.rs"
 clap = { version = "4.5.54", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1.41.1", features = ["macros", "rt-multi-thread"] }
-rusty-cdk = { version = "0.7.0", path = "../rusty-cdk" }
+rusty-cdk = { version = "0.8.0", path = "../rusty-cdk" }

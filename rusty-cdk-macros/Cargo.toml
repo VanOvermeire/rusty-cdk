@@ -1,6 +1,6 @@
 [package]
 name = "rusty-cdk-macros"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 description = "Macros of the rusty-cdk"
 license = "MIT"
