@@ -12,7 +12,7 @@ use std::process::exit;
 use tokio::fs::remove_file;
 use tokio::process::Command;
 
-const CURRENT_DIR: &'static str = ".";
+const CURRENT_DIR: &str = ".";
 
 #[derive(Clone, Debug, Subcommand)]
 pub enum RustyCommand {
@@ -141,7 +141,7 @@ async fn run_synth_in_current_path() -> Result<String, String> {
 
             if is_rust_project {
                 match Command::new("sh")
-                    .args(&["-c", "cargo run > cargo-rusty-temporary-synth.json"])
+                    .args(["-c", "cargo run > cargo-rusty-temporary-synth.json"])
                     .output()
                     .await
                 {

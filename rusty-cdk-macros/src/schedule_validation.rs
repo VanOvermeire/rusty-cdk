@@ -5,13 +5,7 @@ fn valid_number_between(to_parse: &str, min: u16, max: u16) -> bool {
 
     let parsed: Result<u16, _> = to_parse.parse();
     match parsed {
-        Ok(v) => {
-            if v < min || v > max {
-                false
-            } else {
-                true
-            }
-        }
+        Ok(v) => v < min || v > max,
         Err(_) => false,
     }
 }
@@ -112,7 +106,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
         } else {
             vec![month]
         };
-        let invalid_names = month_parts.iter().any(|v| !MONTH_NAMES.contains(&v));
+        let invalid_names = month_parts.iter().any(|v| !MONTH_NAMES.contains(v));
         let invalid_numbers = month_parts.iter().any(|v| !valid_number_between(v, 1, 12));
 
         if invalid_names && invalid_numbers {
@@ -139,7 +133,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
         } else {
             vec![day_of_week]
         };
-        let invalid_names = day_of_week_parts.iter().any(|v| !DAY_NAMES.contains(&v));
+        let invalid_names = day_of_week_parts.iter().any(|v| !DAY_NAMES.contains(v));
         let invalid_numbers = day_of_week_parts.iter().any(|m| !valid_number_between(m, 1, 7));
         if invalid_names && invalid_numbers {
             return Err(format!(

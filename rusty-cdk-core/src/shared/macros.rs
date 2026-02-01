@@ -84,7 +84,7 @@ macro_rules! ref_struct {
                 }
             }
             
-            crate::internal_ref_struct_methods!();
+            $crate::internal_ref_struct_methods!();
         }
     };
 }
@@ -130,7 +130,7 @@ macro_rules! ref_struct_with_id_methods {
                 &self.id
             }
         
-            crate::internal_ref_struct_methods!();
+            $crate::internal_ref_struct_methods!();
         }
     };
 }
