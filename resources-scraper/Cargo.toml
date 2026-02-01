@@ -16,3 +16,7 @@ path = "src/retrieve_urls/main.rs"
 [[bin]]
 name = "resources"
 path = "src/retrieve_resources/main.rs"
+
+[[bin]]
+name = "dto"
+path = "src/dto_builder/main.rs"

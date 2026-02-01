@@ -9,6 +9,8 @@ use std::fs::read_to_string;
 
 const BASE_URL: &str = "https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference";
 
+// TODO unwraps/expects
+
 /// Retrieves raw, but parsable (CSV), resource info from the AWS docs
 /// Output is written to the output dir
 fn main() -> Result<()> {

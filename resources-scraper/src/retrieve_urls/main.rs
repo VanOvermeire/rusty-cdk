@@ -11,6 +11,8 @@ const START_SUFFIX: &str = "aws-template-resource-type-ref.html";
 // add resource groupings that have been completely added
 const IGNORE_LIST: [&str; 3] = ["cfn-reference-shared.html", "AWS_SNS.html", "AWS_SQS.html"];
 
+// TODO unwraps/expects
+
 /// Retrieve a list of relative URLs that point to resource grouping like S3
 /// Will retrieve some
 fn main() -> Result<()> {
