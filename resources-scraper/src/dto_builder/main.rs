@@ -2,13 +2,22 @@ use std::fs::{self, read_to_string};
 
 use anyhow::{Context, Result};
 
-// currently, this only works for _a single_ resource group
+/// Creates DTOs for the scraped Resources 
+/// Currently, this only works for _a single_ resource group
 fn main() -> Result<()>{
     let resources = read_to_string("./output/raw_resources.csv")?;
     let resources = resources.split("\n").filter(|v| !v.is_empty());
     
-    let mut resource_group_name = None;
-    let mut output = vec!["use serde::{Deserialize, Serialize};".to_string(), "use serde_json::Value;".to_string(), "use crate::{dto_methods, ref_struct};".to_string(), "use crate::shared::Id;".to_string(), "".to_string()];
+    let mut resource_group_name = None;    
+    
+    let imports = r###"
+        use serde::{Deserialize, Serialize};
+        use serde_json::Value;
+        use crate::{dto_methods, ref_struct};
+        use crate::shared::Id;
+    "###;
+    
+    let mut output = vec![imports.to_string()];
     
     for r in resources {
         let mut code_to_write_for_resource = vec![];
@@ -26,33 +35,49 @@ fn main() -> Result<()>{
         let struct_name = resource_type_parts.last().context("resource type should contain a name for the struct")?;
         let type_name = format!("{}Type", struct_name);
         let properties_struct_name = format!("{}Properties", struct_name);
+        
+        let code_for_type_struct = format!(r###"
+            #[derive(Debug, Serialize, Deserialize)]
+            pub(crate) enum {} {{
+                #[serde(rename = "{}")]
+                {}
+            }}
+        "###, type_name, resource_type, type_name);
+        code_to_write_for_resource.push(code_for_type_struct);
 
-        code_to_write_for_resource.push("#[derive(Debug, Serialize, Deserialize)]".to_string());
-        code_to_write_for_resource.push(format!("pub(crate) enum {} {{", type_name));
-        code_to_write_for_resource.push(format!("#[serde(rename = \"{}\")]", resource_type));
-        code_to_write_for_resource.push(format!("{} }}", type_name));
+        let code_for_main_struct = format!(r###"
+            ref_struct!({}Ref);
+            
+            #[derive(Debug, Serialize, Deserialize)]
+            pub struct {} {{
+                #[serde(skip)]
+                pub(crate) id: Id,
+                #[serde(skip)]
+                pub(crate) resource_id: String,
+                #[serde(rename = "Type")]
+                pub(crate) r#type: {},
+                #[serde(rename = "Properties")]
+                pub(crate) properties: {}
+            }}
+
+            dto_methods!({});
+        "###, struct_name, struct_name, type_name, properties_struct_name, struct_name);
+        code_to_write_for_resource.push(code_for_main_struct);
         
-        code_to_write_for_resource.push(format!("\nref_struct!({}Ref);", struct_name));
-        
-        code_to_write_for_resource.push("\n#[derive(Debug, Serialize, Deserialize)]".to_string());
-        code_to_write_for_resource.push(format!("pub struct {} {{", struct_name));
-        code_to_write_for_resource.push("#[serde(skip)]\npub(crate) id: Id,\n#[serde(skip)]\npub(crate) resource_id: String,".to_string());
-        code_to_write_for_resource.push("#[serde(rename = \"Type\")]".to_string());
-        code_to_write_for_resource.push(format!("pub(crate) r#type: {},", type_name));
-        code_to_write_for_resource.push("#[serde(rename = \"Properties\")]".to_string());
-        code_to_write_for_resource.push(format!("pub(crate) properties: {} }}", properties_struct_name));
-        
-        code_to_write_for_resource.push(format!("\ndto_methods!({});", struct_name));
-        
-        code_to_write_for_resource.push(format!("\n#[derive(Debug, Serialize, Deserialize)]\npub struct {} {{", properties_struct_name));
-        code_to_write_for_resource.push("}\n".to_string());
         // TODO write properties of Properties Struct, check whether optional, check type, add comments
-        
+        let properties_struct = format!(r###"
+            #[derive(Debug, Serialize, Deserialize)]
+            pub struct {} {{
+                // TODO
+            }}
+        "###, properties_struct_name);
+        code_to_write_for_resource.push(properties_struct);
+
         output.append(&mut code_to_write_for_resource);
     }
     
     // TODO create dir with right name, mod.rs
-    fs::write("output/dto.rs", output.join("\n").as_bytes())?;
+    fs::write("output/dto.rs", output.join("").as_bytes())?;
     
     Ok(())
 }
