@@ -8,3 +8,11 @@ anyhow = "1.0.100"
 rayon = "1.11.0"
 reqwest = {  version = "0.12.3", features = ["blocking"] }
 scraper = "0.24.0"
+
+[[bin]]
+name = "urls"
+path = "src/retrieve_urls/main.rs"
+
+[[bin]]
+name = "resources"
+path = "src/retrieve_resources/main.rs"
