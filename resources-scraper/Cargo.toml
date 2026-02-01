@@ -1,0 +1,10 @@
+[package]
+name = "resources-scraper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+rayon = "1.11.0"
+reqwest = {  version = "0.12.3", features = ["blocking"] }
+scraper = "0.24.0"
