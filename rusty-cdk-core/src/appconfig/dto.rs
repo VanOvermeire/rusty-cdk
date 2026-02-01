@@ -72,7 +72,7 @@ pub struct ConfigurationProfileProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Validator {
     #[serde(rename = "Content")]
-    pub(super) content: String,
+    pub(super) content: Value,
     #[serde(rename = "Type")]
     pub(super) validator_type: String,
 }

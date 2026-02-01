@@ -234,6 +234,7 @@ pub struct OriginGroupMember {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+// TODO add builder
 pub struct FailOverCriteria {
     #[serde(rename = "StatusCodes")]
     pub(super) status_codes: StatusCodes,

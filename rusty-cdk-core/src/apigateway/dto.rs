@@ -178,7 +178,7 @@ pub struct ApiGatewayV2RouteProperties {
     #[serde(rename = "ApiId")]
     pub(super) api_id: Value,
     #[serde(rename = "RouteKey")]
-    pub(super) route_key: String, // match with value for websocket api
+    pub(super) route_key: String,
     #[serde(rename = "Target", skip_serializing_if = "Option::is_none")]
     pub(super) target: Option<Value>,
 

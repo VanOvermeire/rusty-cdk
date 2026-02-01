@@ -1,8 +1,12 @@
-use serde_json::Value;
-use crate::appsync::{AppSyncApi, AppSyncApiProperties, AppSyncApiRef, AppSyncApiType, AppSyncAuthMode, AuthProvider, ChannelNamespace, ChannelNamespaceProperties, ChannelNamespaceRef, ChannelNamespaceType, CognitoConfig, EventConfig, EventLogConfig, LambdaAuthorizerConfig, OpenIDConnectConfig};
+use crate::appsync::{
+    AppSyncApi, AppSyncApiProperties, AppSyncApiRef, AppSyncApiType, AppSyncAuthMode, AuthProvider, ChannelNamespace,
+    ChannelNamespaceProperties, ChannelNamespaceRef, ChannelNamespaceType, CognitoConfig, EventConfig, EventLogConfig,
+    LambdaAuthorizerConfig, OpenIDConnectConfig,
+};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{AppSyncApiName, ChannelNamespaceName};
+use serde_json::Value;
 
 // TODO add api key builder + DTO
 
@@ -14,7 +18,11 @@ pub struct AppSyncApiBuilder {
 
 impl AppSyncApiBuilder {
     pub fn new(id: &str, app_sync_api_name: AppSyncApiName) -> Self {
-        Self { id: Id(id.to_string()), name: app_sync_api_name.0, event_config: None }
+        Self {
+            id: Id(id.to_string()),
+            name: app_sync_api_name.0,
+            event_config: None,
+        }
     }
 
     pub fn event_config(self, event_config: EventConfig) -> Self {
@@ -50,7 +58,12 @@ pub struct EventConfigBuilder {
 }
 
 impl EventConfigBuilder {
-    pub fn new(auth_providers: Vec<AuthProvider>, connection_auth_modes: Vec<AuthMode>, default_auth_modes: Vec<AuthMode>, default_subscribe_auth_modes: Vec<AuthMode>) -> Self {
+    pub fn new(
+        auth_providers: Vec<AuthProvider>,
+        connection_auth_modes: Vec<AuthMode>,
+        default_auth_modes: Vec<AuthMode>,
+        default_subscribe_auth_modes: Vec<AuthMode>,
+    ) -> Self {
         Self {
             auth_providers,
             connection_auth_modes: connection_auth_modes.into_iter().map(Into::into).collect(),
@@ -98,30 +111,20 @@ pub enum AuthMode {
 impl From<AuthMode> for AppSyncAuthMode {
     fn from(mode: AuthMode) -> AppSyncAuthMode {
         match mode {
-            AuthMode::AmazonCognitoUserPools => {
-                AppSyncAuthMode {
-                    auth_type: Some("AMAZON_COGNITO_USER_POOLS".to_string())
-                }
+            AuthMode::AmazonCognitoUserPools => AppSyncAuthMode {
+                auth_type: Some("AMAZON_COGNITO_USER_POOLS".to_string()),
             },
-            AuthMode::AwsIam => {
-                AppSyncAuthMode {
-                    auth_type: Some("AWS_IAM".to_string())
-                }
+            AuthMode::AwsIam => AppSyncAuthMode {
+                auth_type: Some("AWS_IAM".to_string()),
             },
-            AuthMode::ApiKey => {
-                AppSyncAuthMode {
-                    auth_type: Some("API_KEY".to_string())
-                }
+            AuthMode::ApiKey => AppSyncAuthMode {
+                auth_type: Some("API_KEY".to_string()),
             },
-            AuthMode::OpenidConnect => {
-                AppSyncAuthMode {
-                    auth_type: Some("OPENID_CONNECT".to_string())
-                }
+            AuthMode::OpenidConnect => AppSyncAuthMode {
+                auth_type: Some("OPENID_CONNECT".to_string()),
             },
-            AuthMode::AwsLambda => {
-                AppSyncAuthMode {
-                    auth_type: Some("AWS_LAMBDA".to_string())
-                }
+            AuthMode::AwsLambda => AppSyncAuthMode {
+                auth_type: Some("AWS_LAMBDA".to_string()),
             },
         }
     }
@@ -137,46 +140,36 @@ pub struct AuthProviderBuilder {
 impl AuthProviderBuilder {
     pub fn new(auth_type: AuthType) -> Self {
         match auth_type {
-            AuthType::AmazonCognitoUserPools(c) => {
-                Self {
-                    auth_type: "AMAZON_COGNITO_USER_POOLS".to_string(),
-                    cognito_config: Some(c),
-                    lambda_auth_config: None,
-                    open_id_connect_config: None,
-                }
-            }
-            AuthType::AwsIam => {
-                Self {
-                    auth_type: "AWS_IAM".to_string(),
-                    cognito_config: None,
-                    lambda_auth_config: None,
-                    open_id_connect_config: None,
-                }
-            }
-            AuthType::ApiKey => {
-                Self {
-                    auth_type: "API_KEY".to_string(),
-                    cognito_config: None,
-                    lambda_auth_config: None,
-                    open_id_connect_config: None,
-                }
-            }
-            AuthType::OpenidConnect(c) => {
-                Self {
-                    auth_type: "OPENID_CONNECT".to_string(),
-                    open_id_connect_config: Some(c),
-                    cognito_config: None,
-                    lambda_auth_config: None,
-                }
-            }
-            AuthType::AwsLambda(c) => {
-                Self {
-                    auth_type: "AWS_LAMBDA".to_string(),
-                    lambda_auth_config: Some(c),
-                    cognito_config: None,
-                    open_id_connect_config: None,
-                }
-            }
+            AuthType::AmazonCognitoUserPools(c) => Self {
+                auth_type: "AMAZON_COGNITO_USER_POOLS".to_string(),
+                cognito_config: Some(c),
+                lambda_auth_config: None,
+                open_id_connect_config: None,
+            },
+            AuthType::AwsIam => Self {
+                auth_type: "AWS_IAM".to_string(),
+                cognito_config: None,
+                lambda_auth_config: None,
+                open_id_connect_config: None,
+            },
+            AuthType::ApiKey => Self {
+                auth_type: "API_KEY".to_string(),
+                cognito_config: None,
+                lambda_auth_config: None,
+                open_id_connect_config: None,
+            },
+            AuthType::OpenidConnect(c) => Self {
+                auth_type: "OPENID_CONNECT".to_string(),
+                open_id_connect_config: Some(c),
+                cognito_config: None,
+                lambda_auth_config: None,
+            },
+            AuthType::AwsLambda(c) => Self {
+                auth_type: "AWS_LAMBDA".to_string(),
+                lambda_auth_config: Some(c),
+                cognito_config: None,
+                open_id_connect_config: None,
+            },
         }
     }
 
@@ -196,7 +189,7 @@ pub enum AppSyncApiLogLevel {
     Error,
     All,
     Info,
-    Debug
+    Debug,
 }
 
 impl From<AppSyncApiLogLevel> for String {
@@ -213,12 +206,15 @@ impl From<AppSyncApiLogLevel> for String {
 
 pub struct EventLogConfigBuilder {
     cloudwatch_logs_role_arn: String,
-    log_level: String
+    log_level: String,
 }
 
 impl EventLogConfigBuilder {
     pub fn new(cloudwatch_logs_role_arn: String, log_level: AppSyncApiLogLevel) -> Self {
-        Self { cloudwatch_logs_role_arn, log_level: log_level.into() }
+        Self {
+            cloudwatch_logs_role_arn,
+            log_level: log_level.into(),
+        }
     }
 
     pub fn build(self) -> EventLogConfig {
@@ -232,7 +228,7 @@ impl EventLogConfigBuilder {
 pub struct ChannelNamespaceBuilder {
     id: Id,
     api_id: Value,
-    name: String, // TODO should actually also be unique within the api
+    name: String,
     publish_auth_modes: Option<Vec<AppSyncAuthMode>>,
     subscribe_auth_modes: Option<Vec<AppSyncAuthMode>>,
 }
@@ -247,7 +243,7 @@ impl ChannelNamespaceBuilder {
             subscribe_auth_modes: None,
         }
     }
-    
+
     pub fn publish_auth_modes(self, publish_auth_modes: Vec<AuthMode>) -> Self {
         Self {
             publish_auth_modes: Some(publish_auth_modes.into_iter().map(Into::into).collect()),
@@ -255,7 +251,6 @@ impl ChannelNamespaceBuilder {
         }
     }
 
-    
     pub fn subscribe_auth_modes(self, subscribe_auth_modes: Vec<AuthMode>) -> Self {
         Self {
             subscribe_auth_modes: Some(subscribe_auth_modes.into_iter().map(Into::into).collect()),

@@ -192,7 +192,7 @@ type_state!(
 pub struct TargetBuilder<T: TargetBuilderState> {
     phantom_data: PhantomData<T>,
     target_arn: Value,
-    role_arn: Value, // TODO instead this should accept a RoleRef. and if it is a remote role, it should return it's arn without the whole !Ref bit (which is not needed)
+    role_arn: Value,
     input: Option<String>,
     retry_policy: Option<RetryPolicy>,
 }

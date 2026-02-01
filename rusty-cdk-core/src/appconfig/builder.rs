@@ -1,7 +1,11 @@
+use std::marker::PhantomData;
+
 use serde_json::Value;
 use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ApplicationType, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, ConfigurationProfileType, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, DeploymentStrategyType, Environment, EnvironmentProperties, EnvironmentRef, EnvironmentType, Validator};
+use crate::iam::{RoleRef};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
 use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor, LocationUri};
 
 /// Builder for AWS AppConfig applications.
@@ -76,7 +80,6 @@ pub enum ConfigType {
     Freeform,
 }
 
-// TODO might be more idiomatic to implement display
 impl From<ConfigType> for String {
     fn from(value: ConfigType) -> Self {
         match value {
@@ -202,40 +205,52 @@ impl ConfigurationProfileBuilder {
     }
 }
 
+type_state!(
+    ValidatorState,
+    ValidatorStartState,
+    ValidatorChosenState,
+);
+
 /// Builder for configuration profile validators.
-pub struct ValidatorBuilder {
-    content: String,
-    validator_type: String,
+pub struct ValidatorBuilder<T: ValidatorState> {
+    phantom_date: PhantomData<T>,
+    content: Option<Value>,
+    validator_type: Option<String>,
 }
 
-impl ValidatorBuilder {
-    // could validate better with a macro, but for JSON that would require passing in the entire schema in the macro...
-    pub fn new(content: String, validator_type: ValidatorType) -> Self {
+impl ValidatorBuilder<ValidatorStartState> {
+    pub fn new() -> Self {
         Self {
-            content,
-            validator_type: validator_type.into(),
+            phantom_date: Default::default(),
+            content: None,
+            validator_type: None,
         }
     }
+}
 
+impl<T: ValidatorState> ValidatorBuilder<T> {
+    pub fn lambda(self, role: &RoleRef) -> ValidatorBuilder<ValidatorChosenState> {
+        ValidatorBuilder {
+            phantom_date: Default::default(),
+            content: Some(role.get_arn()),
+            validator_type: Some("LAMBDA".to_string()),
+        }
+    }
+    
+    pub fn json_schema<S: Into<String>>(self, content: S) -> ValidatorBuilder<ValidatorChosenState> {
+        ValidatorBuilder {
+            phantom_date: Default::default(),
+            content: Some(Value::String(content.into())),
+            validator_type: Some("JSON_SCHEMA".to_string()),
+        }
+    }
+}
+
+impl ValidatorBuilder<ValidatorChosenState> {
     pub fn build(self) -> Validator {
         Validator {
-            content: self.content,
-            validator_type: self.validator_type,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ValidatorType {
-    JsonSchema,
-    Lambda,
-}
-
-impl From<ValidatorType> for String {
-    fn from(value: ValidatorType) -> Self {
-        match value {
-            ValidatorType::JsonSchema => "JSON_SCHEMA".to_string(),
-            ValidatorType::Lambda => "LAMBDA".to_string(),
+            content: self.content.expect("content to be present, enforced by builder"),
+            validator_type: self.validator_type.expect("validator type to be present, enforced by builder"),
         }
     }
 }
