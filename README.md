@@ -437,7 +437,7 @@ async fn tagging() {
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
   - ChannelNamespace name should be unique within the API
-- Probably more idiomatic to implement display for the enums that have to become `String`
+- Probably more idiomatic to implement `Display` for the enums that have to become `String`
 - Do some refactoring/splitting up of files
   - s3 builder is a good candidate for splitting up
 - Allow imports of outputs

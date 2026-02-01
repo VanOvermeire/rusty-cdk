@@ -3,6 +3,7 @@ pub mod appconfig;
 pub mod appsync;
 pub mod cloudfront;
 pub mod cloudwatch;
+pub mod documentdb;
 pub mod dynamodb;
 pub mod events;
 pub mod iam;
