@@ -9,8 +9,6 @@ use std::fs::read_to_string;
 
 const BASE_URL: &str = "https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference";
 
-// TODO unwraps/expects
-
 /// Retrieves raw, but parsable (CSV), resource info from the AWS docs
 /// Output is written to the output dir
 fn main() -> Result<()> {
@@ -59,10 +57,11 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
 
     let name_selector = Selector::parse("h1").unwrap();
     let name = document.select(&name_selector).next();
-    let name = name.unwrap().inner_html();
+    let name = name.context("resource should have a name")?.inner_html();
 
     let variable_lists_selector = Selector::parse(".variablelist > dl").unwrap();
-    let variable_list = document.select(&variable_lists_selector).next().unwrap(); // first is the props
+    // first list is the props
+    let variable_list = document.select(&variable_lists_selector).next().context("resource should have a list of props")?;
     let prop_name_selector = Selector::parse("dt > span > code").unwrap();
     let mut prop_names = variable_list.select(&prop_name_selector);
 
@@ -87,7 +86,7 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
 
         if name_without_em.starts_with("Update") {
             // this also means we don't add the Update info (currently not needed)
-            map.insert(current_name.take().unwrap(), gather_info.drain(..).collect());
+            map.insert(current_name.take().context("should be a prop name for every collection of info")?, gather_info.drain(..).collect());
             current_name = names_iter.next();
         } else {
             gather_info.push(name_without_em);
@@ -116,7 +115,7 @@ fn get_specific_resource(client: &Client, suffix: &str) -> Result<Vec<String>> {
     let mut resources = vec![];
 
     while let Some(el) = main.next() {
-        let href = el.attr("href").unwrap().to_string();
+        let href = el.attr("href").context("a element should have href")?.to_string();
         let href = href.replace("./", "");
         resources.push(href);
     }

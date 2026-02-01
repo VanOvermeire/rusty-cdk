@@ -11,8 +11,6 @@ const START_SUFFIX: &str = "aws-template-resource-type-ref.html";
 // add resource groupings that have been completely added
 const IGNORE_LIST: [&str; 3] = ["cfn-reference-shared.html", "AWS_SNS.html", "AWS_SQS.html"];
 
-// TODO unwraps/expects
-
 /// Retrieve a list of relative URLs that point to resource grouping like S3
 /// Will retrieve some
 fn main() -> Result<()> {
@@ -41,11 +39,11 @@ fn find_resource_categories(client: &Client) -> Result<Vec<String>> {
     let mut list = document.select(&list_selector);
     let first_list = list.next();
 
-    let mut list_elements = first_list.unwrap().select(&list_element_selector);
+    let mut list_elements = first_list.context("page should have a list of resources")?.select(&list_element_selector);
     let mut hrefs = vec![];
 
     while let Some(el) = list_elements.next() {
-        let href = el.attr("href").unwrap();
+        let href = el.attr("href").context("a element should have href")?;
         let href = href.replace("./", "");
 
         if !IGNORE_LIST.contains(&href.as_str()) {
