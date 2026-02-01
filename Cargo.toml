@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["rusty-cdk", "rusty-cdk-core", "rusty-cdk-macros", "rusty-cdk-lookups", "iam-docs-scraper", "examples/apigateway_lambda_dynamodb", "examples/app_config_and_secrets_with_two_lambdas", "rusty-cdk-lookups", "cargo-rusty"]
+members = ["rusty-cdk", "rusty-cdk-core", "rusty-cdk-macros", "rusty-cdk-lookups", "iam-docs-scraper", "examples/apigateway_lambda_dynamodb", "examples/app_config_and_secrets_with_two_lambdas", "rusty-cdk-lookups", "cargo-rusty", "resources-scraper"]
 
 [profile.release]
 panic = 'abort'

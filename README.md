@@ -442,6 +442,7 @@ async fn tagging() {
   - generates them as structs with SerDe
   - puts the selected dtos in the right location (as dto.rs under name-of-resource folder, with a mod.rs that makes it public)
   - adds the mod to lib.rs
+- Could probably also script the SIMPLE builders (if no type state is needed, and would add additional validation via macro later)
 - Additional stack build checks
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
