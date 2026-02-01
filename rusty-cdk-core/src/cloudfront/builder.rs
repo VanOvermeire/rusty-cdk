@@ -653,7 +653,7 @@ impl OriginBuilder<OriginS3OriginState> {
             .build();
         let doc = PolicyDocumentBuilder::new(vec![statement]).build();
         let bucket_policy_id = format!("{}-website-s3-policy", self.id);
-        let (_, s3_policy) = BucketPolicyBuilder::new_with_bucket_ref(bucket_policy_id.as_str(), bucket_ref, doc).raw_build();
+        let (_, s3_policy) = BucketPolicyBuilder::internal_new(bucket_policy_id.as_str(), bucket_ref, doc).raw_build();
 
         let mut origin = self.build_internal();
         origin.s3_bucket_policy = Some(s3_policy);

@@ -66,13 +66,6 @@ impl LogGroupBuilder {
         }
     }
 
-    pub fn log_group_name_value(self, log_group_name: Value) -> Self {
-        Self {
-            log_group_name: Some(log_group_name),
-            ..self
-        }
-    }
-
     pub fn log_group_class(self, log_group_class: LogGroupClass) -> Self {
         Self {
             log_group_class: Some(log_group_class),

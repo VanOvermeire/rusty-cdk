@@ -78,7 +78,7 @@ impl BucketPolicyBuilder {
         }
     }
 
-    pub(crate) fn new_with_bucket_ref(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
+    pub(crate) fn internal_new(id: &str, bucket_name: Value, policy_document: PolicyDocument) -> Self {
         Self {
             id: Id(id.to_string()),
             bucket_name,

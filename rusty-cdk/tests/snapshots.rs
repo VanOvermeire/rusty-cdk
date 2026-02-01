@@ -150,6 +150,10 @@ fn lambda() {
 fn lambda_with_custom_log_group() {
     let mut stack_builder = StackBuilder::new();
 
+    // what if I want to pass the log group name on, for example, the name of a bucket?
+    // BucketRef -> 'mybucket283' -> Sub! "${bucket}-log-group"
+    // json! { "Fn::Sub": "${resourceId}-log-group" }
+    
     let log_group = LogGroupBuilder::new("funLogGroup")
         .log_group_name_string(log_group_name!("custom-name"))
         .log_group_retention(log_retention!(90))

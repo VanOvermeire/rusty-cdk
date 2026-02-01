@@ -433,11 +433,10 @@ async fn tagging() {
 
 ## TODO
 
-- Check for places where we pass in a `Value` but should pass in a Ref
-- Check duplicate ids in intelligent tiering
-  - And look where we need similar things
 - Allow imports and exports
   - Though probably don't allow hard coupling between stacks
+- Check duplicate ids in intelligent tiering
+  - And look where we need similar things
 - Do some refactoring/splitting up of files
   - s3 builder is a good candidate for splitting up
 - Improve diff
@@ -452,3 +451,5 @@ async fn tagging() {
   - Publishing
 - Switch to uploading template to s3? helps avoid the 51 kb limit
   - Or at least offer that option
+- Think about how to allow, for example, names based on Refs
+  - E.g. you should be able to take a BucketRef, add a suffix (using !Sub maybe) and pass that in as the name of a log group
