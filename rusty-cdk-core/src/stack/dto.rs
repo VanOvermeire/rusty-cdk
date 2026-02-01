@@ -15,6 +15,7 @@ use crate::sns::{Subscription, Topic, TopicPolicy};
 use crate::sqs::{Queue, QueuePolicy};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
@@ -26,8 +27,7 @@ pub enum Cleanable<'a> {
 
 #[derive(Debug)]
 pub struct StackDiff {
-    // though might be modified
-    pub unchanged_ids: Vec<(String, String)>,
+    pub unchanged_ids: Vec<(String, String)>, // though these might be modified
     pub ids_to_be_removed: Vec<(String, String)>,
     pub new_ids: Vec<(String, String)>,
 }
@@ -97,6 +97,14 @@ pub struct Stack {
     pub(crate) resources: HashMap<String, Resource>,
     #[serde(rename = "Metadata")]
     pub(crate) metadata: HashMap<String, String>,
+    #[serde(rename = "Outputs", skip_serializing_if = "Option::is_none")]
+    pub(crate) outputs: Option<HashMap<String, Output>>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Output {
+    #[serde(rename = "Value")]
+    pub(crate) value: Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -227,6 +235,7 @@ impl Stack {
 
     pub fn get_cleanable_resources(&'_ self) -> Vec<Cleanable<'_>> {
         self.resources.iter().flat_map(|(k, r)| {
+            println!("Found {k:?}");
             match r {
                 Resource::Bucket(b) => {
                     if let Some(pol) = &b.update_delete_policy_dto.deletion_policy {

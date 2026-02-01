@@ -1,4 +1,6 @@
-use crate::stack::{Resource, Stack};
+use serde_json::Value;
+
+use crate::stack::{Output, Resource, Stack};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use crate::shared::Id;
@@ -70,6 +72,7 @@ impl Error for StackBuilderError {}
 pub struct StackBuilder {
     resources: Vec<Resource>,
     tags: Vec<(String, String)>,
+    outputs: Vec<(String, Value)>,
 }
 
 impl Default for StackBuilder {
@@ -83,6 +86,7 @@ impl StackBuilder {
         Self {
             resources: vec![],
             tags: vec![],
+            outputs: vec![],
         }
     }
 
@@ -93,6 +97,11 @@ impl StackBuilder {
 
     pub fn add_tag<T: Into<String>>(mut self, key: T, value: T) -> Self {
         self.tags.push((key.into(), value.into()));
+        self
+    }
+    
+    pub fn add_output<T: Into<String>>(mut self, name: T, value: Value) -> Self {
+        self.outputs.push((name.into(), value));
         self
     }
     
@@ -133,6 +142,15 @@ impl StackBuilder {
                 roles_with_potentially_missing_services,
             ));
         }
+        
+        let outputs = if self.outputs.is_empty() {
+            None
+        } else {
+            Some(self.outputs
+                .into_iter()
+                .map(|(k, v)| (k, Output { value: v }))
+                .collect())
+        };
 
         let metadata = self
             .resources
@@ -145,6 +163,7 @@ impl StackBuilder {
             resource_ids_to_replace: vec![],
             tags: self.tags,
             resources,
+            outputs,
             metadata,
         })
     }

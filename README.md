@@ -405,7 +405,7 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
   - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative.
   - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
   - The same goes for unsupported resources: open an issue or PR!
-- _"How do I add tags to resources?"
+- _"How do I add tags to resources?"_
   - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags. See an example below.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
 - _"I create a resource and my deployment failed"_
@@ -433,8 +433,6 @@ async fn tagging() {
 
 ## TODO
 
-- Allow imports and exports
-  - Though probably don't allow hard coupling between stacks
 - Additional stack build checks
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
@@ -442,6 +440,7 @@ async fn tagging() {
 - Probably more idiomatic to implement display for the enums that have to become `String`
 - Do some refactoring/splitting up of files
   - s3 builder is a good candidate for splitting up
+- Allow imports of outputs
 - Improve diff
   - Show whether resource has changed
 - More help with IAM permissions

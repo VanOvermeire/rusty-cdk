@@ -1,12 +1,12 @@
 use clap::Parser;
 use clap::Subcommand;
+use rusty_cdk::clean;
 use rusty_cdk::deploy;
 use rusty_cdk::destroy;
 use rusty_cdk::diff;
 use rusty_cdk::stack::Stack;
 use rusty_cdk::wrappers::StringWithOnlyAlphaNumericsAndHyphens;
-use rusty_cdk::clean;
-use std::fmt::Display;
+use std::fmt::Debug;
 use std::fs::{read_dir, read_to_string};
 use std::process::exit;
 use tokio::fs::remove_file;
@@ -45,15 +45,14 @@ pub enum RustyCommand {
     #[clap(about = "Destroy a stack with the give name")]
     Destroy {
         /// Name of the (deployed) stack that you want to delete
+        #[clap(short, long)]
         name: String,
         /// Force tries to make sure your stack deletes, avoiding common things that can throw a `DeleteFailed` error.
-        /// To do this, `force` will:
-        /// - empty S3 buckets that do not have a 'retain'
-        /// - remove any archival policies from SNS topics
-        /// As resources with a 'retain' policy are not deleted and cause no deletion issues, these are ignored.
-        /// *Use with caution*, and only if you don't need to retain anything from your stack (that is not set to 'retain')
-        #[clap(short, long, default_missing_value = "false")]
-        force: bool,
+        /// To do this, `force` will: empty S3 buckets that do not have a 'retain' and remove archival policies from SNS topics
+        /// Resources with a 'retain' policy are ignored.
+        /// *Use with caution*, and only if you don't need to retain anything from your stack that is not set to 'retain'
+        #[clap(short, long, default_value_t = false)]
+        force: std::primitive::bool,
     },
 }
 
@@ -74,17 +73,15 @@ pub async fn entry_point(command: RustyCommand) {
             } else {
                 match run_synth_in_current_path().await {
                     Ok(path) => path,
-                    Err(e) => print_err_and_exit(e)
+                    Err(e) => print_err_and_exit(e),
                 }
             };
             match get_path_as_stack(&path) {
-                Ok(stack) => {
-                    match deploy(StringWithOnlyAlphaNumericsAndHyphens(name), stack, true).await {
-                        Ok(_) => {},
-                        Err(e) => print_err_and_exit(e)
-                    }
-                }
-                Err(e) => print_err_and_exit(e)
+                Ok(stack) => match deploy(StringWithOnlyAlphaNumericsAndHyphens(name), stack, true).await {
+                    Ok(_) => {}
+                    Err(e) => print_err_and_exit(e),
+                },
+                Err(e) => print_err_and_exit(e),
             }
 
             if cleanup {
@@ -103,12 +100,10 @@ pub async fn entry_point(command: RustyCommand) {
                 }
             };
             match get_path_as_stack(&path) {
-                Ok(stack) => {
-                    match diff(StringWithOnlyAlphaNumericsAndHyphens(name), stack).await {
-                        Ok(_) => {},
-                        Err(e) => print_err_and_exit(e),
-                    }
-                }
+                Ok(stack) => match diff(StringWithOnlyAlphaNumericsAndHyphens(name), stack).await {
+                    Ok(_) => {}
+                    Err(e) => print_err_and_exit(e),
+                },
                 Err(e) => print_err_and_exit(e),
             }
 
@@ -122,11 +117,12 @@ pub async fn entry_point(command: RustyCommand) {
             if force {
                 match clean(StringWithOnlyAlphaNumericsAndHyphens(name.to_string()), true).await {
                     Ok(_) => {}
-                    Err(e) => print_err_and_exit(e)
+                    Err(e) => print_err_and_exit(e),
                 }
             }
+            println!("destroy");
             match destroy(StringWithOnlyAlphaNumericsAndHyphens(name), true).await {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => print_err_and_exit(e),
             }
         }
@@ -182,7 +178,7 @@ async fn remove_fill_or_exit(path: &String) {
     }
 }
 
-fn print_err_and_exit<T: Display>(e: T) -> ! {
-    eprintln!("{e}");
+fn print_err_and_exit<T: Debug>(e: T) -> ! {
+    eprintln!("{e:?}");
     exit(1);
 }
