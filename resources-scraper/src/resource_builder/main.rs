@@ -6,75 +6,108 @@ use regex::Regex;
 
 static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
 
-/// TODO allows this to work for helpers
-///  - check first resource to see whether helpers
-///  - if so, we only need to build the props and put them in a struct with the name behind the space of the resource type
-///  - only write a dto file and helpers
-
 /// Creates DTOs for the scraped Resources 
 /// Currently, this only works for _a single_ resource group
 fn main() -> Result<()>{
     let resources = read_to_string("./output/raw_resources.csv")?;
-    let resources = resources.split("\n").filter(|v| !v.is_empty());
+    let mut resources = resources.split("\n").filter(|v| !v.is_empty()).peekable();
+    let is_helper = resources.peek().map(|v| {
+        let value = v.split(";").next().unwrap_or("");
+        value.contains("::") && value.contains(" ")
+    }).unwrap_or(false);
     
-    let mut resource_group_name = None;    
-    
-    let imports = r###"
-        use serde::{Deserialize, Serialize};
-        use serde_json::Value;
-        use crate::{dto_methods, ref_struct};
-        use crate::shared::Id;
-    "###;    
+    if is_helper {
+        println!("Found helpers to create");
+        let mut dto_output = vec![];
+        let mut helper_urls = vec![];
+        
+        for r in resources {
+            let mut code_to_write_for_resource = vec![];
+            
+            let mut split_resource = r.split(";");
+            
+            let resource_type = split_resource.next().context("resource type to be present")?;
+            let resource_type_parts = resource_type.split(" ");
 
-    let mut dto_output = vec![imports.to_string()];
-    let mut builder_output = vec!["use crate::shared::Id;".to_string()];
-    let mut helper_urls = vec![];
+            let struct_name = resource_type_parts.last().context("helper should contain a name for the struct behind a space")?;
+            
+            let (props, mut urls) = props(&mut split_resource)?;
+            helper_urls.append(&mut urls);
+            
+            let helper_struct = format!(r###"
+                #[derive(Debug, Serialize, Deserialize)]
+                pub struct {} {{
+                    {}
+                }}
+            "###, struct_name, props.join("\n"));
+            code_to_write_for_resource.push(helper_struct);
     
-    for r in resources {
-        let mut code_to_write_for_resource = vec![];
-        
-        let mut split_resource = r.split(";");
-        
-        let resource_type = split_resource.next().context("resource type to be present")?;
-        let mut resource_type_parts = resource_type.split("::");
-        
-        if resource_group_name.is_none() {
-            resource_type_parts.next();
-            let group_name = resource_type_parts.next().context("resource type should have three parts after splitting")?;
-            resource_group_name = Some(group_name);
+            dto_output.append(&mut code_to_write_for_resource);
         }
         
-        let struct_name = resource_type_parts.last().context("resource type should contain a name for the struct")?;
-        let properties_struct_name = format!("{}Properties", struct_name);
+        fs::write("dto.rs", dto_output.join("").as_bytes())?;
+        fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
+    } else {
+        println!("Found resources to create");
+        let mut resource_group_name = None;    
         
-        code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
-
-        let boilerplate_for_builder = builder(&struct_name)?;
-        builder_output.push(boilerplate_for_builder);
+        let imports = r###"
+            use serde::{Deserialize, Serialize};
+            use serde_json::Value;
+            use crate::{dto_methods, ref_struct};
+            use crate::shared::Id;
+        "###;
+        let builder_imports = "use crate::shared::Id;";
+        let mut dto_output = vec![imports.to_string()];
+        let mut builder_output = vec![builder_imports.to_string()];
+        let mut helper_urls = vec![];
         
-        let (props, mut urls) = props(&mut split_resource)?;
-        helper_urls.append(&mut urls);
+        for r in resources {
+            let mut code_to_write_for_resource = vec![];
+            
+            let mut split_resource = r.split(";");
+            
+            let resource_type = split_resource.next().context("resource type to be present")?;
+            let mut resource_type_parts = resource_type.split("::");
+            
+            if resource_group_name.is_none() {
+                resource_type_parts.next();
+                let group_name = resource_type_parts.next().context("resource type should have three parts after splitting")?;
+                resource_group_name = Some(group_name);
+            }
+            
+            let struct_name = resource_type_parts.last().context("resource type should contain a name for the struct")?;
+            let properties_struct_name = format!("{}Properties", struct_name);
+            
+            code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
+    
+            let boilerplate_for_builder = builder(&struct_name)?;
+            builder_output.push(boilerplate_for_builder);
+            
+            let (props, mut urls) = props(&mut split_resource)?;
+            helper_urls.append(&mut urls);
+            
+            let properties_struct = format!(r###"
+                #[derive(Debug, Serialize, Deserialize)]
+                pub struct {} {{
+                    {}
+                }}
+            "###, properties_struct_name, props.join("\n"));
+            code_to_write_for_resource.push(properties_struct);
+    
+            dto_output.append(&mut code_to_write_for_resource);
+        }
         
-        let properties_struct = format!(r###"
-            #[derive(Debug, Serialize, Deserialize)]
-            pub struct {} {{
-                {}
-            }}
-        "###, properties_struct_name, props.join("\n"));
-        code_to_write_for_resource.push(properties_struct);
-
-        dto_output.append(&mut code_to_write_for_resource);
+        let resource_group_name = resource_group_name.unwrap().to_lowercase();
+        let output_dir = format!("output/{}", resource_group_name);
+        
+        let _ignore_if_does_not_exist = fs::remove_dir_all(&output_dir);
+        fs::create_dir(&output_dir)?; // will fail if directory already exists
+        fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
+        fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
+        fs::write(&format!("{}/builder.rs", output_dir), builder_output.join("\n").as_bytes())?;
+        fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
     }
-    
-    let resource_group_name = resource_group_name.unwrap().to_lowercase();
-    let output_dir = format!("output/{}", resource_group_name);
-    
-    let _ignore_if_does_not_exist = fs::remove_dir_all(&output_dir);
-    fs::create_dir(&output_dir)?; // will fail if directory already exists
-    fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
-    fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
-    fs::write(&format!("{}/builder.rs", output_dir), builder_output.join("\n").as_bytes())?;
-    fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
     
     Ok(())
 }
