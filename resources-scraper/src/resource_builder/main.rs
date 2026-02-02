@@ -6,6 +6,11 @@ use regex::Regex;
 
 static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
 
+/// TODO allows this to work for helpers
+///  - check first resource to see whether helpers
+///  - if so, we only need to build the props and put them in a struct with the name behind the space of the resource type
+///  - only write a dto file and helpers
+
 /// Creates DTOs for the scraped Resources 
 /// Currently, this only works for _a single_ resource group
 fn main() -> Result<()>{
@@ -44,19 +49,7 @@ fn main() -> Result<()>{
         
         code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
 
-        let boilerplate_for_builder = format!(r###"
-            pub struct {0}Builder {{
-                id: Id,
-            }}
-            
-            impl {0}Builder {{
-                pub fn new(id: Id) -> Self {{
-                    Self {{
-                        id,
-                    }}
-                }}
-            }}
-        "###, struct_name);
+        let boilerplate_for_builder = builder(&struct_name)?;
         builder_output.push(boilerplate_for_builder);
         
         let (props, mut urls) = props(&mut split_resource)?;
@@ -116,6 +109,23 @@ fn main_struct(struct_name: &str, resource_type: &str, properties_struct_name: &
     "###, struct_name, struct_name, type_name, properties_struct_name, struct_name);
     
     vec![code_for_type_struct, code_for_main_struct]
+}
+
+fn builder(struct_name: &str) -> Result<String> {
+    let builder = format!(r###"
+        pub struct {0}Builder {{
+            id: Id,
+        }}
+        
+        impl {0}Builder {{
+            pub fn new(id: Id) -> Self {{
+                Self {{
+                    id,
+                }}
+            }}
+        }}
+    "###, struct_name);
+    Ok(builder)
 }
 
 fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec<String>)> {
