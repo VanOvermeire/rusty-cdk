@@ -7,6 +7,7 @@ license = "MIT"
 homepage = "https://github.com/VanOvermeire/rusty-cdk"
 repository = "https://github.com/VanOvermeire/rusty-cdk"
 keywords = ["AWS", "CDK", "CloudFormation", "IAC"]
+categories = ["web-programming"]
 
 [dependencies]
 rusty-cdk-macros = { version = "0.8.0", path = "../rusty-cdk-macros" }
