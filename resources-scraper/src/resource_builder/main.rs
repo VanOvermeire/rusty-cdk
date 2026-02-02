@@ -1,13 +1,14 @@
-use std::fs::{self, read_to_string};
+use std::{fs::{self, read_to_string}, sync::OnceLock};
 
 use anyhow::{Context, Result};
 use change_case::snake_case;
 use regex::Regex;
 
+static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
+
 /// Creates DTOs for the scraped Resources 
 /// Currently, this only works for _a single_ resource group
 fn main() -> Result<()>{
-    let custom_prop_type_regex = Regex::new(r#"(?P<prefix>.*)<a href=\"(?P<url>.+?)\">(?P<name>.+?)</a>"#).unwrap();
     let resources = read_to_string("./output/raw_resources.csv")?;
     let resources = resources.split("\n").filter(|v| !v.is_empty());
     
@@ -39,37 +40,10 @@ fn main() -> Result<()>{
         }
         
         let struct_name = resource_type_parts.last().context("resource type should contain a name for the struct")?;
-        let type_name = format!("{}Type", struct_name);
         let properties_struct_name = format!("{}Properties", struct_name);
         
-        let code_for_type_struct = format!(r###"
-            #[derive(Debug, Serialize, Deserialize)]
-            pub(crate) enum {} {{
-                #[serde(rename = "{}")]
-                {}
-            }}
-        "###, type_name, resource_type, type_name);
-        code_to_write_for_resource.push(code_for_type_struct);
+        code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
 
-        let code_for_main_struct = format!(r###"
-            ref_struct!({}Ref);
-            
-            #[derive(Debug, Serialize, Deserialize)]
-            pub struct {} {{
-                #[serde(skip)]
-                pub(crate) id: Id,
-                #[serde(skip)]
-                pub(crate) resource_id: String,
-                #[serde(rename = "Type")]
-                pub(crate) r#type: {},
-                #[serde(rename = "Properties")]
-                pub(crate) properties: {}
-            }}
-
-            dto_methods!({});
-        "###, struct_name, struct_name, type_name, properties_struct_name, struct_name);
-        code_to_write_for_resource.push(code_for_main_struct);
-        
         let boilerplate_for_builder = format!(r###"
             pub struct {0}Builder {{
                 id: Id,
@@ -85,62 +59,8 @@ fn main() -> Result<()>{
         "###, struct_name);
         builder_output.push(boilerplate_for_builder);
         
-        let mut props = vec![];
-        
-        while let Some(prop) = split_resource.next() {
-            let mut prop_split = prop.split("===");
-            let prop_name = prop_split.next().context("prop should have a name parts, before the =")?;
-            let mut prop_info_split = prop_split.next().context("prop should have info part, after the =")?.split("###");
-            
-            let mut optional = false;
-            let mut type_info = "".to_string();
-            let mut comments = vec![];
-            
-            while let Some(prop_info) = prop_info_split.next() {
-                let prop_info = prop_info.trim();
-                
-                if prop_info == "Required: No" {
-                    optional = true;
-                } else if prop_info.starts_with("Type: ") {
-                    let prop_info = prop_info.replace("Type: ", "");
-                    type_info = match prop_info.as_str() {
-                        "String" => "String".to_string(),
-                        "Integer" => "u32".to_string(),
-                        "Boolean" => "bool".to_string(),
-                        "Json" => "Value".to_string(),
-                        "Array of String" => "Vec<String>".to_string(),
-                        _ => { 
-                            println!("could not find type for {}", prop_info);
-                            let caps = custom_prop_type_regex.captures(&prop_info).context("failed to capture custom type information")?;
-                            helper_urls.push(caps["url"].replace("./", ""));
-                            let name = caps["name"].to_string();
-                            
-                            if caps["prefix"].is_empty() {
-                                name
-                            } else {
-                                format!("Vec<{}>", &caps["name"])
-                            }
-                        }
-                    };
-                } else {
-                    comments.push(prop_info);
-                }
-            }
-            
-            let serde_info = if optional {
-                format!(r###"#[serde(rename = "{}", skip_serializing_if = "Option::is_none")]"###, prop_name)
-            } else {
-                format!(r###"#[serde(rename = "{}")]"###, prop_name)
-            };
-            
-            let prop_name_and_type = if optional {
-                format!("pub(crate) {}: Option<{}>,", snake_case(prop_name), type_info)
-            } else {
-                format!("pub(crate) {}: {},", snake_case(prop_name), type_info)
-            };
-
-            props.push(format!("{}\n{} // {}", serde_info, prop_name_and_type, comments.join(", ")));
-        }
+        let (props, mut urls) = props(&mut split_resource)?;
+        helper_urls.append(&mut urls);
         
         let properties_struct = format!(r###"
             #[derive(Debug, Serialize, Deserialize)]
@@ -164,4 +84,100 @@ fn main() -> Result<()>{
     fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
     
     Ok(())
+}
+
+fn main_struct(struct_name: &str, resource_type: &str, properties_struct_name: &str) -> Vec<String> {
+    let type_name = format!("{}Type", struct_name);
+    
+    let code_for_type_struct = format!(r###"
+        #[derive(Debug, Serialize, Deserialize)]
+        pub(crate) enum {} {{
+            #[serde(rename = "{}")]
+            {}
+        }}
+    "###, type_name, resource_type, type_name);
+
+    let code_for_main_struct = format!(r###"
+        ref_struct!({}Ref);
+        
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct {} {{
+            #[serde(skip)]
+            pub(crate) id: Id,
+            #[serde(skip)]
+            pub(crate) resource_id: String,
+            #[serde(rename = "Type")]
+            pub(crate) r#type: {},
+            #[serde(rename = "Properties")]
+            pub(crate) properties: {}
+        }}
+
+        dto_methods!({});
+    "###, struct_name, struct_name, type_name, properties_struct_name, struct_name);
+    
+    vec![code_for_type_struct, code_for_main_struct]
+}
+
+fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec<String>)> {
+    let custom_prop_type_regex = CUSTOM_PROP_TYPE_REGEX.get_or_init(|| Regex::new(r#"(?P<prefix>.*)<a href=\"(?P<url>.+?)\">(?P<name>.+?)</a>"#).unwrap());
+    
+    let mut props = vec![];
+    let mut helper_urls = vec![];
+    
+    while let Some(prop) = split_resource.next() {
+        let mut prop_split = prop.split("===");
+        let prop_name = prop_split.next().context("prop should have a name parts, before the =")?;
+        let mut prop_info_split = prop_split.next().context("prop should have info part, after the =")?.split("###");
+        
+        let mut optional = false;
+        let mut type_info = "".to_string();
+        let mut comments = vec![];
+        
+        while let Some(prop_info) = prop_info_split.next() {
+            let prop_info = prop_info.trim();
+            
+            if prop_info == "Required: No" {
+                optional = true;
+            } else if prop_info.starts_with("Type: ") {
+                let prop_info = prop_info.replace("Type: ", "");
+                type_info = match prop_info.as_str() {
+                    "String" => "String".to_string(),
+                    "Integer" => "u32".to_string(),
+                    "Boolean" => "bool".to_string(),
+                    "Json" => "Value".to_string(),
+                    "Array of String" => "Vec<String>".to_string(),
+                    _ => { 
+                        println!("could not find type for {}", prop_info);
+                        let caps = custom_prop_type_regex.captures(&prop_info).context("failed to capture custom type information")?;
+                        helper_urls.push(caps["url"].replace("./", ""));
+                        let name = caps["name"].to_string();
+                        
+                        if caps["prefix"].is_empty() {
+                            name
+                        } else {
+                            format!("Vec<{}>", &caps["name"])
+                        }
+                    }
+                };
+            } else {
+                comments.push(prop_info);
+            }
+        }
+        
+        let serde_info = if optional {
+            format!(r###"#[serde(rename = "{}", skip_serializing_if = "Option::is_none")]"###, prop_name)
+        } else {
+            format!(r###"#[serde(rename = "{}")]"###, prop_name)
+        };
+        
+        let prop_name_and_type = if optional {
+            format!("pub(crate) {}: Option<{}>,", snake_case(prop_name), type_info)
+        } else {
+            format!("pub(crate) {}: {},", snake_case(prop_name), type_info)
+        };
+
+        props.push(format!("{}\n{} // {}", serde_info, prop_name_and_type, comments.join(", ")));
+    }
+    
+    Ok((props, helper_urls))
 }
