@@ -28,6 +28,7 @@ fn main() -> Result<()>{
         let mut code_to_write_for_resource = vec![];
         
         let mut split_resource = r.split(";");
+        
         let resource_type = split_resource.next().context("resource type to be present")?;
         let mut resource_type_parts = resource_type.split("::");
         
@@ -106,6 +107,7 @@ fn main() -> Result<()>{
                         "String" => "String".to_string(),
                         "Integer" => "u32".to_string(),
                         "Boolean" => "bool".to_string(),
+                        "Json" => "Value".to_string(),
                         "Array of String" => "Vec<String>".to_string(),
                         _ => { 
                             println!("could not find type for {}", prop_info);
