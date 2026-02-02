@@ -2,10 +2,12 @@ use std::fs::{self, read_to_string};
 
 use anyhow::{Context, Result};
 use change_case::snake_case;
+use regex::Regex;
 
 /// Creates DTOs for the scraped Resources 
 /// Currently, this only works for _a single_ resource group
 fn main() -> Result<()>{
+    let custom_prop_type_regex = Regex::new(r#"(?P<prefix>.*)<a href=\"(?P<url>.+?)\">(?P<name>.+?)</a>"#).unwrap();
     let resources = read_to_string("./output/raw_resources.csv")?;
     let resources = resources.split("\n").filter(|v| !v.is_empty());
     
@@ -20,6 +22,7 @@ fn main() -> Result<()>{
 
     let mut dto_output = vec![imports.to_string()];
     let mut builder_output = vec!["use crate::shared::Id;".to_string()];
+    let mut helper_urls = vec![];
     
     for r in resources {
         let mut code_to_write_for_resource = vec![];
@@ -100,15 +103,23 @@ fn main() -> Result<()>{
                 } else if prop_info.starts_with("Type: ") {
                     let prop_info = prop_info.replace("Type: ", "");
                     type_info = match prop_info.as_str() {
-                        "String" => "String",
-                        "Integer" => "u32",
-                        "Boolean" => "bool",
-                        "Array of String" => "Vec<String>",
+                        "String" => "String".to_string(),
+                        "Integer" => "u32".to_string(),
+                        "Boolean" => "bool".to_string(),
+                        "Array of String" => "Vec<String>".to_string(),
                         _ => { 
                             println!("could not find type for {}", prop_info);
-                            "TODO"
+                            let caps = custom_prop_type_regex.captures(&prop_info).context("failed to capture custom type information")?;
+                            helper_urls.push(caps["url"].replace("./", ""));
+                            let name = caps["name"].to_string();
+                            
+                            if caps["prefix"].is_empty() {
+                                name
+                            } else {
+                                format!("Vec<{}>", &caps["name"])
+                            }
                         }
-                    }.to_string();
+                    };
                 } else {
                     comments.push(prop_info);
                 }
@@ -148,6 +159,7 @@ fn main() -> Result<()>{
     fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
     fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
     fs::write(&format!("{}/builder.rs", output_dir), builder_output.join("\n").as_bytes())?;
+    fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
     
     Ok(())
 }

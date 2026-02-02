@@ -11,6 +11,7 @@ const BASE_URL: &str = "https://docs.aws.amazon.com/AWSCloudFormation/latest/Tem
 
 /// Retrieves raw, but parsable (CSV), resource info from the AWS docs
 /// Output is written to the output dir
+/// Works for Resources but not for 'helpers' (custom props) -> skip the outer loop and add those urls to `retrieve_resource_props`
 fn main() -> Result<()> {
     let client = Client::new();
 
@@ -39,7 +40,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// TODO retrieve name of resource!
 fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashMap<String, Vec<String>>)> {
     let resource_url = format!("{}/{}", BASE_URL, path);
     println!("Retrieving props for {}", resource_url);
