@@ -99,7 +99,6 @@ fn main() -> Result<()>{
                     optional = true;
                 } else if prop_info.starts_with("Type: ") {
                     let prop_info = prop_info.replace("Type: ", "");
-                    println!("Checking {}", prop_info);
                     type_info = match prop_info.as_str() {
                         "String" => "String",
                         "Integer" => "u32",
@@ -124,7 +123,6 @@ fn main() -> Result<()>{
             let prop_name_and_type = if optional {
                 format!("pub(crate) {}: Option<{}>,", snake_case(prop_name), type_info)
             } else {
-                println!("not optional for {} (type {})", prop_name, type_info);
                 format!("pub(crate) {}: {},", snake_case(prop_name), type_info)
             };
 
@@ -145,7 +143,7 @@ fn main() -> Result<()>{
     let resource_group_name = resource_group_name.unwrap().to_lowercase();
     let output_dir = format!("output/{}", resource_group_name);
     
-    fs::remove_dir_all(&output_dir)?;
+    let _ignore_if_does_not_exist = fs::remove_dir_all(&output_dir);
     fs::create_dir(&output_dir)?; // will fail if directory already exists
     fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
     fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
