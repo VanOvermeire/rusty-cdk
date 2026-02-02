@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
+change-case = "0.2.0"
 rayon = "1.11.0"
 reqwest = {  version = "0.12.3", features = ["blocking"] }
 scraper = "0.24.0"
@@ -18,5 +19,9 @@ name = "resources"
 path = "src/retrieve_resources/main.rs"
 
 [[bin]]
-name = "dto"
-path = "src/dto_builder/main.rs"
+name = "builder"
+path = "src/resource_builder/main.rs"
+
+[[bin]]
+name = "helper"
+path = "src/helper_builder/main.rs"

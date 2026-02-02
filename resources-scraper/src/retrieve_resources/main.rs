@@ -26,7 +26,7 @@ fn main() -> Result<()> {
             let (name, props) = retrieve_resource_props(&client, &r)?;
             let joined_props = props
                 .into_iter()
-                .map(|v| format!("{}={}", v.0, v.1.join(",")))
+                .map(|v| format!("{}==={}", v.0, v.1.join("###")))
                 .collect::<Vec<_>>()
                 .join(";");
             let output_for_single_resource = format!("{};{}", name, joined_props);
