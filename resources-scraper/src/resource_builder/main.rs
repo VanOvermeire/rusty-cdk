@@ -20,6 +20,8 @@ fn main() -> Result<()>{
         println!("Found helpers to create");
         let mut dto_output = vec![];
         let mut helper_urls = vec![];
+        let builder_imports = "use crate::shared::Id;";
+        let mut builder_output = vec![builder_imports.to_string()];
         
         for r in resources {
             let mut code_to_write_for_resource = vec![];
@@ -31,9 +33,10 @@ fn main() -> Result<()>{
 
             let struct_name = resource_type_parts.last().context("helper should contain a name for the struct behind a space")?;
             
-            let (props, mut urls) = props(&mut split_resource)?;
+            let (prop_infos, mut urls) = props_info(&mut split_resource)?;
+            let props = props(&prop_infos)?;
             helper_urls.append(&mut urls);
-            
+
             let helper_struct = format!(r###"
                 #[derive(Debug, Serialize, Deserialize)]
                 pub struct {} {{
@@ -43,9 +46,13 @@ fn main() -> Result<()>{
             code_to_write_for_resource.push(helper_struct);
     
             dto_output.append(&mut code_to_write_for_resource);
+            
+            let boilerplate_for_builder = builder(&struct_name, &prop_infos)?;
+            builder_output.push(boilerplate_for_builder);
         }
         
-        fs::write("dto.rs", dto_output.join("").as_bytes())?;
+        fs::write("output/dto.rs", dto_output.join("").as_bytes())?;
+        fs::write("output/builder.rs", builder_output.join("\n").as_bytes())?;
         fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
     } else {
         println!("Found resources to create");
@@ -80,13 +87,11 @@ fn main() -> Result<()>{
             let properties_struct_name = format!("{}Properties", struct_name);
             
             code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
-    
-            let boilerplate_for_builder = builder(&struct_name)?;
-            builder_output.push(boilerplate_for_builder);
-            
-            let (props, mut urls) = props(&mut split_resource)?;
+
+            let (prop_infos, mut urls) = props_info(&mut split_resource)?;
+            let props = props(&prop_infos)?;
             helper_urls.append(&mut urls);
-            
+
             let properties_struct = format!(r###"
                 #[derive(Debug, Serialize, Deserialize)]
                 pub struct {} {{
@@ -95,14 +100,17 @@ fn main() -> Result<()>{
             "###, properties_struct_name, props.join("\n"));
             code_to_write_for_resource.push(properties_struct);
     
-            dto_output.append(&mut code_to_write_for_resource);
+            dto_output.append(&mut code_to_write_for_resource);        
+            
+            let boilerplate_for_builder = builder(&struct_name, &prop_infos)?;
+            builder_output.push(boilerplate_for_builder);
         }
         
         let resource_group_name = resource_group_name.unwrap().to_lowercase();
         let output_dir = format!("output/{}", resource_group_name);
         
         let _ignore_if_does_not_exist = fs::remove_dir_all(&output_dir);
-        fs::create_dir(&output_dir)?; // will fail if directory already exists
+        let _ignore_if_already_exists = fs::create_dir(&output_dir);
         fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
         fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
         fs::write(&format!("{}/builder.rs", output_dir), builder_output.join("\n").as_bytes())?;
@@ -144,25 +152,7 @@ fn main_struct(struct_name: &str, resource_type: &str, properties_struct_name: &
     vec![code_for_type_struct, code_for_main_struct]
 }
 
-fn builder(struct_name: &str) -> Result<String> {
-    let builder = format!(r###"
-        pub struct {0}Builder {{
-            id: Id,
-        }}
-        
-        impl {0}Builder {{
-            pub fn new(id: Id) -> Self {{
-                Self {{
-                    id,
-                }}
-            }}
-        }}
-    "###, struct_name);
-    Ok(builder)
-}
-
-fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec<String>)> {
-    let (props, helper_urls) = props_info(split_resource)?;
+fn props(props: &Vec<PropInfo>) -> Result<Vec<String>> {
     let props = props.into_iter().map(|prop| {
         let serde_info = if prop.optional {
             format!(r###"#[serde(rename = "{}", skip_serializing_if = "Option::is_none")]"###, prop.name)
@@ -179,7 +169,7 @@ fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec
         format!("{}\n{} // {}", serde_info, prop_name_and_type, prop.comments.join(", "))
     }).collect();
 
-    Ok((props, helper_urls))
+    Ok(props)
 }
 
 struct PropInfo {
@@ -238,4 +228,42 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInf
     }
     
     Ok((prop_info, helper_urls))
+}
+
+fn builder(struct_name: &str, props: &Vec<PropInfo>) -> Result<String> {
+    let properties = props.into_iter().map(|prop| {
+        format!("{}: Option<{}>,", snake_case(&prop.name), prop.type_as_string)
+    }).collect::<Vec<_>>().join("\n");
+    let prop_builders = props.into_iter().map(|prop| {
+        format!(r###"
+            pub fn {0}(self, {0}: {1}) -> Self {{
+                Self {{
+                    {0}: {0},
+                    ..self
+                }}
+            }}
+            "###, snake_case(&prop.name), prop.type_as_string)
+    }).collect::<Vec<_>>().join("\n");
+    
+    let builder = format!(r###"
+        pub struct {0}Builder {{
+            id: Id,
+            {2}
+        }}
+        
+        impl {0}Builder {{
+            pub fn new(id: Id) -> Self {{
+                Self {{
+                    id,
+                }}
+            }}
+            
+            {1}
+            
+            pub fn build(self) -> {0} {{
+                todo!("Implement the build method")
+            }}
+        }}
+    "###, struct_name, prop_builders, properties);
+    Ok(builder)
 }
