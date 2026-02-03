@@ -162,9 +162,37 @@ fn builder(struct_name: &str) -> Result<String> {
 }
 
 fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec<String>)> {
+    let (props, helper_urls) = props_info(split_resource)?;
+    let props = props.into_iter().map(|prop| {
+        let serde_info = if prop.optional {
+            format!(r###"#[serde(rename = "{}", skip_serializing_if = "Option::is_none")]"###, prop.name)
+        } else {
+            format!(r###"#[serde(rename = "{}")]"###, prop.name)
+        };
+        
+        let prop_name_and_type = if prop.optional {
+            format!("pub(crate) {}: Option<{}>,", snake_case(&prop.name), prop.type_as_string)
+        } else {
+            format!("pub(crate) {}: {},", snake_case(&prop.name), prop.type_as_string)
+        };
+
+        format!("{}\n{} // {}", serde_info, prop_name_and_type, prop.comments.join(", "))
+    }).collect();
+
+    Ok((props, helper_urls))
+}
+
+struct PropInfo {
+    name: String,
+    type_as_string: String,
+    optional: bool,
+    comments: Vec<String>,
+}
+
+fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInfo>, Vec<String>)> {
     let custom_prop_type_regex = CUSTOM_PROP_TYPE_REGEX.get_or_init(|| Regex::new(r#"(?P<prefix>.*)<a href=\"(?P<url>.+?)\">(?P<name>.+?)</a>"#).unwrap());
     
-    let mut props = vec![];
+    let mut prop_info = vec![];
     let mut helper_urls = vec![];
     
     while let Some(prop) = split_resource.next() {
@@ -203,24 +231,11 @@ fn props(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<String>, Vec
                     }
                 };
             } else {
-                comments.push(prop_info);
+                comments.push(prop_info.to_string());
             }
         }
-        
-        let serde_info = if optional {
-            format!(r###"#[serde(rename = "{}", skip_serializing_if = "Option::is_none")]"###, prop_name)
-        } else {
-            format!(r###"#[serde(rename = "{}")]"###, prop_name)
-        };
-        
-        let prop_name_and_type = if optional {
-            format!("pub(crate) {}: Option<{}>,", snake_case(prop_name), type_info)
-        } else {
-            format!("pub(crate) {}: {},", snake_case(prop_name), type_info)
-        };
-
-        props.push(format!("{}\n{} // {}", serde_info, prop_name_and_type, comments.join(", ")));
+        prop_info.push(PropInfo { name: prop_name.to_string(), type_as_string: type_info, optional, comments });
     }
     
-    Ok((props, helper_urls))
+    Ok((prop_info, helper_urls))
 }
