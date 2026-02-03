@@ -215,8 +215,12 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInf
                         
                         if caps["prefix"].is_empty() {
                             name
-                        } else {
+                        } else if caps["prefix"].trim() == "Array of" {
                             format!("Vec<{}>", &caps["name"])
+                        } else if caps["prefix"].trim() == "Object of" {
+                            format!("HashMap<{0}, {0}>", &caps["name"])
+                        } else {
+                            panic!("encountered unknown prefix {}", &caps["prefix"]);
                         }
                     }
                 };
