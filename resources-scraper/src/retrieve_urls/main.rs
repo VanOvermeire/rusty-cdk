@@ -12,7 +12,6 @@ const START_SUFFIX: &str = "aws-template-resource-type-ref.html";
 const IGNORE_LIST: [&str; 3] = ["cfn-reference-shared.html", "AWS_SNS.html", "AWS_SQS.html"];
 
 /// Retrieve a list of relative URLs that point to resource grouping like S3
-/// Will retrieve some
 fn main() -> Result<()> {
     let client = Client::new();
     let output = find_resource_categories(&client)?;
