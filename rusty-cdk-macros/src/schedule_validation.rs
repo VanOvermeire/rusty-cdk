@@ -1,11 +1,11 @@
-fn valid_number_between(to_parse: &str, min: u16, max: u16) -> bool {
+fn valid_number_between(to_parse: &str, min: u16, max: u16) -> bool {    
     if to_parse == "*" {
         return true;
     }
 
     let parsed: Result<u16, _> = to_parse.parse();
     match parsed {
-        Ok(v) => v < min || v > max,
+        Ok(v) => v >= min && v <= max,
         Err(_) => false,
     }
 }
@@ -25,6 +25,8 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
     }
 
     let minutes = value_parts[0];
+    
+    eprintln!("got value {} and minutes is now {}", value, minutes);
 
     if minutes != "*" {
         let minutes_parts = if minutes.contains(",") {
@@ -40,7 +42,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
         if invalid {
             return Err(format!(
-                "minutes should be numbers between 0 and 59 and/or these wildcards: {} (was {})",
+                "minutes should be between 0 and 59 and/or these wildcards: {} (was {})",
                 BASIC_CRON_WILDCARDS.join(" "),
                 minutes
             ));
@@ -62,7 +64,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
         if invalid {
             return Err(format!(
-                "hours should be numbers between 0 and 23 and/or these wildcards: {} (was {})",
+                "hours should be between 0 and 23 and/or these wildcards: {} (was {})",
                 BASIC_CRON_WILDCARDS.join(" "),
                 hours
             ));
@@ -87,7 +89,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
         if invalid {
             return Err(format!(
-                "day of month should be numbers between 1 and 31 and/or these wildcards: {} (was {})",
+                "day of month should be between 1 and 31 and/or these wildcards: {} (was {})",
                 MONTH_CRON_WILDCARDS.join(" "),
                 day_of_month
             ));
@@ -111,7 +113,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
         if invalid_names && invalid_numbers {
             return Err(format!(
-                "month should be numbers between 1 and 12, or these names {} and/or these wildcards: {} (was {})",
+                "month should be between 1 and 12, or these names {} and/or these wildcards: {} (was {})",
                 MONTH_NAMES.join(","),
                 BASIC_CRON_WILDCARDS.join(" "),
                 month
@@ -137,7 +139,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
         let invalid_numbers = day_of_week_parts.iter().any(|m| !valid_number_between(m, 1, 7));
         if invalid_names && invalid_numbers {
             return Err(format!(
-                "day of week should be numbers between 1 and 7, or these names {} and/or these wildcards: {} (was {})",
+                "day of week should be between 1 and 7, or these names {} and/or these wildcards: {} (was {})",
                 DAY_NAMES.join(","),
                 WEEK_CRON_WILDCARDS.join(" "),
                 day_of_week
@@ -162,7 +164,7 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
             if invalid {
                 return Err(format!(
-                    "year should be numbers between 1970 and 2199 and/or these wildcards: {} (was {})",
+                    "year should be between 1970 and 2199 and/or these wildcards: {} (was {})",
                     BASIC_CRON_WILDCARDS.join(" "),
                     year
                 ));
