@@ -1,17 +1,20 @@
-use crate::custom_resource::{BucketNotificationBuilder, BUCKET_NOTIFICATION_HANDLER_CODE};
+use crate::custom_resource::{BUCKET_NOTIFICATION_HANDLER_CODE, BucketNotificationBuilder};
 use crate::iam::{
     CustomPermission, Effect, Permission, PolicyDocument, PolicyDocumentBuilder, PrincipalBuilder, Statement, StatementBuilder,
 };
 use crate::intrinsic::join;
 use crate::lambda::{Architecture, Runtime};
 use crate::lambda::{Code, FunctionBuilder, FunctionRef, PermissionBuilder};
-use crate::s3::{dto, AccelerateConfiguration, BucketPolicyType, BucketType, IntelligentTieringConfiguration, InventoryTableConfiguration, JournalTableConfiguration, MetadataConfiguration, MetadataDestination, RecordExpiration, TagFilter, Tiering};
+use crate::s3::{
+    AccelerateConfiguration, BucketPolicyType, BucketType, IntelligentTieringConfiguration, InventoryTableConfiguration,
+    JournalTableConfiguration, MetadataConfiguration, MetadataDestination, RecordExpiration, TagFilter, Tiering, dto,
+};
 use crate::s3::{
     Bucket, BucketEncryption, BucketPolicy, BucketPolicyRef, BucketProperties, BucketRef, CorsConfiguration, CorsRule,
     LifecycleConfiguration, LifecycleRule, LifecycleRuleTransition, NonCurrentVersionTransition, PublicAccessBlockConfiguration,
     RedirectAllRequestsTo, S3BucketPolicyProperties, ServerSideEncryptionByDefault, ServerSideEncryptionRule, WebsiteConfiguration,
 };
-use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX};
+use crate::shared::{DeletionPolicy, Id, QUEUE_POLICY_ID_SUFFIX, TOPIC_POLICY_ID_SUFFIX, UpdateDeletePolicyDTO, UpdateReplacePolicy};
 use crate::shared::{HttpMethod, Protocol};
 use crate::sns::{TopicPolicyBuilder, TopicRef};
 use crate::sqs::{QueuePolicyBuilder, QueueRef};
@@ -21,7 +24,7 @@ use crate::wrappers::{
     BucketName, BucketTiering, IamAction, LambdaPermissionAction, LifecycleTransitionInDays, Memory, PolicyName, RecordExpirationDays,
     S3LifecycleObjectSizes, Timeout,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::marker::PhantomData;
 use std::time::Duration;
 
@@ -746,8 +749,8 @@ impl BucketBuilder<WebsiteState> {
     }
 }
 
-/// Builder for S3 CORS configuration 
-/// 
+/// Builder for S3 CORS configuration
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-corsconfiguration.html
 pub struct CorsConfigurationBuilder {
     rules: Vec<CorsRule>,
@@ -764,7 +767,7 @@ impl CorsConfigurationBuilder {
 }
 
 /// Builder for individual CORS rules.
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-corsrule.html
 pub struct CorsRuleBuilder {
     allow_origins: Vec<String>,
@@ -1176,7 +1179,7 @@ impl From<IntelligentTieringStatus> for String {
 }
 
 /// Builder for TagFilters of IntelligentTiering
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-tagfilter.html
 pub struct TagFilterBuilder {
     key: String,
@@ -1200,7 +1203,7 @@ impl TagFilterBuilder {
 }
 
 /// Builder for IntelligentTiering Configuration
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-intelligenttieringconfiguration.html
 pub struct IntelligentTieringConfigurationBuilder {
     id: String,
@@ -1285,7 +1288,7 @@ impl From<Expiration> for String {
 }
 
 /// Builder for the Record Expiration of Bucket Metadataconfiguration
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-metadataconfiguration-journaltableconfiguration.html
 pub struct RecordExpirationBuilder {
     days: Option<u32>,
@@ -1354,7 +1357,7 @@ impl JournalTableConfigurationBuilder {
 }
 
 /// Builder for the metadata destination of Bucket Metadataconfiguration
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-metadatadestination.html
 pub struct MetadataDestinationBuilder {
     table_bucket_type: String,
@@ -1409,7 +1412,7 @@ impl From<ConfigurationState> for String {
 }
 
 /// Builder for the InventoryTable Config
-/// 
+///
 /// See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-s3-bucket-inventorytableconfiguration.html
 pub struct InventoryTableConfigurationBuilder {
     configuration_state: String,

@@ -1,13 +1,13 @@
 use crate::s3::BucketPolicy;
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum OriginAccessControlDtoType {
     #[serde(rename = "AWS::CloudFront::OriginAccessControl")]
-    OriginAccessControlType
+    OriginAccessControlType,
 }
 
 ref_struct!(OriginAccessControlRef);
@@ -46,7 +46,7 @@ pub struct OriginAccessControlConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum CachePolicyType {
     #[serde(rename = "AWS::CloudFront::CachePolicy")]
-    CachePolicyType
+    CachePolicyType,
 }
 
 ref_struct!(CachePolicyRef);
@@ -125,7 +125,7 @@ pub struct CookiesConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum DistributionType {
     #[serde(rename = "AWS::CloudFront::Distribution")]
-    DistributionType
+    DistributionType,
 }
 
 ref_struct!(DistributionRef);
@@ -303,7 +303,6 @@ pub struct VpcOriginConfig {
     #[serde(rename = "OwnerAccountId", skip_serializing_if = "Option::is_none")]
     pub(super) owner_account_id: Option<String>,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CustomOriginConfig {

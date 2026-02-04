@@ -1,5 +1,5 @@
+use cargo_rusty::{Args, entry_point};
 use clap::Parser;
-use cargo_rusty::{entry_point, Args};
 
 #[tokio::main]
 async fn main() {

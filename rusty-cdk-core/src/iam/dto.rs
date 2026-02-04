@@ -1,12 +1,12 @@
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum RoleType {
     #[serde(rename = "AWS::IAM::Role")]
-    RoleType
+    RoleType,
 }
 
 ref_struct!(RoleRef);
@@ -51,7 +51,7 @@ pub struct PolicyDocument {
     #[serde(rename = "Version")]
     pub(crate) version: String,
     #[serde(rename = "Statement")]
-    pub(crate) statements: Vec<Statement>
+    pub(crate) statements: Vec<Statement>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +73,7 @@ pub struct Statement {
     #[serde(rename = "Resource", skip_serializing_if = "Option::is_none")]
     pub(crate) resource: Option<Vec<Value>>,
     #[serde(rename = "Condition", skip_serializing_if = "Option::is_none")]
-    pub(crate) condition: Option<Value>
+    pub(crate) condition: Option<Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

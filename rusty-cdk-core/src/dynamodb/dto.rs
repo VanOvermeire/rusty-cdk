@@ -1,12 +1,12 @@
+use crate::shared::{Id, UpdateDeletePolicyDTO};
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::{Id, UpdateDeletePolicyDTO};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum TableType {
     #[serde(rename = "AWS::DynamoDB::Table")]
-    TableType
+    TableType,
 }
 
 ref_struct!(TableRef);
@@ -22,7 +22,7 @@ pub struct Table {
     #[serde(rename = "Properties")]
     pub(super) properties: TableProperties,
     #[serde(flatten)]
-    pub(super) update_delete_policy_dto: UpdateDeletePolicyDTO
+    pub(super) update_delete_policy_dto: UpdateDeletePolicyDTO,
 }
 dto_methods!(Table);
 

@@ -16,7 +16,6 @@ const TYPE_INFO: &str = "Type";
 // which should be the last bit of info for a given prop
 const UPDATE_REQUIRES_INFORMATION: &str = "Update";
 
-
 /// Retrieves raw, but parsable (CSV), resource info from the AWS docs
 /// Output is written to the output dir
 /// Works for Resources but not for 'helpers' (custom props) -> skip the outer loop and add those urls to `retrieve_resource_props`
@@ -24,21 +23,21 @@ fn main() -> Result<()> {
     let client = Client::new();
 
     let mut output = vec![];
-    
+
     let input = read_to_string("./output/list_of_urls")?;
     let resource_urls = input.split("\n").filter(|v| !v.is_empty());
     let mut sublinks_to_check = vec![];
 
     for url in resource_urls {
         let resources = get_specific_resource(&client, url)?;
-    
+
         for r in resources {
             let (name, props, mut additional_links) = retrieve_resource_props(&client, &r)?;
             output.push(output_for_single_resource(&name, &props));
             sublinks_to_check.append(&mut additional_links);
         }
     }
-    
+
     while sublinks_to_check.len() > 0 {
         println!("checking {} additional links", sublinks_to_check.len());
         let mut new_sublinks = vec![];
@@ -85,7 +84,10 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
 
     let variable_lists_selector = Selector::parse(".variablelist > dl").unwrap();
     // first list is the props
-    let variable_list = document.select(&variable_lists_selector).next().context("resource should have a list of props")?;
+    let variable_list = document
+        .select(&variable_lists_selector)
+        .next()
+        .context("resource should have a list of props")?;
     let prop_name_selector = Selector::parse("dt > span > code").unwrap();
     let mut prop_names = variable_list.select(&prop_name_selector);
 
@@ -104,7 +106,7 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
     let mut current_name = names_iter.next();
     let mut map: HashMap<String, Vec<String>> = HashMap::new();
     let mut gather_info = vec![];
-    
+
     let custom_prop_type_regex = CUSTOM_PROP_TYPE_REGEX.get_or_init(|| Regex::new(r#".*<a href=\"(?P<url>.+?)\">.+</a>"#).unwrap());
 
     while let Some(info) = prop_info.next() {
@@ -113,7 +115,10 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
 
         if name_without_em.starts_with(UPDATE_REQUIRES_INFORMATION) {
             // this also means we don't add the Update info (currently not needed)
-            map.insert(current_name.take().context("should be a prop name for every collection of info")?, gather_info.drain(..).collect());
+            map.insert(
+                current_name.take().context("should be a prop name for every collection of info")?,
+                gather_info.drain(..).collect(),
+            );
             current_name = names_iter.next();
         } else {
             if name_without_em.starts_with(TYPE_INFO) {
@@ -121,7 +126,7 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
                     if m["url"].starts_with("https://") {
                         println!("ignoring external link: {}", &m["url"]);
                     } else {
-                        additional_links.push(m["url"].replace("./", ""));                        
+                        additional_links.push(m["url"].replace("./", ""));
                     }
                 }
             }

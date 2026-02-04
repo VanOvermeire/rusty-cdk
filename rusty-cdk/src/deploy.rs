@@ -95,11 +95,7 @@ impl Display for DeployError {
 /// - `s3:PutObject` (if you have Lambdas)
 /// - IAM permissions for creating roles
 /// - Service-specific permissions for resources being created
-pub async fn deploy(
-    name: StringWithOnlyAlphaNumericsAndHyphens,
-    mut stack: Stack,
-    print_progress: bool,
-) -> Result<String, DeployError> {
+pub async fn deploy(name: StringWithOnlyAlphaNumericsAndHyphens, mut stack: Stack, print_progress: bool) -> Result<String, DeployError> {
     let name = name.0;
     let config = load_config(true).await;
 

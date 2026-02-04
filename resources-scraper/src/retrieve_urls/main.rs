@@ -38,7 +38,9 @@ fn find_resource_categories(client: &Client) -> Result<Vec<String>> {
     let mut list = document.select(&list_selector);
     let first_list = list.next();
 
-    let mut list_elements = first_list.context("page should have a list of resources")?.select(&list_element_selector);
+    let mut list_elements = first_list
+        .context("page should have a list of resources")?
+        .select(&list_element_selector);
     let mut hrefs = vec![];
 
     while let Some(el) = list_elements.next() {

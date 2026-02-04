@@ -9,5 +9,5 @@ pub use deploy::*;
 pub use destroy::*;
 pub use diff::*;
 pub use rusty_cdk_core::*;
-pub use rusty_cdk_macros::*;
 pub use rusty_cdk_lookups::*;
+pub use rusty_cdk_macros::*;

@@ -1,6 +1,14 @@
 #![allow(dead_code)]
 
-use rusty_cdk_macros::{app_config_name, iam_action, non_zero_number, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, string_with_only_alphanumerics_and_hyphens, env_var_key, memory, timeout, delay_seconds, maximum_message_size, message_retention_period, visibility_timeout, receive_message_wait_time, sqs_event_source_max_concurrency, log_retention, log_group_name, lifecycle_object_sizes, lambda_permission_action, lifecycle_transition_in_days, location_uri, app_sync_api_name, channel_namespace_name, bucket_tiering, retry_policy_event_age, retry_policy_retries, max_flexible_time_window, schedule_rate_expression, schedule_name, schedule_cron_expression, schedule_at_expression, policy_name, string_for_secret, toml_file, origin_path, default_root_object, zip_file, topic_display_name};
+use rusty_cdk_macros::{
+    app_config_name, app_sync_api_name, bucket_tiering, channel_namespace_name, default_root_object, delay_seconds, env_var_key,
+    iam_action, lambda_permission_action, lifecycle_object_sizes, lifecycle_transition_in_days, location_uri, log_group_name,
+    log_retention, max_flexible_time_window, maximum_message_size, memory, message_retention_period, non_zero_number, origin_path,
+    policy_name, receive_message_wait_time, retry_policy_event_age, retry_policy_retries, schedule_at_expression, schedule_cron_expression,
+    schedule_name, schedule_rate_expression, sqs_event_source_max_concurrency, string_for_secret,
+    string_with_only_alphanumerics_and_hyphens, string_with_only_alphanumerics_and_underscores,
+    string_with_only_alphanumerics_underscores_and_hyphens, timeout, toml_file, topic_display_name, visibility_timeout, zip_file,
+};
 
 // placeholders for the wrapper structs that exist in the core package //
 struct NonZeroNumber(u32);
@@ -122,7 +130,7 @@ fn create_log_group_name_with_valid_value() {
 
 #[test]
 fn create_object_sizes_two_sizes() {
-    let val = lifecycle_object_sizes!(5000,10000);
+    let val = lifecycle_object_sizes!(5000, 10000);
 
     assert_eq!(Some(5000), val.0);
     assert_eq!(Some(10000), val.1);
@@ -151,12 +159,12 @@ fn lambda_permission_action_with_right_prefix() {
 
 #[test]
 fn lifecycle_transition_in_days_more_than_30_days() {
-    lifecycle_transition_in_days!(31,"StandardIA");
+    lifecycle_transition_in_days!(31, "StandardIA");
 }
 
 #[test]
 fn lifecycle_transition_in_days() {
-    lifecycle_transition_in_days!(3,"Glacier");
+    lifecycle_transition_in_days!(3, "Glacier");
 }
 
 #[test]
@@ -166,17 +174,17 @@ fn location_uri_hosted() {
 
 #[test]
 fn location_uri_s3() {
-    location_uri!("s3","s3://something");
+    location_uri!("s3", "s3://something");
 }
 
 #[test]
 fn location_uri_secretsmanager() {
-    location_uri!("secretsmanager","secretsmanager://something");
+    location_uri!("secretsmanager", "secretsmanager://something");
 }
 
 #[test]
 fn location_uri_codepipeline() {
-    location_uri!("codepipeline","codepipeline://something");
+    location_uri!("codepipeline", "codepipeline://something");
 }
 
 #[test]
@@ -196,12 +204,12 @@ fn channel_namespace_name() {
 
 #[test]
 fn bucket_tiering_archive() {
-    bucket_tiering!("ARCHIVE_ACCESS",100);
+    bucket_tiering!("ARCHIVE_ACCESS", 100);
 }
 
 #[test]
 fn bucket_tiering_deep_archive() {
-    bucket_tiering!("DEEP_ARCHIVE_ACCESS",181);
+    bucket_tiering!("DEEP_ARCHIVE_ACCESS", 181);
 }
 
 #[test]
@@ -221,7 +229,7 @@ fn max_flexible_time_window() {
 
 #[test]
 fn schedule_rate_expression() {
-    schedule_rate_expression!(1220,"days");
+    schedule_rate_expression!(1220, "days");
 }
 
 #[test]
@@ -255,7 +263,6 @@ fn string_for_secret_valid() {
     string_for_secret!("a/b_c+d=e.f@g-h1");
 }
 
-
 struct TomlFile(String);
 
 #[test]
@@ -278,12 +285,10 @@ fn zip_file_valid() {
     zip_file!("examples/apigateway_lambda_dynamodb/files/empty.zip");
 }
 
-
 #[test]
 fn topic_display_name_valid() {
     topic_display_name!("my-topic_display name");
 }
-
 
 #[test]
 fn create_string_with_only_alphanumerics_and_hyphens_alpha() {
@@ -299,4 +304,3 @@ fn create_string_with_only_alphanumerics_and_hyphens_numeric() {
 fn create_string_with_only_alphanumerics_and_hyphens_mixed() {
     string_with_only_alphanumerics_and_hyphens!("another-valid-id-456");
 }
-

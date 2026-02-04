@@ -1,12 +1,12 @@
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ScheduleType {
     #[serde(rename = "AWS::Scheduler::Schedule")]
-    ScheduleType
+    ScheduleType,
 }
 
 ref_struct!(ScheduleRef);
@@ -42,10 +42,8 @@ pub struct ScheduleProperties {
     #[serde(rename = "ScheduleExpression")]
     pub(super) schedule_expression: String,
     #[serde(rename = "Target")]
-    pub(super) target: Target
-    // "ScheduleExpressionTimezone" : String,
-    // "KmsKeyArn" : String,
-
+    pub(super) target: Target, // "ScheduleExpressionTimezone" : String,
+                               // "KmsKeyArn" : String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -79,5 +77,5 @@ pub struct RetryPolicy {
     #[serde(rename = "MaximumEventAgeInSeconds", skip_serializing_if = "Option::is_none")]
     pub(super) maximum_event_age_in_seconds: Option<u32>,
     #[serde(rename = "MaximumRetryAttempts", skip_serializing_if = "Option::is_none")]
-    pub(super) maximum_retry_attempts: Option<u8>
+    pub(super) maximum_retry_attempts: Option<u8>,
 }

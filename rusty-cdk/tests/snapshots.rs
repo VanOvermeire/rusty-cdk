@@ -30,7 +30,7 @@ use rusty_cdk_core::sqs::QueueBuilder;
 use rusty_cdk_core::stack::StackBuilder;
 use rusty_cdk_core::wrappers::*;
 use rusty_cdk_macros::*;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::fs::read_to_string;
 
 #[test]
@@ -153,7 +153,7 @@ fn lambda_with_custom_log_group() {
     // what if I want to pass the log group name on, for example, the name of a bucket?
     // BucketRef -> 'mybucket283' -> Sub! "${bucket}-log-group"
     // json! { "Fn::Sub": "${resourceId}-log-group" }
-    
+
     let log_group = LogGroupBuilder::new("funLogGroup")
         .log_group_name_string(log_group_name!("custom-name"))
         .log_group_retention(log_retention!(90))
@@ -453,8 +453,12 @@ fn lambda_with_custom_log_group_and_schedule() {
         .build(&mut stack_builder);
 
     // direct construction of RoleRef to avoid depending on specific AWS env
-    // in most use cases, prefer the `lookup_role_ref` macro for safety and a bit of convenience  
-    let role_ref = RoleRef::new("RemoteScheduleRole", "ASchedulerToLambdaRole", "arn:aws:iam::1234:role/ASchedulerToLambdaRole");
+    // in most use cases, prefer the `lookup_role_ref` macro for safety and a bit of convenience
+    let role_ref = RoleRef::new(
+        "RemoteScheduleRole",
+        "ASchedulerToLambdaRole",
+        "arn:aws:iam::1234:role/ASchedulerToLambdaRole",
+    );
     let target = TargetBuilder::new_json_target(JsonTarget::Lambda(&fun), &role_ref)
         .input(json!({ "value": "hello" }))
         .build();

@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct_with_id_methods};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum QueueType {
     #[serde(rename = "AWS::SQS::Queue")]
-    QueueType
+    QueueType,
 }
 
 ref_struct_with_id_methods!(QueueRef);
@@ -65,7 +65,7 @@ pub struct QueueProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum QueuePolicyType {
     #[serde(rename = "AWS::SQS::QueuePolicy")]
-    QueuePolicyType
+    QueuePolicyType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -86,7 +86,7 @@ pub struct QueuePolicyProperties {
     #[serde(rename = "PolicyDocument")]
     pub(crate) doc: PolicyDocument,
     #[serde(rename = "Queues")]
-    pub(super) queues: Vec<Value>,   
+    pub(super) queues: Vec<Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

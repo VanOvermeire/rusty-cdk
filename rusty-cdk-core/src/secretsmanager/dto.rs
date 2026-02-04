@@ -1,12 +1,12 @@
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum SecretType {
     #[serde(rename = "AWS::SecretsManager::Secret")]
-    SecretType
+    SecretType,
 }
 
 ref_struct!(SecretRef);

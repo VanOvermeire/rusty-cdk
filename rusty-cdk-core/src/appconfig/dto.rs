@@ -1,12 +1,12 @@
-use serde_json::Value;
-use serde::{Deserialize, Serialize};
-use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ApplicationType {
     #[serde(rename = "AWS::AppConfig::Application")]
-    ApplicationType
+    ApplicationType,
 }
 
 ref_struct!(ApplicationRef);
@@ -20,7 +20,7 @@ pub struct Application {
     #[serde(rename = "Type")]
     pub(super) r#type: ApplicationType,
     #[serde(rename = "Properties")]
-    pub(super) properties: ApplicationProperties
+    pub(super) properties: ApplicationProperties,
 }
 dto_methods!(Application);
 
@@ -33,7 +33,7 @@ pub struct ApplicationProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ConfigurationProfileType {
     #[serde(rename = "AWS::AppConfig::ConfigurationProfile")]
-    ConfigurationProfileType
+    ConfigurationProfileType,
 }
 
 ref_struct!(ConfigurationProfileRef);
@@ -47,7 +47,7 @@ pub struct ConfigurationProfile {
     #[serde(rename = "Type")]
     pub(super) r#type: ConfigurationProfileType,
     #[serde(rename = "Properties")]
-    pub(super) properties: ConfigurationProfileProperties
+    pub(super) properties: ConfigurationProfileProperties,
 }
 dto_methods!(ConfigurationProfile);
 
@@ -64,9 +64,8 @@ pub struct ConfigurationProfileProperties {
     #[serde(rename = "Type", skip_serializing_if = "Option::is_none")]
     pub(super) config_type: Option<String>,
     #[serde(rename = "Validators", skip_serializing_if = "Option::is_none")]
-    pub(super) validators: Option<Vec<Validator>>
-    // "KmsKeyIdentifier" : String,
-    // "RetrievalRoleArn" : String,
+    pub(super) validators: Option<Vec<Validator>>, // "KmsKeyIdentifier" : String,
+                                                   // "RetrievalRoleArn" : String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -80,7 +79,7 @@ pub struct Validator {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum DeploymentStrategyType {
     #[serde(rename = "AWS::AppConfig::DeploymentStrategy")]
-    DeploymentStrategyType
+    DeploymentStrategyType,
 }
 
 ref_struct!(DeploymentStrategyRef);
@@ -94,7 +93,7 @@ pub struct DeploymentStrategy {
     #[serde(rename = "Type")]
     pub(super) r#type: DeploymentStrategyType,
     #[serde(rename = "Properties")]
-    pub(super) properties: DeploymentStrategyProperties
+    pub(super) properties: DeploymentStrategyProperties,
 }
 dto_methods!(DeploymentStrategy);
 
@@ -117,7 +116,7 @@ pub struct DeploymentStrategyProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum EnvironmentType {
     #[serde(rename = "AWS::AppConfig::Environment")]
-    EnvironmentType
+    EnvironmentType,
 }
 
 ref_struct!(EnvironmentRef);
@@ -142,6 +141,5 @@ pub struct EnvironmentProperties {
     #[serde(rename = "ApplicationId")]
     pub(super) application_id: Value,
     #[serde(rename = "DeletionProtectionCheck", skip_serializing_if = "Option::is_none")]
-    pub(super) deletion_protection_check: Option<String>
-    // "Monitors" : [ Monitor, ... ],
+    pub(super) deletion_protection_check: Option<String>, // "Monitors" : [ Monitor, ... ],
 }

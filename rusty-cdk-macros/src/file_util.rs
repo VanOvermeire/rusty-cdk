@@ -1,7 +1,7 @@
 use dirs::home_dir;
 use serde::Serialize;
 use std::fs::{read_to_string, write};
-use std::path::{absolute, Path, PathBuf};
+use std::path::{Path, PathBuf, absolute};
 
 pub(crate) fn read_info(file_name: &str) -> Option<String> {
     get_file_path(file_name).and_then(|p| read_to_string(p).ok())
@@ -35,6 +35,6 @@ pub(crate) fn get_absolute_file_path(value: &str) -> Result<String, String> {
     } else {
         path.to_str().expect("path to be valid unicode").to_string()
     };
-    
+
     Ok(value)
 }

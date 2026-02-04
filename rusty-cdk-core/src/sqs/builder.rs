@@ -1,14 +1,17 @@
 use crate::iam::PolicyDocument;
+use crate::kms::KeyRef;
 use crate::shared::Id;
 use crate::shared::QUEUE_POLICY_ID_SUFFIX;
-use crate::sqs::{QueuePolicyType, QueueRef, QueueType};
 use crate::sqs::{Queue, QueuePolicy, QueuePolicyProperties, QueuePolicyRef, QueueProperties, RedrivePolicy};
+use crate::sqs::{QueuePolicyType, QueueRef, QueueType};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{DelaySeconds, KeyReusePeriod, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber, ReceiveMessageWaitTime, StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout};
+use crate::wrappers::{
+    DelaySeconds, KeyReusePeriod, MaximumMessageSize, MessageRetentionPeriod, NonZeroNumber, ReceiveMessageWaitTime,
+    StringWithOnlyAlphaNumericsAndUnderscores, VisibilityTimeout,
+};
 use serde_json::Value;
 use std::marker::PhantomData;
-use crate::kms::KeyRef;
 
 const FIFO_SUFFIX: &str = ".fifo";
 

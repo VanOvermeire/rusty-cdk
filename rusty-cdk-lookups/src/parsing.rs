@@ -1,4 +1,4 @@
-use syn::{LitStr};
+use syn::LitStr;
 use syn::parse::{Parse, ParseStream};
 use syn::token::Comma;
 

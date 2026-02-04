@@ -1,3 +1,4 @@
+use rusty_cdk_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
@@ -14,7 +15,6 @@ use rusty_cdk_macros::{
     delay_seconds, iam_action, maximum_message_size, message_retention_period, non_zero_number, receive_message_wait_time,
     string_with_only_alphanumerics_and_underscores, visibility_timeout,
 };
-use rusty_cdk_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
 
 #[test]
 fn dynamodb_pay_per_request_billing_should_compile() {

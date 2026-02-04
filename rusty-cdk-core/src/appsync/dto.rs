@@ -1,12 +1,12 @@
-use serde_json::Value;
-use serde::{Deserialize, Serialize};
-use crate::{dto_methods, ref_struct};
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum AppSyncApiType {
     #[serde(rename = "AWS::AppSync::Api")]
-    AppSyncApiType
+    AppSyncApiType,
 }
 
 ref_struct!(AppSyncApiRef);
@@ -85,13 +85,13 @@ pub struct OpenIDConnectConfig {
     #[serde(rename = "IatTTL", skip_serializing_if = "Option::is_none")]
     pub(crate) iat_ttl_millis: Option<u32>,
     #[serde(rename = "Issuer")]
-    pub(crate) issuer: String
+    pub(crate) issuer: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppSyncAuthMode {
     #[serde(rename = "AuthType", skip_serializing_if = "Option::is_none")]
-    pub(crate) auth_type: Option<String>
+    pub(crate) auth_type: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -99,13 +99,13 @@ pub struct EventLogConfig {
     #[serde(rename = "CloudWatchLogsRoleArn")]
     pub(crate) cloudwatch_logs_role_arn: String,
     #[serde(rename = "LogLevel")]
-    pub(crate) log_level: String
+    pub(crate) log_level: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ChannelNamespaceType {
     #[serde(rename = "AWS::AppSync::ChannelNamespace")]
-    ChannelNamespaceType
+    ChannelNamespaceType,
 }
 
 ref_struct!(ChannelNamespaceRef);

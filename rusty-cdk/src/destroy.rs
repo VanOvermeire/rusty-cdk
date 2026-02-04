@@ -38,7 +38,7 @@ impl Display for DestroyError {
 /// * `name` - The CloudFormation stack name (alphanumeric characters and hyphens only)
 /// * `stack` - The stack to deploy, created using `StackBuilder`
 /// * `print_progress` - Print progress updates to standard out
-/// 
+///
 pub async fn destroy(name: StringWithOnlyAlphaNumericsAndHyphens, print_progress: bool) -> Result<(), DestroyError> {
     let name = name.0;
     let config = load_config(false).await;

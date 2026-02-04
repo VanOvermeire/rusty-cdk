@@ -1,4 +1,7 @@
-use crate::custom_resource::{BucketNotification, BucketNotificationProperties, BucketNotificationRef, LambdaFunctionConfiguration, NotificationConfiguration, TopicConfiguration, QueueConfiguration, BucketNotificationType};
+use crate::custom_resource::{
+    BucketNotification, BucketNotificationProperties, BucketNotificationRef, BucketNotificationType, LambdaFunctionConfiguration,
+    NotificationConfiguration, QueueConfiguration, TopicConfiguration,
+};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use serde_json::Value;

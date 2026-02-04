@@ -1,5 +1,5 @@
 use rusty_cdk::appconfig::{ApplicationBuilder, ConfigurationProfileBuilder, EnvironmentBuilder};
-use rusty_cdk::iam::{Permission};
+use rusty_cdk::iam::Permission;
 use rusty_cdk::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk::secretsmanager::{GenerateSecretStringBuilder, SecretBuilder};
 use rusty_cdk::stack::StackBuilder;
@@ -22,12 +22,9 @@ async fn main() {
         )
         .build(&mut stack_builder);
 
-    let app_config = ApplicationBuilder::new("MyAppConfig", app_config_name!("MyApplication"))
-        .build(&mut stack_builder);
+    let app_config = ApplicationBuilder::new("MyAppConfig", app_config_name!("MyApplication")).build(&mut stack_builder);
 
-    let app_config_env =
-        EnvironmentBuilder::new("MyAppConfigEnv", app_config_name!("prod"), &app_config)
-            .build(&mut stack_builder);
+    let app_config_env = EnvironmentBuilder::new("MyAppConfigEnv", app_config_name!("prod"), &app_config).build(&mut stack_builder);
 
     let config_profile = ConfigurationProfileBuilder::new(
         "MyConfigProfile",
@@ -35,7 +32,7 @@ async fn main() {
         &app_config,
         location_uri!("hosted"),
     )
-        .build(&mut stack_builder);
+    .build(&mut stack_builder);
 
     // Create bucket for Lambda code (in practice, this would be pre-existing)
     // Using the wrapper directly to bypass bucket existence validation
@@ -47,21 +44,15 @@ async fn main() {
     let secret_lambda_memory = memory!(512);
     let secret_lambda_timeout = timeout!(30);
 
-    let (_secret_lambda, _secret_role, _secret_log) = FunctionBuilder::new(
-        "SecretLambda",
-        Architecture::ARM64,
-        secret_lambda_memory,
-        secret_lambda_timeout,
-    )
-        .code(Code::Zip(Zip::new(bucket.clone(), secret_lambda_zip)))
-        .handler("bootstrap")
-        .runtime(Runtime::ProvidedAl2023)
-        .function_name(string_with_only_alphanumerics_underscores_and_hyphens!(
-        "secret-lambda"
-    ))
-        .env_var(env_var_key!("SECRET_ARN"), secret.get_ref())
-        .add_permission(Permission::SecretsManagerRead(&secret))
-        .build(&mut stack_builder);
+    let (_secret_lambda, _secret_role, _secret_log) =
+        FunctionBuilder::new("SecretLambda", Architecture::ARM64, secret_lambda_memory, secret_lambda_timeout)
+            .code(Code::Zip(Zip::new(bucket.clone(), secret_lambda_zip)))
+            .handler("bootstrap")
+            .runtime(Runtime::ProvidedAl2023)
+            .function_name(string_with_only_alphanumerics_underscores_and_hyphens!("secret-lambda"))
+            .env_var(env_var_key!("SECRET_ARN"), secret.get_ref())
+            .add_permission(Permission::SecretsManagerRead(&secret))
+            .build(&mut stack_builder);
 
     // this is the same empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
     let appconfig_lambda_zip = zip_file!("./examples/app_config_and_secrets_with_two_lambdas/files/empty.zip");
@@ -74,26 +65,15 @@ async fn main() {
         appconfig_lambda_memory,
         appconfig_lambda_timeout,
     )
-        .code(Code::Zip(Zip::new(bucket, appconfig_lambda_zip)))
-        .handler("bootstrap")
-        .runtime(Runtime::ProvidedAl2023)
-        .function_name(string_with_only_alphanumerics_underscores_and_hyphens!(
-        "appconfig-lambda"
-    ))
-        .env_var(
-            env_var_key!("APPCONFIG_APPLICATION_ID"),
-            app_config.get_ref(),
-        )
-        .env_var(
-            env_var_key!("APPCONFIG_ENVIRONMENT_ID"),
-            app_config_env.get_ref(),
-        )
-        .env_var(
-            env_var_key!("APPCONFIG_CONFIGURATION_PROFILE_ID"),
-            config_profile.get_ref(),
-        )
-        .add_permission(Permission::AppConfigRead(&app_config, &app_config_env, &config_profile))
-        .build(&mut stack_builder);
+    .code(Code::Zip(Zip::new(bucket, appconfig_lambda_zip)))
+    .handler("bootstrap")
+    .runtime(Runtime::ProvidedAl2023)
+    .function_name(string_with_only_alphanumerics_underscores_and_hyphens!("appconfig-lambda"))
+    .env_var(env_var_key!("APPCONFIG_APPLICATION_ID"), app_config.get_ref())
+    .env_var(env_var_key!("APPCONFIG_ENVIRONMENT_ID"), app_config_env.get_ref())
+    .env_var(env_var_key!("APPCONFIG_CONFIGURATION_PROFILE_ID"), config_profile.get_ref())
+    .add_permission(Permission::AppConfigRead(&app_config, &app_config_env, &config_profile))
+    .build(&mut stack_builder);
 
     let synthesized = stack_builder.build().unwrap().synth().unwrap();
     println!("{}", synthesized);

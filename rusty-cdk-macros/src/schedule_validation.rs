@@ -1,4 +1,4 @@
-fn valid_number_between(to_parse: &str, min: u16, max: u16) -> bool {    
+fn valid_number_between(to_parse: &str, min: u16, max: u16) -> bool {
     if to_parse == "*" {
         return true;
     }
@@ -21,11 +21,14 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
     let value_parts: Vec<_> = value.split(" ").collect();
 
     if value_parts.len() < 5 {
-        return Err(format!("cron expression should consist of five or six fields (was {})", value_parts.len()));
+        return Err(format!(
+            "cron expression should consist of five or six fields (was {})",
+            value_parts.len()
+        ));
     }
 
     let minutes = value_parts[0];
-    
+
     eprintln!("got value {} and minutes is now {}", value, minutes);
 
     if minutes != "*" {
@@ -186,7 +189,7 @@ pub(crate) fn validate_at(value: &str) -> Result<(), String> {
     let time = split[1];
 
     let date_parts: Vec<_> = date.split('-').collect();
-    
+
     if date_parts.len() != 3 {
         return Err("`at` date should be year, month, day, separated by `-` (yyyy-mm-ddThh:mm:ss)".to_string());
     }
@@ -204,7 +207,7 @@ pub(crate) fn validate_at(value: &str) -> Result<(), String> {
     if !valid_number_between(days, 1, 31) {
         return Err(format!("days should be between 1 and 31 (was {})", days));
     }
-    
+
     let time_parts: Vec<_> = time.split(':').collect();
 
     if time_parts.len() != 3 {

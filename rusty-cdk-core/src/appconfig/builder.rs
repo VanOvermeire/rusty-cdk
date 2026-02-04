@@ -1,12 +1,16 @@
 use std::marker::PhantomData;
 
-use serde_json::Value;
-use crate::appconfig::{Application, ApplicationProperties, ApplicationRef, ApplicationType, ConfigurationProfile, ConfigurationProfileProperties, ConfigurationProfileRef, ConfigurationProfileType, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef, DeploymentStrategyType, Environment, EnvironmentProperties, EnvironmentRef, EnvironmentType, Validator};
-use crate::iam::{RoleRef};
+use crate::appconfig::{
+    Application, ApplicationProperties, ApplicationRef, ApplicationType, ConfigurationProfile, ConfigurationProfileProperties,
+    ConfigurationProfileRef, ConfigurationProfileType, DeploymentStrategy, DeploymentStrategyProperties, DeploymentStrategyRef,
+    DeploymentStrategyType, Environment, EnvironmentProperties, EnvironmentRef, EnvironmentType, Validator,
+};
+use crate::iam::RoleRef;
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
 use crate::wrappers::{AppConfigName, DeploymentDurationInMinutes, GrowthFactor, LocationUri};
+use serde_json::Value;
 
 /// Builder for AWS AppConfig applications.
 ///
@@ -62,7 +66,7 @@ impl ApplicationBuilder {
 //     S3(String) // s3://<bucket>/<objectKey>
 //     // SSM, AWS Systems Manager Parameter Store
 // }
-// 
+//
 // impl From<LocationUri> for String {
 //     fn from(value: LocationUri) -> Self {
 //         match value {
@@ -136,7 +140,7 @@ pub struct ConfigurationProfileBuilder {
     location_uri: String,
     deletion_protection_check: Option<String>,
     config_type: Option<String>,
-    validators: Option<Vec<Validator>>
+    validators: Option<Vec<Validator>>,
 }
 
 impl ConfigurationProfileBuilder {
@@ -205,11 +209,7 @@ impl ConfigurationProfileBuilder {
     }
 }
 
-type_state!(
-    ValidatorState,
-    ValidatorStartState,
-    ValidatorChosenState,
-);
+type_state!(ValidatorState, ValidatorStartState, ValidatorChosenState,);
 
 /// Builder for configuration profile validators.
 pub struct ValidatorBuilder<T: ValidatorState> {
@@ -236,7 +236,7 @@ impl<T: ValidatorState> ValidatorBuilder<T> {
             validator_type: Some("LAMBDA".to_string()),
         }
     }
-    
+
     pub fn json_schema<S: Into<String>>(self, content: S) -> ValidatorBuilder<ValidatorChosenState> {
         ValidatorBuilder {
             phantom_date: Default::default(),
@@ -265,7 +265,7 @@ impl From<GrowthType> for String {
     fn from(value: GrowthType) -> Self {
         match value {
             GrowthType::Linear => "LINEAR".to_string(),
-            GrowthType::Exponential => "EXPONENTIAL".to_string()
+            GrowthType::Exponential => "EXPONENTIAL".to_string(),
         }
     }
 }
@@ -304,7 +304,13 @@ impl DeploymentStrategyBuilder {
     /// * `deployment_duration_in_minutes` - Time to deploy the configuration
     /// * `growth_factor` - Percentage of targets to receive the deployment during each interval
     /// * `replicate_to` - Where to replicate the configuration
-    pub fn new(id: &str, name: AppConfigName, deployment_duration_in_minutes: DeploymentDurationInMinutes, growth_factor: GrowthFactor, replicate_to: ReplicateTo) -> Self {
+    pub fn new(
+        id: &str,
+        name: AppConfigName,
+        deployment_duration_in_minutes: DeploymentDurationInMinutes,
+        growth_factor: GrowthFactor,
+        replicate_to: ReplicateTo,
+    ) -> Self {
         Self {
             id: Id(id.to_string()),
             name: name.0,
@@ -314,17 +320,17 @@ impl DeploymentStrategyBuilder {
             replicate_to: replicate_to.into(),
         }
     }
-    
+
     pub fn growth_type(self, growth_type: GrowthType) -> Self {
         Self {
             growth_type: Some(growth_type.into()),
             ..self
         }
     }
-    
+
     pub fn build(self, stack_builder: &mut StackBuilder) -> DeploymentStrategyRef {
         let resource_id = Resource::generate_id("DeploymentStrategy");
-        
+
         stack_builder.add_resource(DeploymentStrategy {
             id: self.id,
             resource_id: resource_id.clone(),
@@ -337,7 +343,7 @@ impl DeploymentStrategyBuilder {
                 growth_type: self.growth_type,
             },
         });
-        
+
         DeploymentStrategyRef::internal_new(resource_id)
     }
 }
@@ -347,7 +353,7 @@ pub struct EnvironmentBuilder {
     id: Id,
     name: String,
     application_id: Value,
-    deletion_protection_check: Option<String>
+    deletion_protection_check: Option<String>,
 }
 
 impl EnvironmentBuilder {
@@ -372,10 +378,10 @@ impl EnvironmentBuilder {
             ..self
         }
     }
-    
+
     pub fn build(self, stack_builder: &mut StackBuilder) -> EnvironmentRef {
         let resource_id = Resource::generate_id("Environment");
-        
+
         stack_builder.add_resource(Environment {
             id: self.id,
             resource_id: resource_id.clone(),
@@ -386,7 +392,7 @@ impl EnvironmentBuilder {
                 deletion_protection_check: self.deletion_protection_check,
             },
         });
-        
+
         EnvironmentRef::internal_new(resource_id)
     }
 }

@@ -1,12 +1,12 @@
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum BucketNotificationType {
     #[serde(rename = "Custom::S3BucketNotifications")]
-    BucketNotificationType
+    BucketNotificationType,
 }
 
 ref_struct!(BucketNotificationRef);

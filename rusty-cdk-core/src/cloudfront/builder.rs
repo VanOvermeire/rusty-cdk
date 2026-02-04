@@ -1,15 +1,21 @@
-use crate::cloudfront::{CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CachePolicyType, CookiesConfig, CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, DistributionType, HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlDtoType, OriginAccessControlRef, OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig, ViewerCertificate, VpcOriginConfig};
+use crate::cloudfront::{
+    CacheBehavior, CachePolicy, CachePolicyConfig, CachePolicyProperties, CachePolicyRef, CachePolicyType, CookiesConfig,
+    CustomOriginConfig, DefaultCacheBehavior, Distribution, DistributionConfig, DistributionProperties, DistributionRef, DistributionType,
+    HeadersConfig, Origin, OriginAccessControl, OriginAccessControlConfig, OriginAccessControlDtoType, OriginAccessControlRef,
+    OriginControlProperties, OriginCustomHeader, ParametersInCacheKeyAndForwardedToOrigin, QueryStringsConfig, S3OriginConfig,
+    ViewerCertificate, VpcOriginConfig,
+};
 use crate::iam::{Effect, PolicyDocumentBuilder, PrincipalBuilder, StatementBuilder};
-use crate::intrinsic::{get_att, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
+use crate::intrinsic::{AWS_ACCOUNT_PSEUDO_PARAM, get_att, get_ref, join};
 use crate::s3::BucketPolicyBuilder;
 use crate::s3::BucketRef;
 use crate::shared::HttpMethod::{Delete, Get, Head, Options, Patch, Post, Put};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};
-use serde_json::{json, Value};
-use std::marker::PhantomData;
 use crate::type_state;
+use crate::wrappers::{CfConnectionTimeout, ConnectionAttempts, DefaultRootObject, IamAction, OriginPath, S3OriginReadTimeout};
+use serde_json::{Value, json};
+use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 pub enum SslSupportedMethod {
@@ -412,12 +418,7 @@ impl From<IpAddressType> for String {
     }
 }
 
-type_state!(
-    OriginState,
-    OriginStartState,
-    OriginS3OriginState,
-    OriginCustomOriginState,
-);
+type_state!(OriginState, OriginStartState, OriginS3OriginState, OriginCustomOriginState,);
 
 // TODO more origins
 
@@ -491,7 +492,7 @@ impl OriginBuilder<OriginStartState> {
             custom_origin_config: None,
         }
     }
-    
+
     // TODO add test
     //  and could also add additional methods for ELB etc. that pass in the ELB, to have extra safety
 
@@ -569,7 +570,9 @@ impl<T: OriginState> OriginBuilder<T> {
 
 impl OriginBuilder<OriginCustomOriginState> {
     pub fn ip_address_type(self, address_type: IpAddressType) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
         config.ip_address_type = Some(address_type.into());
 
         OriginBuilder {
@@ -578,7 +581,9 @@ impl OriginBuilder<OriginCustomOriginState> {
         }
     }
     pub fn http_port(self, port: u16) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
         config.http_port = Some(port);
 
         OriginBuilder {
@@ -588,7 +593,9 @@ impl OriginBuilder<OriginCustomOriginState> {
     }
 
     pub fn https_port(self, port: u16) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
         config.https_port = Some(port);
 
         OriginBuilder {
@@ -598,7 +605,9 @@ impl OriginBuilder<OriginCustomOriginState> {
     }
 
     pub fn origin_keep_alive_timeout(self, timeout: u8) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
         config.origin_keep_alive_timeout = Some(timeout);
 
         OriginBuilder {
@@ -608,7 +617,9 @@ impl OriginBuilder<OriginCustomOriginState> {
     }
 
     pub fn origin_read_timeout(self, timeout: u8) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
         config.origin_read_timeout = Some(timeout);
 
         OriginBuilder {
@@ -618,7 +629,9 @@ impl OriginBuilder<OriginCustomOriginState> {
     }
 
     pub fn add_origin_ssl_protocol(self, protocol: String) -> Self {
-        let mut config = self.custom_origin_config.expect("custom config to be present in Custom Origin State");
+        let mut config = self
+            .custom_origin_config
+            .expect("custom config to be present in Custom Origin State");
 
         let protocols = if let Some(mut protocols) = config.origin_ssl_protocols {
             protocols.push(protocol);
@@ -786,11 +799,7 @@ impl DefaultCacheBehaviorBuilder {
     }
 }
 
-type_state!(
-    DistributionState,
-    DistributionStartState,
-    DistributionOriginState,
-);
+type_state!(DistributionState, DistributionStartState, DistributionOriginState,);
 
 #[derive(Debug, Clone)]
 pub enum SigningBehavior {

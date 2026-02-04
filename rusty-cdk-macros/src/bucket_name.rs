@@ -1,11 +1,11 @@
-use proc_macro::TokenStream;
-use std::collections::HashSet;
-use std::fs::read_to_string;
-use quote::quote;
-use serde::{Deserialize, Serialize};
-use syn::{Error, LitStr};
 use crate::bucket_name::FileStorageOutput::{Invalid, Unknown, Valid};
 use crate::file_util;
+use proc_macro::TokenStream;
+use quote::quote;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fs::read_to_string;
+use syn::{Error, LitStr};
 
 const BUCKET_NAMES_INFO_FILE: &str = ".rusty_cdk_bucket_name_info";
 
@@ -16,12 +16,15 @@ struct BucketNameInfo<'a> {
     #[serde(borrow)]
     valid_bucket_names: HashSet<&'a str>,
     #[serde(borrow)]
-    invalid_bucket_names: HashSet<&'a str>
+    invalid_bucket_names: HashSet<&'a str>,
 }
 
 impl BucketNameInfo<'_> {
     fn new() -> Self {
-        Self { valid_bucket_names: Default::default(), invalid_bucket_names: Default::default() }
+        Self {
+            valid_bucket_names: Default::default(),
+            invalid_bucket_names: Default::default(),
+        }
     }
 }
 
@@ -39,9 +42,7 @@ pub(crate) enum FileStorageOutput {
 pub(crate) fn valid_bucket_name_according_to_file_storage(value: &str) -> FileStorageOutput {
     let full_path = match file_util::get_file_path(BUCKET_NAMES_INFO_FILE) {
         Some(p) => p,
-        None => {
-            return Unknown
-        }
+        None => return Unknown,
     };
 
     if full_path.exists() {
@@ -49,7 +50,7 @@ pub(crate) fn valid_bucket_name_according_to_file_storage(value: &str) -> FileSt
             Ok(str) => str,
             Err(_) => {
                 write_empty_bucket_info();
-                return Unknown
+                return Unknown;
             }
         };
         match serde_json::from_str::<BucketNameInfo>(&file_as_string) {
@@ -58,14 +59,14 @@ pub(crate) fn valid_bucket_name_according_to_file_storage(value: &str) -> FileSt
                 let invalid_bucket_name = info.invalid_bucket_names.iter().find(|v| **v == value);
 
                 if valid_bucket_name.is_some() {
-                    return Valid
+                    return Valid;
                 } else if invalid_bucket_name.is_some() {
-                    return Invalid
+                    return Invalid;
                 }
             }
             Err(_) => {
                 write_empty_bucket_info();
-                return Unknown
+                return Unknown;
             }
         }
     }
@@ -81,11 +82,11 @@ pub(crate) fn update_file_storage(input: FileStorageInput) {
                 FileStorageInput::Valid(name) => {
                     info.valid_bucket_names.insert(name);
                     info.invalid_bucket_names.retain(|v| *v != name);
-                },
+                }
                 FileStorageInput::Invalid(name) => {
                     info.invalid_bucket_names.insert(name);
                     info.valid_bucket_names.retain(|v| *v != name);
-                },
+                }
             };
             file_util::write_info(BUCKET_NAMES_INFO_FILE, info);
         }
@@ -102,7 +103,7 @@ pub(crate) fn check_bucket_name(input: LitStr) -> Result<(), Error> {
 
     let url = format!("https://{}.s3.amazonaws.com/", name);
     let response = reqwest::blocking::get(&url);
-    
+
     if let Ok(response) = response {
         if response.status() == 404 {
             Ok(())
@@ -119,5 +120,6 @@ pub(crate) fn check_bucket_name(input: LitStr) -> Result<(), Error> {
 pub(crate) fn bucket_name_output(value: String) -> TokenStream {
     quote!(
         BucketName(#value.to_string())
-    ).into()
+    )
+    .into()
 }

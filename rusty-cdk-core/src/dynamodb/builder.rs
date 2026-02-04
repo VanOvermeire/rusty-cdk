@@ -2,9 +2,9 @@ use crate::dynamodb::{AttributeDefinition, KeySchema, Table, TableProperties, Ta
 use crate::dynamodb::{OnDemandThroughput, ProvisionedThroughput, TableRef};
 use crate::shared::{DeletionPolicy, Id, UpdateDeletePolicyDTO, UpdateReplacePolicy};
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
 use crate::wrappers::{NonZeroNumber, StringWithOnlyAlphaNumericsAndUnderscores};
 use std::marker::PhantomData;
-use crate::type_state;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BillingMode {
@@ -256,7 +256,10 @@ impl<T: TableBuilderState> TableBuilder<T> {
             resource_id: resource_id.clone(),
             r#type: TableType::TableType,
             properties,
-            update_delete_policy_dto: UpdateDeletePolicyDTO { deletion_policy: self.deletion_policy, update_replace_policy: self.update_replace_policy },
+            update_delete_policy_dto: UpdateDeletePolicyDTO {
+                deletion_policy: self.deletion_policy,
+                update_replace_policy: self.update_replace_policy,
+            },
         });
 
         TableRef::internal_new(resource_id)

@@ -1,25 +1,30 @@
 use crate::iam::{PolicyDocument, RoleRef};
 use crate::intrinsic::{get_arn, get_ref};
+use crate::kms::KeyRef;
 use crate::lambda::{FunctionRef, PermissionBuilder};
 use crate::shared::{Id, TOPIC_POLICY_ID_SUFFIX};
-use crate::sns::{LoggingConfig, SnsSubscriptionProperties, Subscription, SubscriptionDtoType, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef, TopicPolicyType, TopicProperties, TopicRef, TopicType};
+use crate::sns::{
+    LoggingConfig, SnsSubscriptionProperties, Subscription, SubscriptionDtoType, Topic, TopicPolicy, TopicPolicyProperties, TopicPolicyRef,
+    TopicPolicyType, TopicProperties, TopicRef, TopicType,
+};
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, SuccessFeedbackSampleRate, TopicDisplayName};
-use serde_json::{json, Value};
+use crate::wrappers::{
+    ArchivePolicy, LambdaPermissionAction, StringWithOnlyAlphaNumericsUnderscoresAndHyphens, SuccessFeedbackSampleRate, TopicDisplayName,
+};
+use serde_json::{Value, json};
 use std::marker::PhantomData;
-use crate::kms::KeyRef;
 
 const FIFO_SUFFIX: &str = ".fifo";
 
 #[derive(Debug, Clone)]
 pub enum FifoThroughputScope {
     Topic,
-    MessageGroup
+    MessageGroup,
 }
 
 pub enum SubscriptionType<'a> {
-    Lambda(&'a FunctionRef)
+    Lambda(&'a FunctionRef),
 }
 
 impl From<FifoThroughputScope> for String {
@@ -73,7 +78,7 @@ type_state!(
 /// // Create a simple topic without subscriptions
 /// let simple_topic = TopicBuilder::new("simple-topic")
 ///     .build(&mut stack_builder);
-/// 
+///
 /// let function = unimplemented!("create a function");
 ///
 /// // Create a topic with a Lambda subscription
@@ -164,7 +169,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             ..self
         }
     }
-    
+
     pub fn logging_config(self, logging_config: LoggingConfig) -> Self {
         Self {
             logging_config: Some(logging_config),
@@ -218,44 +223,53 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             ..self
         }
     }
-    
+
     fn add_subscription_internal(&mut self, subscription: SubscriptionType) {
         match subscription {
-            SubscriptionType::Lambda(l) => self.lambda_subscription_ids.push((l.get_id().clone(), l.get_resource_id().to_string()))
+            SubscriptionType::Lambda(l) => self
+                .lambda_subscription_ids
+                .push((l.get_id().clone(), l.get_resource_id().to_string())),
         };
     }
-    
+
     fn build_internal(self, fifo: bool, stack_builder: &mut StackBuilder) -> TopicRef {
         let topic_resource_id = Resource::generate_id("SnsTopic");
-        
-        self.lambda_subscription_ids.iter().for_each(|(to_subscribe_id, to_subscribe_resource_id)| {
-            let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
-            let subscription_resource_id = Resource::generate_id("SnsSubscription");
-            
-            PermissionBuilder::new(&Id::generate_id(&subscription_id, "Permission"), LambdaPermissionAction("lambda:InvokeFunction".to_string()), get_arn(to_subscribe_resource_id), "sns.amazonaws.com")
+
+        self.lambda_subscription_ids
+            .iter()
+            .for_each(|(to_subscribe_id, to_subscribe_resource_id)| {
+                let subscription_id = Id::combine_ids(&self.id, to_subscribe_id);
+                let subscription_resource_id = Resource::generate_id("SnsSubscription");
+
+                PermissionBuilder::new(
+                    &Id::generate_id(&subscription_id, "Permission"),
+                    LambdaPermissionAction("lambda:InvokeFunction".to_string()),
+                    get_arn(to_subscribe_resource_id),
+                    "sns.amazonaws.com",
+                )
                 .source_arn(get_ref(&topic_resource_id))
                 .build(stack_builder);
 
-            let subscription = Subscription {
-                id: subscription_id,
-                resource_id: subscription_resource_id,
-                r#type: SubscriptionDtoType::SubscriptionType,
-                properties: SnsSubscriptionProperties {
-                    protocol: "lambda".to_string(),
-                    endpoint: get_arn(to_subscribe_resource_id),
-                    topic_arn: get_ref(&topic_resource_id),
-                },
-            };
+                let subscription = Subscription {
+                    id: subscription_id,
+                    resource_id: subscription_resource_id,
+                    r#type: SubscriptionDtoType::SubscriptionType,
+                    properties: SnsSubscriptionProperties {
+                        protocol: "lambda".to_string(),
+                        endpoint: get_arn(to_subscribe_resource_id),
+                        topic_arn: get_ref(&topic_resource_id),
+                    },
+                };
 
-            stack_builder.add_resource(subscription);
-        });
+                stack_builder.add_resource(subscription);
+            });
 
         let archive_policy = if let Some(policy_retention_time) = self.archive_policy {
             Some(json!({ "MessageRetentionPeriod": policy_retention_time }))
         } else {
             None
         };
-        
+
         let properties = TopicProperties {
             topic_name: self.topic_name,
             fifo_topic: Some(fifo),
@@ -269,7 +283,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
         };
 
         let topic_ref = TopicRef::internal_new(self.id.clone(), topic_resource_id.to_string());
-        
+
         if let Some(mut policy) = self.topic_policy_doc {
             for statement in &mut policy.statements {
                 // point the statements of this policy to the queue
@@ -284,7 +298,7 @@ impl<T: TopicBuilderState> TopicBuilder<T> {
             r#type: TopicType::TopicType,
             properties,
         });
-        
+
         topic_ref
     }
 }
@@ -335,9 +349,10 @@ impl TopicBuilder<FifoState> {
     /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name
-            && !name.ends_with(FIFO_SUFFIX) {
-                self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
-            }
+            && !name.ends_with(FIFO_SUFFIX)
+        {
+            self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
+        }
         self.build_internal(true, stack_builder)
     }
 }
@@ -361,16 +376,17 @@ impl TopicBuilder<FifoStateWithSubscriptions> {
         self.add_subscription_internal(subscription);
         self
     }
-    
+
     /// Builds the FIFO topic with subscriptions and adds it to the stack.
     ///
     /// Automatically appends the required ".fifo" suffix to the topic name if not already present.
     /// Creates Lambda permissions for all subscriptions.
     pub fn build(mut self, stack_builder: &mut StackBuilder) -> TopicRef {
         if let Some(ref name) = self.topic_name
-            && !name.ends_with(FIFO_SUFFIX) {
-                self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
-            }
+            && !name.ends_with(FIFO_SUFFIX)
+        {
+            self.topic_name = Some(format!("{}{}", name, FIFO_SUFFIX));
+        }
         self.build_internal(true, stack_builder)
     }
 }
@@ -411,28 +427,28 @@ impl LoggingConfigBuilder {
             success_feedback_role: None,
         }
     }
-    
+
     pub fn success_feedback_role(self, role: &RoleRef) -> Self {
         Self {
             success_feedback_role: Some(role.get_arn()),
             ..self
         }
     }
-    
+
     pub fn failure_feedback_role(self, role: &RoleRef) -> Self {
         Self {
             failure_feedback_role: Some(role.get_arn()),
             ..self
         }
     }
-    
+
     pub fn success_feedback_sample_rate(self, success_feedback_sample_rate: SuccessFeedbackSampleRate) -> Self {
         Self {
             success_feedback_sample_rate: Some(success_feedback_sample_rate.0),
             ..self
         }
     }
-    
+
     pub fn build(self) -> LoggingConfig {
         LoggingConfig {
             failure_feedback_role_arn: self.failure_feedback_role,
@@ -446,7 +462,7 @@ impl LoggingConfigBuilder {
 pub(crate) struct TopicPolicyBuilder {
     id: Id,
     doc: PolicyDocument,
-    topics: Vec<Value>
+    topics: Vec<Value>,
 }
 
 impl TopicPolicyBuilder {
@@ -454,15 +470,11 @@ impl TopicPolicyBuilder {
     pub(crate) fn new(id: Id, doc: PolicyDocument, topics: Vec<&TopicRef>) -> Self {
         Self::new_with_values(id, doc, topics.into_iter().map(|v| v.get_ref()).collect())
     }
-    
+
     pub(crate) fn new_with_values(id: Id, doc: PolicyDocument, topics: Vec<Value>) -> Self {
-        Self {
-            id,
-            doc,
-            topics,
-        }
+        Self { id, doc, topics }
     }
-    
+
     pub(crate) fn build(self, stack_builder: &mut StackBuilder) -> TopicPolicyRef {
         let resource_id = Resource::generate_id("TopicPolicy");
         stack_builder.add_resource(TopicPolicy {
@@ -474,8 +486,7 @@ impl TopicPolicyBuilder {
                 topics: self.topics,
             },
         });
-        
+
         TopicPolicyRef::internal_new(self.id, resource_id)
     }
 }
-

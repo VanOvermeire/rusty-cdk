@@ -15,30 +15,30 @@ pub(crate) struct PermissionValidator {
 impl PermissionValidator {
     pub(crate) fn new() -> Self {
         Self {
-            services_with_permissions: create_permissions_map_for(IAM_PERMISSIONS_LIST)
+            services_with_permissions: create_permissions_map_for(IAM_PERMISSIONS_LIST),
         }
     }
 
     pub(crate) fn is_valid_action(&self, action: &str) -> ValidationResponse {
         if action.is_empty() {
-            return ValidationResponse::Invalid("action should not be blank".to_string())
+            return ValidationResponse::Invalid("action should not be blank".to_string());
         }
-        
+
         if action.chars().any(|c| c.is_whitespace()) {
-            return ValidationResponse::Invalid(format!("whitespaces (`{}`) are not allowed in an IAM action", action))
+            return ValidationResponse::Invalid(format!("whitespaces (`{}`) are not allowed in an IAM action", action));
         }
-        
+
         let mut service_and_permission: Vec<_> = action.split(':').collect();
         let permission = service_and_permission.pop();
         let service = service_and_permission.pop();
-        
+
         match (service, permission) {
             (Some(service), Some(permission)) => {
                 let valid_permissions = self.services_with_permissions.get(service);
-                
+
                 if let Some(valid_permissions) = valid_permissions {
                     if permission.contains("*") {
-                        self.handle_wildcards(service, permission, valid_permissions)   
+                        self.handle_wildcards(service, permission, valid_permissions)
                     } else if valid_permissions.contains(&permission) {
                         ValidationResponse::Valid
                     } else {
@@ -47,32 +47,41 @@ impl PermissionValidator {
                 } else {
                     ValidationResponse::Invalid(format!("unknown AWS service name `{}`", service))
                 }
-            },
-            _ => ValidationResponse::Invalid("expected a service and its permission separated by :".to_string())
+            }
+            _ => ValidationResponse::Invalid("expected a service and its permission separated by :".to_string()),
         }
     }
-    
+
     // Does not cover the (rare) case of wildcards in the middle of permissions.
-    // To handle that without writing too much code, I'd need to add regex. 
+    // To handle that without writing too much code, I'd need to add regex.
     // For now, accept that a user who adds a lot of wildcards knows what he or she's doing :)
     fn handle_wildcards(&self, service: &str, permission: &str, valid_permissions: &Vec<&str>) -> ValidationResponse {
         if permission == "*" {
             ValidationResponse::Valid
         } else {
             let permission_without_wildcard = permission.replace("*", "");
-            
+
             if permission.starts_with("*") && permission.ends_with("*") {
                 let part_of_valid_permission = valid_permissions.iter().any(|v| v.contains(&permission_without_wildcard));
-                
+
                 if part_of_valid_permission {
                     ValidationResponse::Valid
                 } else {
-                    ValidationResponse::Invalid(format!("no valid permission contains {} (for service: {})", permission_without_wildcard, service))
+                    ValidationResponse::Invalid(format!(
+                        "no valid permission contains {} (for service: {})",
+                        permission_without_wildcard, service
+                    ))
                 }
             } else if permission.starts_with("*") && !valid_permissions.iter().any(|v| v.ends_with(&permission_without_wildcard)) {
-                ValidationResponse::Invalid(format!("no valid permission ends with {} (for service: {})", permission_without_wildcard, service))
+                ValidationResponse::Invalid(format!(
+                    "no valid permission ends with {} (for service: {})",
+                    permission_without_wildcard, service
+                ))
             } else if permission.ends_with("*") && !valid_permissions.iter().any(|v| v.starts_with(&permission_without_wildcard)) {
-                ValidationResponse::Invalid(format!("no valid permission starts with {} (for service: {})", permission_without_wildcard, service))
+                ValidationResponse::Invalid(format!(
+                    "no valid permission starts with {} (for service: {})",
+                    permission_without_wildcard, service
+                ))
             } else {
                 ValidationResponse::Valid
             }
@@ -86,7 +95,8 @@ fn create_permissions_map_for(list: &'static str) -> HashMap<&'static str, Vec<&
         .filter(|m| !m.is_empty())
         .map(|m| {
             let mut service_and_permissions: Vec<_> = m.split(';').collect();
-            let permissions = service_and_permissions.pop()
+            let permissions = service_and_permissions
+                .pop()
                 .expect("required props to be the second element")
                 .split(',')
                 .collect();

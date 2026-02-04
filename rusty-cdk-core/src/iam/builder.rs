@@ -1,23 +1,22 @@
+use crate::appconfig::{ApplicationRef, ConfigurationProfileRef, EnvironmentRef};
 use crate::dynamodb::TableRef;
-use crate::iam::{AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, RoleType, ServicePrincipal, Statement};
-use crate::intrinsic::{get_arn, get_ref, join, AWS_ACCOUNT_PSEUDO_PARAM};
+use crate::iam::{
+    AWSPrincipal, AssumeRolePolicyDocument, IamRoleProperties, Policy, PolicyDocument, Principal, Role, RoleRef, RoleType,
+    ServicePrincipal, Statement,
+};
+use crate::intrinsic::{AWS_ACCOUNT_PSEUDO_PARAM, get_arn, get_ref, join};
 use crate::s3::BucketRef;
+use crate::secretsmanager::SecretRef;
 use crate::shared::Id;
 use crate::sqs::QueueRef;
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
 use crate::wrappers::{IamAction, PolicyName};
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::vec;
-use crate::appconfig::{ApplicationRef, ConfigurationProfileRef, EnvironmentRef};
-use crate::secretsmanager::SecretRef;
-use crate::type_state;
 
-type_state!(
-    PrincipalState,
-    StartState,
-    ChosenState,
-);
+type_state!(PrincipalState, StartState, ChosenState,);
 
 /// Builder for IAM principals (service, AWS, or custom).
 ///
@@ -40,7 +39,7 @@ pub struct PrincipalBuilder<T: PrincipalState> {
     phantom_data: PhantomData<T>,
     service: Option<String>,
     aws: Option<String>,
-    normal: Option<String>
+    normal: Option<String>,
 }
 
 impl Default for PrincipalBuilder<StartState> {
@@ -58,13 +57,13 @@ impl PrincipalBuilder<StartState> {
             normal: None,
         }
     }
-    
+
     pub fn service<T: Into<String>>(self, service: T) -> PrincipalBuilder<ChosenState> {
         PrincipalBuilder {
             phantom_data: Default::default(),
             service: Some(service.into()),
             aws: self.aws,
-            normal: self.normal
+            normal: self.normal,
         }
     }
 
@@ -73,7 +72,7 @@ impl PrincipalBuilder<StartState> {
             phantom_data: Default::default(),
             aws: Some(aws.into()),
             service: self.service,
-            normal: self.normal
+            normal: self.normal,
         }
     }
 
@@ -90,13 +89,9 @@ impl PrincipalBuilder<StartState> {
 impl PrincipalBuilder<ChosenState> {
     pub fn build(self) -> Principal {
         if let Some(aws) = self.aws {
-            Principal::AWS(AWSPrincipal {
-                aws,
-            })
+            Principal::AWS(AWSPrincipal { aws })
         } else if let Some(service) = self.service {
-            Principal::Service(ServicePrincipal {
-                service,
-            })
+            Principal::Service(ServicePrincipal { service })
         } else if let Some(normal) = self.normal {
             Principal::Custom(normal)
         } else {
@@ -137,7 +132,7 @@ pub struct RoleBuilder {
     id: Id,
     resource_id: Option<String>,
     properties: IamRoleProperties,
-    potentially_missing: Vec<String>
+    potentially_missing: Vec<String>,
 }
 
 impl RoleBuilder {
@@ -155,7 +150,12 @@ impl RoleBuilder {
         }
     }
 
-    pub(crate) fn new_with_info_on_missing(id: &str, resource_id: &str, properties: IamRoleProperties, potentially_missing: Vec<String>) -> RoleBuilder {
+    pub(crate) fn new_with_info_on_missing(
+        id: &str,
+        resource_id: &str,
+        properties: IamRoleProperties,
+        potentially_missing: Vec<String>,
+    ) -> RoleBuilder {
         Self {
             id: Id(id.to_string()),
             resource_id: Some(resource_id.to_string()),
@@ -163,10 +163,10 @@ impl RoleBuilder {
             potentially_missing,
         }
     }
-    
+
     pub fn build(self, stack_builder: &mut StackBuilder) -> RoleRef {
         let resource_id = self.resource_id.unwrap_or_else(|| Resource::generate_id("Role"));
-        
+
         stack_builder.add_resource(Role {
             id: self.id,
             resource_id: resource_id.clone(),
@@ -281,16 +281,14 @@ impl PolicyBuilder {
 /// let policy_doc = PolicyDocumentBuilder::new(vec![statement]).build();
 /// ```
 pub struct PolicyDocumentBuilder {
-    statements: Vec<Statement>
+    statements: Vec<Statement>,
 }
 
 impl PolicyDocumentBuilder {
     pub fn new(statements: Vec<Statement>) -> PolicyDocumentBuilder {
-        Self {
-            statements
-        }
+        Self { statements }
     }
-    
+
     pub fn build(self) -> PolicyDocument {
         PolicyDocument {
             version: "2012-10-17".to_string(),
@@ -300,16 +298,14 @@ impl PolicyDocumentBuilder {
 }
 
 pub struct AssumeRolePolicyDocumentBuilder {
-    statements: Vec<Statement>
+    statements: Vec<Statement>,
 }
 
 impl AssumeRolePolicyDocumentBuilder {
     pub fn new(statements: Vec<Statement>) -> Self {
-        Self {
-            statements,
-        }
+        Self { statements }
     }
-    
+
     pub fn build(self) -> AssumeRolePolicyDocument {
         AssumeRolePolicyDocument {
             version: "2012-10-17".to_string(),
@@ -360,7 +356,7 @@ pub struct StatementBuilder {
     effect: Effect,
     principal: Option<Principal>,
     resource: Option<Vec<Value>>,
-    condition: Option<Value>
+    condition: Option<Value>,
 }
 
 impl StatementBuilder {
@@ -384,7 +380,7 @@ impl StatementBuilder {
             ..self
         }
     }
-    
+
     pub fn condition(self, condition: Value) -> Self {
         Self {
             condition: Some(condition),
@@ -430,10 +426,7 @@ impl CustomPermission {
     /// * `id` - Unique name for the permission
     /// * `statement` - IAM policy statement defining the permission
     pub fn new(id: PolicyName, statement: Statement) -> Self {
-        Self {
-            id,
-            statement,
-        }
+        Self { id, statement }
     }
 }
 
@@ -556,13 +549,16 @@ impl Permission<'_> {
                         profile.get_ref(),
                     ],
                 );
-                
-                let statement = StatementBuilder::internal_new(vec![
-                    "appconfig:StartConfigurationSession".to_string(),
-                    "appconfig:GetLatestConfiguration".to_string(),
-                ], Effect::Allow)
-                    .resources(vec![resource])
-                    .build();
+
+                let statement = StatementBuilder::internal_new(
+                    vec![
+                        "appconfig:StartConfigurationSession".to_string(),
+                        "appconfig:GetLatestConfiguration".to_string(),
+                    ],
+                    Effect::Allow,
+                )
+                .resources(vec![resource])
+                .build();
                 let policy_document = PolicyDocumentBuilder::new(vec![statement]).build();
                 PolicyBuilder::new(PolicyName(format!("{}Read", id)), policy_document).build()
             }

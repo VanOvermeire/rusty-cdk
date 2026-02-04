@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods,ref_struct};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum DocumentDBType {
     #[serde(rename = "AWS::DocDB::DBCluster")]
-    DocumentDBType
+    DocumentDBType,
 }
 
 ref_struct!(DocumentDBRef);
@@ -55,9 +55,9 @@ pub struct DocumentDBProperties {
     #[serde(rename = "RestoreType", skip_serializing_if = "Option::is_none")]
     pub(crate) restore_type: Option<String>, // full-copy copy-on-write
     #[serde(rename = "RotateMasterUserPassword", skip_serializing_if = "Option::is_none")]
-    pub(crate) rotate_master_user_pass: Option<bool>, 
+    pub(crate) rotate_master_user_pass: Option<bool>,
     #[serde(rename = "ServerlessV2ScalingConfiguration", skip_serializing_if = "Option::is_none")]
-    pub(crate) serverless_scaling_config: Option<String>, 
+    pub(crate) serverless_scaling_config: Option<String>,
     #[serde(rename = "SnapshotIdentifier", skip_serializing_if = "Option::is_none")]
     pub(crate) snapshot_identifier: Option<String>, // should match id of exsiting snapshot...
     #[serde(rename = "SourceDBClusterIdentifier", skip_serializing_if = "Option::is_none")]
@@ -70,15 +70,15 @@ pub struct DocumentDBProperties {
     pub(crate) use_latest_restorable_time: Option<bool>,
     #[serde(rename = "VpcSecurityGroupIds", skip_serializing_if = "Option::is_none")]
     pub(crate) vpc_security_group_ids: Option<Vec<String>>, // need security groups...
-    
-    // PreferredBackupWindow -> UTC, hh24:mi-hh24:mi, != maintenance window, at least 30 min
-    // PreferredMaintenanceWindow -> UTC, ddd:hh24:mi-ddd:hh24:mi, 30m
-    // GlobalClusterIdentifier
-    // EngineVersion
-    // DBSubnetGroupName
-    // #[serde(rename = "AvailabilityZones", skip_serializing_if = "Option::is_none")]
-    // pub(crate) availability_zones: Option<Vec<String>>,
-    // EnableCloudwatchLogsExports
+
+                                                            // PreferredBackupWindow -> UTC, hh24:mi-hh24:mi, != maintenance window, at least 30 min
+                                                            // PreferredMaintenanceWindow -> UTC, ddd:hh24:mi-ddd:hh24:mi, 30m
+                                                            // GlobalClusterIdentifier
+                                                            // EngineVersion
+                                                            // DBSubnetGroupName
+                                                            // #[serde(rename = "AvailabilityZones", skip_serializing_if = "Option::is_none")]
+                                                            // pub(crate) availability_zones: Option<Vec<String>>,
+                                                            // EnableCloudwatchLogsExports
 }
 
 #[derive(Debug, Serialize, Deserialize)]

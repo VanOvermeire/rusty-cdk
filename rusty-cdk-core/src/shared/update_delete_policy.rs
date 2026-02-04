@@ -49,7 +49,7 @@ impl From<&String> for DeletionPolicy {
             "Snapshot" => DeletionPolicy::Snapshot,
             "Retain" => DeletionPolicy::Retain,
             "RetainExceptOnCreate" => DeletionPolicy::RetainExceptOnCreate,
-            _ => unreachable!("all deletion policy options to be covered")
+            _ => unreachable!("all deletion policy options to be covered"),
         }
     }
 }

@@ -6,10 +6,10 @@
 //! positive numbers are required, or invalid memory/timeout configurations.
 //!
 //! # Creating Wrappers
-//! 
+//!
 //! ** Recommended approach: ** Use the compile-time validated proc macros from the
 //! `rusty-cdk-macros` crate for type safety and validation at compile time.
-//! 
+//!
 //! ** Direct creation: ** While these wrappers can be created directly by calling
 //! their constructors, this bypasses compile-time validation and should only be
 //! used as an override.
@@ -105,7 +105,7 @@ pub struct StringForSecret(pub String);
 /// ```rust
 /// use rusty_cdk_core::wrappers::NonZeroNumber;
 /// use rusty_cdk_macros::non_zero_number;
-/// 
+///
 /// let capacity = non_zero_number!(10);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -123,7 +123,7 @@ pub struct NonZeroNumber(pub u32);
 /// ```rust
 /// use rusty_cdk_core::wrappers::Memory;
 /// use rusty_cdk_macros::memory;
-/// 
+///
 /// let mem = memory!(512);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -141,7 +141,7 @@ pub struct Memory(pub u16);
 /// ```rust
 /// use rusty_cdk_core::wrappers::Timeout;
 /// use rusty_cdk_macros::timeout;
-/// 
+///
 /// let timeout_val = timeout!(30);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -160,7 +160,7 @@ pub struct Timeout(pub u16);
 /// ```rust
 /// use rusty_cdk_core::wrappers::EnvVarKey;
 /// use rusty_cdk_macros::env_var_key;
-/// 
+///
 /// let db_url = env_var_key!("DATABASE_URL");
 /// ```
 #[derive(Debug, Clone)]
@@ -183,7 +183,7 @@ pub struct EnvVarKey(pub String);
 /// ```rust,compile_fail
 /// use rusty_cdk_core::wrappers::ZipFile;
 /// use rusty_cdk_macros::zip_file;
-/// 
+///
 /// let lambda_code = zip_file!("./target/lambda/function.zip");
 /// ```
 #[derive(Debug, Clone)]
@@ -201,7 +201,7 @@ pub struct ZipFile(pub String);
 /// ```rust
 /// use rusty_cdk_core::wrappers::DelaySeconds;
 /// use rusty_cdk_macros::delay_seconds;
-/// 
+///
 /// let delay = delay_seconds!(300);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -219,7 +219,7 @@ pub struct DelaySeconds(pub u16);
 /// ```rust
 /// use rusty_cdk_core::wrappers::MaximumMessageSize;
 /// use rusty_cdk_macros::maximum_message_size;
-/// 
+///
 /// let max_size = maximum_message_size!(262144); // 256 KiB
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -237,7 +237,7 @@ pub struct MaximumMessageSize(pub u32);
 /// ```rust
 /// use rusty_cdk_core::wrappers::MessageRetentionPeriod;
 /// use rusty_cdk_macros::message_retention_period;
-/// 
+///
 /// let retention = message_retention_period!(345600); // 4 days
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -256,7 +256,7 @@ pub struct MessageRetentionPeriod(pub u32);
 /// ```rust
 /// use rusty_cdk_core::wrappers::VisibilityTimeout;
 /// use rusty_cdk_macros::visibility_timeout;
-/// 
+///
 /// let timeout = visibility_timeout!(30);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -275,7 +275,7 @@ pub struct VisibilityTimeout(pub u32);
 /// ```rust
 /// use rusty_cdk_core::wrappers::ReceiveMessageWaitTime;
 /// use rusty_cdk_macros::receive_message_wait_time;
-/// 
+///
 /// let wait_time = receive_message_wait_time!(10);
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -312,7 +312,7 @@ pub struct SqsEventSourceMaxConcurrency(pub u16);
 /// Use the `bucket!` macro from `rusty-cdk-macros` for compile-time validation
 ///
 /// # Note
-/// The `bucket!` macro queries AWS at compile time to verify the bucket exists and caches the result for faster subsequent compilations. 
+/// The `bucket!` macro queries AWS at compile time to verify the bucket exists and caches the result for faster subsequent compilations.
 /// Set `RUSTY_CDK_NO_REMOTE=true` env var to skip remote checks.
 #[derive(Debug, Clone)]
 pub struct Bucket(pub String);
@@ -367,7 +367,7 @@ pub struct LogGroupName(pub String);
 ///
 /// # Note
 /// The `bucket_name!` macro queries AWS at compile time to verify the bucket name is globally
-/// available and caches the result for faster subsequent compilations. 
+/// available and caches the result for faster subsequent compilations.
 /// Set `RUSTY_CDK_NO_REMOTE=true` to skip remote checks.
 #[derive(Debug, Clone)]
 pub struct BucketName(pub String);
@@ -427,7 +427,7 @@ pub struct S3LifecycleObjectSizes(pub Option<u32>, pub Option<u32>);
 /// A wrapper for TOML configuration file paths.
 ///
 /// This wrapper ensures type safety when specifying paths to TOML configuration files used in infrastructure definitions.
-/// 
+///
 /// # Recommended Usage
 /// Use the `toml_file!` macro from `rusty-cdk-macros` for compile-time validation:
 #[derive(Debug, Clone)]
@@ -491,7 +491,7 @@ pub struct OriginPath(pub String);
 ///
 /// This wrapper specifies the object that CloudFront returns when a viewer requests
 /// the root URL of your distribution (e.g., http://example.com/ instead of http://example.com/index.html).
-/// 
+///
 /// # Recommended Usage
 /// Use the `default_root_object!` macro from `rusty-cdk-macros` for compile-time validation:
 ///
@@ -787,7 +787,7 @@ pub struct ScheduleName(pub String);
 pub struct PolicyName(pub String);
 
 /// DisplayName of an SNS topic
-/// 
+///
 /// # Recommended Usage
 /// Use the `topic_display_name!` macro from `rusty-cdk-macros` for compile-time validation:
 ///
@@ -801,7 +801,7 @@ pub struct PolicyName(pub String);
 pub struct TopicDisplayName(pub String);
 
 /// Archive policy of an SNS topic
-/// 
+///
 /// # Recommended Usage
 /// Use the `archive_policy!` macro from `rusty-cdk-macros` for compile-time validation:
 ///

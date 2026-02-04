@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use crate::{dto_methods, ref_struct_with_id_methods};
 use crate::iam::PolicyDocument;
 use crate::shared::Id;
+use crate::{dto_methods, ref_struct_with_id_methods};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum TopicType {
     #[serde(rename = "AWS::SNS::Topic")]
-    TopicType
+    TopicType,
 }
 
 ref_struct_with_id_methods!(TopicRef);
@@ -65,7 +65,7 @@ pub struct LoggingConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum TopicPolicyType {
     #[serde(rename = "AWS::SNS::TopicPolicy")]
-    TopicPolicyType
+    TopicPolicyType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -92,7 +92,7 @@ pub struct TopicPolicyProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum SubscriptionDtoType {
     #[serde(rename = "AWS::SNS::Subscription")]
-    SubscriptionType
+    SubscriptionType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -115,5 +115,5 @@ pub struct SnsSubscriptionProperties {
     #[serde(rename = "Protocol")]
     pub(super) protocol: String,
     #[serde(rename = "TopicArn")]
-    pub(super) topic_arn: Value
+    pub(super) topic_arn: Value,
 }

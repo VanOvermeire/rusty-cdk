@@ -6,7 +6,7 @@ pub enum HttpMethod {
     Patch,
     Post,
     Put,
-    Delete
+    Delete,
 }
 
 impl From<HttpMethod> for String {
@@ -19,7 +19,7 @@ impl From<HttpMethod> for String {
             HttpMethod::Patch => "PATCH".to_string(),
             HttpMethod::Post => "POST".to_string(),
             HttpMethod::Put => "PUT".to_string(),
-            HttpMethod::Delete => "DELETE".to_string()
+            HttpMethod::Delete => "DELETE".to_string(),
         }
     }
 }

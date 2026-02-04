@@ -5,15 +5,13 @@ use aws_sdk_cloudformation::types::StackStatus;
 
 pub(crate) async fn load_config(with_stall_protection: bool) -> SdkConfig {
     let mut config = aws_config::defaults(aws_config::BehaviorVersion::latest());
-    
+
     if with_stall_protection {
         // https://github.com/awslabs/aws-sdk-rust/issues/1146
         config = config.stalled_stream_protection(StalledStreamProtectionConfig::disabled());
     }
 
-    config
-        .load()
-        .await
+    config.load().await
 }
 
 pub(crate) async fn get_existing_template(client: &Client, stack_name: &str) -> Option<String> {

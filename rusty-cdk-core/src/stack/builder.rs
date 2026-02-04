@@ -1,9 +1,9 @@
 use serde_json::Value;
 
+use crate::shared::Id;
 use crate::stack::{Output, Resource, Stack};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use crate::shared::Id;
 
 #[derive(Debug)]
 pub enum StackBuilderError {
@@ -99,15 +99,14 @@ impl StackBuilder {
         self.tags.push((key.into(), value.into()));
         self
     }
-    
+
     pub fn add_output<T: Into<String>>(mut self, name: T, value: Value) -> Self {
         self.outputs.push((name.into(), value));
         self
     }
-    
+
     pub(crate) fn get_resource(&mut self, id: &Id) -> Option<&mut Resource> {
-        self.resources.iter_mut()
-            .find(|v| &v.get_id() == id)
+        self.resources.iter_mut().find(|v| &v.get_id() == id)
     }
 
     /// Builds the stack and validates all resources.
@@ -116,25 +115,22 @@ impl StackBuilder {
     /// - there are duplicate ids
     /// - IAM roles are missing permissions for AWS services they need to access (only when Cargo.toml dependencies were passed in)
     pub fn build(self) -> Result<Stack, StackBuilderError> {
-        let (ids, resource_ids) = self.resources
+        let (ids, resource_ids) = self
+            .resources
             .iter()
             .map(|r| (r.get_id().to_string(), r.get_resource_id().to_string()))
             .collect::<(Vec<_>, Vec<_>)>();
-        
+
         let duplicate_ids = Self::check_for_duplicate_ids(ids);
         let resource_ids = Self::check_for_duplicate_ids(resource_ids);
-        
+
         if !duplicate_ids.is_empty() {
-            return Err(StackBuilderError::DuplicateIds(
-                duplicate_ids,
-            ));
+            return Err(StackBuilderError::DuplicateIds(duplicate_ids));
         }
         if !resource_ids.is_empty() {
-            return Err(StackBuilderError::DuplicateResourceIds(
-                resource_ids,
-            ));
+            return Err(StackBuilderError::DuplicateResourceIds(resource_ids));
         }
-        
+
         let roles_with_potentially_missing_services: Vec<_> = self.check_for_roles_with_missing_permissions();
 
         if !roles_with_potentially_missing_services.is_empty() {
@@ -142,14 +138,11 @@ impl StackBuilder {
                 roles_with_potentially_missing_services,
             ));
         }
-        
+
         let outputs = if self.outputs.is_empty() {
             None
         } else {
-            Some(self.outputs
-                .into_iter()
-                .map(|(k, v)| (k, Output { value: v }))
-                .collect())
+            Some(self.outputs.into_iter().map(|(k, v)| (k, Output { value: v })).collect())
         };
 
         let metadata = self
@@ -202,8 +195,16 @@ mod tests {
 
     #[test]
     fn test_check_for_duplicate_ids() {
-        let duplicates = StackBuilder::check_for_duplicate_ids(vec!["bucket".to_string(), "bucket".to_string(), "topic".to_string(), "queue".to_string(), "bucket".to_string(), "table".to_string(), "topic".to_string()]);
-        
+        let duplicates = StackBuilder::check_for_duplicate_ids(vec![
+            "bucket".to_string(),
+            "bucket".to_string(),
+            "topic".to_string(),
+            "queue".to_string(),
+            "bucket".to_string(),
+            "table".to_string(),
+            "topic".to_string(),
+        ]);
+
         assert_eq!(duplicates, vec!["bucket", "topic"])
     }
 }

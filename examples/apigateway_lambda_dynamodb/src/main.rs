@@ -1,4 +1,3 @@
-use std::process::exit;
 use rusty_cdk::apigateway::ApiGatewayV2Builder;
 use rusty_cdk::dynamodb::{AttributeType, Key, TableBuilder};
 use rusty_cdk::iam::Permission;
@@ -6,7 +5,10 @@ use rusty_cdk::lambda::{Architecture, Code, FunctionBuilder, Runtime, Zip};
 use rusty_cdk::shared::HttpMethod;
 use rusty_cdk::stack::StackBuilder;
 use rusty_cdk::wrappers::*;
-use rusty_cdk::{bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_underscores, timeout, toml_file, zip_file};
+use rusty_cdk::{
+    bucket, env_var_key, memory, non_zero_number, string_with_only_alphanumerics_and_underscores, timeout, toml_file, zip_file,
+};
+use std::process::exit;
 
 #[tokio::main]
 async fn main() {
@@ -36,16 +38,14 @@ async fn main() {
         .env_var(env_var_key!("TABLE_NAME"), table.get_ref())
         .check_permissions_against_dependencies(toml_file!("./examples/apigateway_lambda_dynamodb/files/Cargo.toml"))
         .build(&mut stack_builder);
- 
+
     ApiGatewayV2Builder::new("myAGW", "exampleGW")
         .http()
         .disable_execute_api_endpoint(true)
         .add_route_lambda("/books", HttpMethod::Get, &fun)
         .build(&mut stack_builder);
 
-    let stack = stack_builder
-        .add_tag("OWNER", "me")
-        .build();
+    let stack = stack_builder.add_tag("OWNER", "me").build();
 
     if let Err(s) = stack {
         eprintln!("Error: {s}");

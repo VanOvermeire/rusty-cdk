@@ -33,7 +33,6 @@ impl StringRequirements {
             ..self
         }
     }
-
 }
 
 pub(crate) fn validate_string(value: &str, requirements: StringRequirements) -> Result<(), String> {
@@ -41,16 +40,27 @@ pub(crate) fn validate_string(value: &str, requirements: StringRequirements) -> 
         return Err(format!("min allowed length is {} (was {})", requirements.min_length, value.len()));
     }
 
-    if let Some(max) = requirements.max_length && value.len() > max {
+    if let Some(max) = requirements.max_length
+        && value.len() > max
+    {
         return Err(format!("max allowed length is {} (was {})", max, value.len()));
     }
-    
-    if let Some(prefix) = requirements.prefix && !value.starts_with(&prefix) {
+
+    if let Some(prefix) = requirements.prefix
+        && !value.starts_with(&prefix)
+    {
         return Err(format!("value `{}` does not contain required prefix `{}`", value, prefix));
     }
-    
-    if requirements.check_chars && value.chars().any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c)) {
-        return Err(format!("value should only contain alphanumeric characters and {:?}", requirements.allowed_chars));
+
+    if requirements.check_chars
+        && value
+            .chars()
+            .any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c))
+    {
+        return Err(format!(
+            "value should only contain alphanumeric characters and {:?}",
+            requirements.allowed_chars
+        ));
     }
 
     Ok(())
@@ -58,23 +68,23 @@ pub(crate) fn validate_string(value: &str, requirements: StringRequirements) -> 
 
 #[cfg(test)]
 mod tests {
-    use crate::strings::{validate_string, StringRequirements};
+    use crate::strings::{StringRequirements, validate_string};
 
     #[test]
     fn should_return_empty_when_string_contains_prefix() {
         let requirements = StringRequirements::not_empty_prefix("some-prefix");
-    
+
         let output = validate_string("some-prefix-and-more-text", requirements);
-    
+
         assert!(output.is_ok());
     }
 
     #[test]
     fn should_return_error_when_string_does_not_contain_prefix() {
-    let requirements = StringRequirements::not_empty_prefix("some-prefix");
-    
+        let requirements = StringRequirements::not_empty_prefix("some-prefix");
+
         let output = validate_string("just-text", requirements);
-    
+
         assert!(output.is_err());
     }
 
@@ -95,11 +105,11 @@ mod tests {
 
         assert!(output.is_ok());
     }
-    
+
     #[test]
     fn should_return_error_when_string_contains_invalid_char() {
         let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['_']);
-        
+
         let output = validate_string("invalid-hyphen", requirements);
 
         assert!(output.is_err());

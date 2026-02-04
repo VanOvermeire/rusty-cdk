@@ -7,7 +7,7 @@ macro_rules! dto_methods {
             pub fn get_id(&self) -> &Id {
                 &self.id
             }
-        
+
             #[allow(dead_code)]
             pub fn get_resource_id(&self) -> &str {
                 self.resource_id.as_str()
@@ -23,7 +23,7 @@ macro_rules! internal_ref_struct_methods {
         pub(crate) fn get_resource_id(&self) -> &str {
             self.resource_id.as_str()
         }
-    
+
         #[allow(dead_code)]
         pub fn get_ref(&self) -> Value {
             if let Some(val) = &self.ref_name {
@@ -32,16 +32,16 @@ macro_rules! internal_ref_struct_methods {
                 $crate::intrinsic::get_ref(self.get_resource_id())
             }
         }
-        
+
         #[allow(dead_code)]
         pub fn get_arn(&self) -> Value {
             if let Some(val) = &self.arn_value {
                 Value::String(val.to_string())
             } else {
-                $crate::intrinsic::get_arn(self.get_resource_id())    
+                $crate::intrinsic::get_arn(self.get_resource_id())
             }
         }
-        
+
         #[allow(dead_code)]
         pub fn get_att(&self, id: &str) -> Value {
             if self.ref_name.is_some() && self.arn_value.is_some() {
@@ -58,13 +58,13 @@ macro_rules! internal_ref_struct_methods {
 #[macro_export]
 macro_rules! ref_struct {
     ($name:ident) => {
-        #[derive(Debug,Clone)]
+        #[derive(Debug, Clone)]
         pub struct $name {
             resource_id: String,
             ref_name: Option<String>,
             arn_value: Option<String>,
         }
-        
+
         impl $name {
             #[allow(dead_code)]
             pub(crate) fn internal_new(resource_id: String) -> Self {
@@ -74,7 +74,7 @@ macro_rules! ref_struct {
                     arn_value: None,
                 }
             }
-            
+
             #[allow(dead_code)]
             pub fn new(resource_id: &str, ref_name: &str, arn_value: &str) -> Self {
                 Self {
@@ -83,7 +83,7 @@ macro_rules! ref_struct {
                     arn_value: Some(arn_value.to_string()),
                 }
             }
-            
+
             $crate::internal_ref_struct_methods!();
         }
     };
@@ -91,7 +91,7 @@ macro_rules! ref_struct {
 
 /// Generated a ref struct, which is used to reference a given resource when you need it as a dependency of some other resource.
 /// To allow the other resources to depend on this one, the ref struct has methods for retrieving the Ref, ARN, and other attributes.
-/// 
+///
 /// This macro also generates a method to retrieve the `id` field of the original resource, which is sometimes needed when generating custom ids based on a pre-existing id.
 /// For example, SNS subscriptions have Lambdas as a subscription destination. SNS generates an additional resource for the subscription, with an id based on the Lambda id.
 #[macro_export]
@@ -103,7 +103,7 @@ macro_rules! ref_struct_with_id_methods {
             ref_name: Option<String>,
             arn_value: Option<String>,
         }
-        
+
         impl $name {
             #[allow(dead_code)]
             pub(crate) fn internal_new(id: Id, resource_id: String) -> Self {
@@ -114,7 +114,7 @@ macro_rules! ref_struct_with_id_methods {
                     arn_value: None,
                 }
             }
-            
+
             #[allow(dead_code)]
             pub fn new(id: &str, resource_id: &str, ref_name: &str, arn_value: &str) -> Self {
                 Self {
@@ -129,7 +129,7 @@ macro_rules! ref_struct_with_id_methods {
             pub(crate) fn get_id(&self) -> &Id {
                 &self.id
             }
-        
+
             $crate::internal_ref_struct_methods!();
         }
     };

@@ -1,11 +1,11 @@
-use proc_macro::TokenStream;
-use std::collections::HashSet;
-use std::fs::{read_to_string};
-use quote::quote;
-use syn::{Error, LitStr};
-use serde::{Deserialize, Serialize};
 use crate::bucket::FileStorageOutput::{Invalid, Unknown, Valid};
 use crate::file_util;
+use proc_macro::TokenStream;
+use quote::quote;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fs::read_to_string;
+use syn::{Error, LitStr};
 
 const BUCKET_INFO_FILE: &str = ".rusty_cdk_bucket_info";
 
@@ -14,12 +14,15 @@ struct BucketInfo<'a> {
     #[serde(borrow)]
     real_bucket_names: HashSet<&'a str>,
     #[serde(borrow)]
-    unknown_bucket_names: HashSet<&'a str>
+    unknown_bucket_names: HashSet<&'a str>,
 }
 
 impl BucketInfo<'_> {
     fn new() -> Self {
-        Self { real_bucket_names: HashSet::new(), unknown_bucket_names: HashSet::new() }
+        Self {
+            real_bucket_names: HashSet::new(),
+            unknown_bucket_names: HashSet::new(),
+        }
     }
 }
 
@@ -37,9 +40,7 @@ pub(crate) enum FileStorageOutput {
 pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorageOutput {
     let full_path = match file_util::get_file_path(BUCKET_INFO_FILE) {
         Some(p) => p,
-        None => {
-            return Unknown
-        }
+        None => return Unknown,
     };
 
     if full_path.exists() {
@@ -47,7 +48,7 @@ pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorage
             Ok(str) => str,
             Err(_) => {
                 write_empty_bucket_info();
-                return Unknown
+                return Unknown;
             }
         };
         match serde_json::from_str::<BucketInfo>(&file_as_string) {
@@ -56,14 +57,14 @@ pub(crate) fn valid_bucket_according_to_file_storage(value: &str) -> FileStorage
                 let invalid_bucket_name = info.unknown_bucket_names.iter().find(|v| **v == value);
 
                 if valid_bucket_name.is_some() {
-                    return Valid
+                    return Valid;
                 } else if invalid_bucket_name.is_some() {
-                    return Invalid
+                    return Invalid;
                 }
             }
             Err(_) => {
                 write_empty_bucket_info();
-                return Unknown
+                return Unknown;
             }
         }
     }
@@ -79,11 +80,11 @@ pub(crate) fn update_file_storage(input: FileStorageInput) {
                 FileStorageInput::Valid(name) => {
                     info.real_bucket_names.insert(name);
                     info.unknown_bucket_names.retain(|v| *v != name);
-                },
+                }
                 FileStorageInput::Invalid(name) => {
                     info.unknown_bucket_names.insert(name);
                     info.real_bucket_names.retain(|v| *v != name);
-                },
+                }
             };
             file_util::write_info(BUCKET_INFO_FILE, info);
         }
@@ -100,9 +101,7 @@ pub(crate) async fn find_bucket(input: LitStr) -> Result<(), Error> {
     let config = aws_config::load_from_env().await;
     let s3_client = aws_sdk_s3::Client::new(&config);
 
-    let results = s3_client.list_buckets()
-        .send()
-        .await;
+    let results = s3_client.list_buckets().send().await;
 
     match results {
         Ok(result) => {
@@ -110,15 +109,16 @@ pub(crate) async fn find_bucket(input: LitStr) -> Result<(), Error> {
                 let bucket = buckets.into_iter().find(|b| b.name.iter().any(|n| n.as_str() == name));
 
                 if bucket.is_none() {
-                    return Err(Error::new(input.span(), format!("did not find bucket with name {} in your account", name)))
+                    return Err(Error::new(
+                        input.span(),
+                        format!("did not find bucket with name {} in your account", name),
+                    ));
                 }
             } else {
-                return Err(Error::new(input.span(), "no buckets found".to_string()))
+                return Err(Error::new(input.span(), "no buckets found".to_string()));
             }
         }
-        Err(e) => {
-            return Err(Error::new(input.span(), format!("could not retrieve buckets: {e:#?}")))
-        }
+        Err(e) => return Err(Error::new(input.span(), format!("could not retrieve buckets: {e:#?}"))),
     }
 
     Ok(())
@@ -127,5 +127,6 @@ pub(crate) async fn find_bucket(input: LitStr) -> Result<(), Error> {
 pub(crate) fn bucket_output(value: String) -> TokenStream {
     quote!(
         Bucket(#value.to_string())
-    ).into()
+    )
+    .into()
 }

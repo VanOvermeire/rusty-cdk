@@ -1,14 +1,14 @@
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 ref_struct!(ApiGatewayV2ApiRef);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ApiGatewayV2ApiType {
     #[serde(rename = "AWS::ApiGatewayV2::Api")]
-    ApiGatewayV2ApiType
+    ApiGatewayV2ApiType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,7 +38,6 @@ pub struct ApiGatewayV2ApiProperties {
     pub(super) cors_configuration: Option<CorsConfiguration>,
     #[serde(rename = "RouteSelectionExpression", skip_serializing_if = "Option::is_none")]
     pub(super) route_selection_expression: Option<String>,
-
     // #[serde(rename = "ApiKeySelectionExpression", skip_serializing_if = "Option::is_none")]
     // pub(super) api_key_selection_expression: String // $request.header.x-api-key OR $context.authorizer.usageIdentifierKey
 }
@@ -64,7 +63,7 @@ ref_struct!(ApiGatewayV2StageRef);
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ApiGatewayV2StageType {
     #[serde(rename = "AWS::ApiGatewayV2::Stage")]
-    ApiGatewayV2StageType
+    ApiGatewayV2StageType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -105,7 +104,7 @@ pub struct RouteSettings {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ApiGatewayV2IntegrationType {
     #[serde(rename = "AWS::ApiGatewayV2::Integration")]
-    ApiGatewayV2IntegrationType
+    ApiGatewayV2IntegrationType,
 }
 
 ref_struct!(ApiGatewayV2IntegrationRef);
@@ -147,7 +146,6 @@ pub struct ApiGatewayV2IntegrationProperties {
     pub(super) response_parameters: Option<Value>,
     #[serde(rename = "TimeoutInMillis", skip_serializing_if = "Option::is_none")]
     pub(super) timeout_in_millis: Option<u32>,
-
     // #[serde(rename = "IntegrationSubtype", skip_serializing_if = "Option::is_none")]
     // pub(super) integration_subtype: Option<String>, // only for http api aws proxy
 }
@@ -155,7 +153,7 @@ pub struct ApiGatewayV2IntegrationProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ApiGatewayV2RouteType {
     #[serde(rename = "AWS::ApiGatewayV2::Route")]
-    ApiGatewayV2RouteType
+    ApiGatewayV2RouteType,
 }
 
 ref_struct!(ApiGatewayV2RouteRef);
@@ -181,10 +179,8 @@ pub struct ApiGatewayV2RouteProperties {
     pub(super) route_key: String,
     #[serde(rename = "Target", skip_serializing_if = "Option::is_none")]
     pub(super) target: Option<Value>,
-
     // #[serde(rename = "ApiKeyRequired", skip_serializing_if = "Option::is_none")]
     // pub(super) api_key_required: Option<bool>, // only for websocket
     // #[serde(rename = "OperationName", skip_serializing_if = "Option::is_none")]
     // pub(super) operation_name: Option<String>,
 }
-

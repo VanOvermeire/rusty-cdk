@@ -1,10 +1,13 @@
 use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
 use crate::iam::{
-    find_missing_services, map_toml_dependencies_to_services, AssumeRolePolicyDocumentBuilder, Effect, Permission as IamPermission, Policy, PrincipalBuilder,
-    RoleBuilder, RolePropertiesBuilder, RoleRef, StatementBuilder,
+    AssumeRolePolicyDocumentBuilder, Effect, Permission as IamPermission, Policy, PrincipalBuilder, RoleBuilder, RolePropertiesBuilder,
+    RoleRef, StatementBuilder, find_missing_services, map_toml_dependencies_to_services,
 };
-use crate::intrinsic::{get_arn, get_ref, join, AWS_PARTITION_PSEUDO_PARAM};
-use crate::lambda::{Environment, EventSourceMapping, EventSourceMappingType, EventSourceProperties, Function, FunctionRef, FunctionType, LambdaCode, LambdaFunctionProperties, LambdaPermissionProperties, LoggingInfo, Permission, PermissionRef, PermissionType, ScalingConfig};
+use crate::intrinsic::{AWS_PARTITION_PSEUDO_PARAM, get_arn, get_ref, join};
+use crate::lambda::{
+    Environment, EventSourceMapping, EventSourceMappingType, EventSourceProperties, Function, FunctionRef, FunctionType, LambdaCode,
+    LambdaFunctionProperties, LambdaPermissionProperties, LoggingInfo, Permission, PermissionRef, PermissionType, ScalingConfig,
+};
 use crate::shared::Id;
 use crate::sqs::QueueRef;
 use crate::stack::{Asset, Resource, StackBuilder};

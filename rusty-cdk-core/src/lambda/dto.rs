@@ -1,6 +1,6 @@
-use crate::{dto_methods, ref_struct, ref_struct_with_id_methods};
 use crate::shared::Id;
 use crate::stack::Asset;
+use crate::{dto_methods, ref_struct, ref_struct_with_id_methods};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum FunctionType {
     #[serde(rename = "AWS::Lambda::Function")]
-    FunctionType
+    FunctionType,
 }
 
 ref_struct_with_id_methods!(FunctionRef);
@@ -51,7 +51,7 @@ pub struct LambdaFunctionProperties {
     #[serde(rename = "ReservedConcurrentExecutions", skip_serializing_if = "Option::is_none")]
     pub(super) reserved_concurrent_executions: Option<u32>,
     #[serde(rename = "LoggingConfig")]
-    pub(super) logging_info: LoggingInfo, 
+    pub(super) logging_info: LoggingInfo,
     // package_type: Option<String>,
     // "VpcConfig": VpcConfig
 }
@@ -87,7 +87,7 @@ pub struct LoggingInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum EventSourceMappingType {
     #[serde(rename = "AWS::Lambda::EventSourceMapping")]
-    EventSourceMappingType
+    EventSourceMappingType,
 }
 
 ref_struct!(EventSourceMappingRef);
@@ -124,7 +124,7 @@ pub struct ScalingConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum PermissionType {
     #[serde(rename = "AWS::Lambda::Permission")]
-    PermissionType
+    PermissionType,
 }
 
 ref_struct_with_id_methods!(PermissionRef);

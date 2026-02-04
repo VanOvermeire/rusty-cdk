@@ -1,12 +1,12 @@
+use crate::shared::Id;
+use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::{dto_methods, ref_struct};
-use crate::shared::Id;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum LogGroupType {
     #[serde(rename = "AWS::Logs::LogGroup")]
-    LogGroupType
+    LogGroupType,
 }
 
 ref_struct!(LogGroupRef);
@@ -37,7 +37,7 @@ pub struct LogGroupProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum AlarmType {
     #[serde(rename = "AWS::CloudWatch::Alarm")]
-    AlarmType
+    AlarmType,
 }
 
 ref_struct!(AlarmRef);
@@ -148,4 +148,3 @@ pub struct Metric {
     #[serde(rename = "Namespace")]
     pub(super) namespace: String,
 }
-

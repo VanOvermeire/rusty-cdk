@@ -7,7 +7,7 @@ use serde_json::Value;
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum BucketPolicyType {
     #[serde(rename = "AWS::S3::BucketPolicy")]
-    BucketPolicyType
+    BucketPolicyType,
 }
 
 ref_struct!(BucketPolicyRef);
@@ -36,7 +36,7 @@ pub struct S3BucketPolicyProperties {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum BucketType {
     #[serde(rename = "AWS::S3::Bucket")]
-    BucketType
+    BucketType,
 }
 
 ref_struct!(BucketRef);
@@ -52,7 +52,7 @@ pub struct Bucket {
     #[serde(rename = "Properties")]
     pub(super) properties: BucketProperties,
     #[serde(flatten)]
-    pub(crate) update_delete_policy_dto: UpdateDeletePolicyDTO
+    pub(crate) update_delete_policy_dto: UpdateDeletePolicyDTO,
 }
 dto_methods!(Bucket);
 
@@ -273,7 +273,7 @@ pub struct LifecycleRule {
     #[serde(rename = "Transitions", skip_serializing_if = "Option::is_none")]
     pub(super) transitions: Option<Vec<LifecycleRuleTransition>>,
     #[serde(rename = "NoncurrentVersionTransitions", skip_serializing_if = "Option::is_none")]
-    pub(super) non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>, 
+    pub(super) non_current_version_transitions: Option<Vec<NonCurrentVersionTransition>>,
     // #[serde(rename = "ExpiredObjectDeleteMarker", skip_serializing_if = "Option::is_none")]
     // pub(super) expire_object_delete_marker: Option<bool> => cannot be specified with ExpirationInDays, ExpirationDate, or TagFilters.
     // "ExpirationDate": String => check the regex

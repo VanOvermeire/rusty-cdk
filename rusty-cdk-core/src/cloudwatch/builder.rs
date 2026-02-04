@@ -88,14 +88,14 @@ impl LogGroupBuilder {
         };
 
         let resource_id = Resource::generate_id("LogGroup");
-        
+
         stack_builder.add_resource(LogGroup {
             id: self.id,
             resource_id: resource_id.clone(),
             r#type: LogGroupType::LogGroupType,
             properties,
         });
-        
+
         LogGroupRef::internal_new(resource_id)
     }
 }

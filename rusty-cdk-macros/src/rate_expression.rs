@@ -1,6 +1,6 @@
-use syn::{LitInt, LitStr};
 use syn::parse::{Parse, ParseStream};
 use syn::token::Comma;
+use syn::{LitInt, LitStr};
 
 pub(crate) struct RateExpression {
     pub(crate) value: u16,

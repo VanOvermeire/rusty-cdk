@@ -98,7 +98,7 @@ pub struct Stack {
     #[serde(rename = "Metadata")]
     pub(crate) metadata: HashMap<String, String>,
     #[serde(rename = "Outputs", skip_serializing_if = "Option::is_none")]
-    pub(crate) outputs: Option<HashMap<String, Output>>
+    pub(crate) outputs: Option<HashMap<String, Output>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -234,31 +234,34 @@ impl Stack {
     }
 
     pub fn get_cleanable_resources(&'_ self) -> Vec<Cleanable<'_>> {
-        self.resources.iter().flat_map(|(k, r)| {
-            println!("Found {k:?}");
-            match r {
-                Resource::Bucket(b) => {
-                    if let Some(pol) = &b.update_delete_policy_dto.deletion_policy {
-                        let pol: DeletionPolicy = pol.into();
-                        match pol {
-                            DeletionPolicy::Retain => None,
-                            _ => Some(Cleanable::Bucket(k))
+        self.resources
+            .iter()
+            .flat_map(|(k, r)| {
+                println!("Found {k:?}");
+                match r {
+                    Resource::Bucket(b) => {
+                        if let Some(pol) = &b.update_delete_policy_dto.deletion_policy {
+                            let pol: DeletionPolicy = pol.into();
+                            match pol {
+                                DeletionPolicy::Retain => None,
+                                _ => Some(Cleanable::Bucket(k)),
+                            }
+                        } else {
+                            Some(Cleanable::Bucket(k))
                         }
-                    } else {
-                        Some(Cleanable::Bucket(k))
                     }
-                }
-                Resource::Topic(t) => {
-                    // note: no update/delete policy yet, so only check archive property
-                    if t.properties.archive_policy.is_some() {
-                        Some(Cleanable::Topic(k))
-                    } else {
-                        None
+                    Resource::Topic(t) => {
+                        // note: no update/delete policy yet, so only check archive property
+                        if t.properties.archive_policy.is_some() {
+                            Some(Cleanable::Topic(k))
+                        } else {
+                            None
+                        }
                     }
+                    _ => None,
                 }
-                _ => None
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     pub fn get_diff(&self, existing_stack: &str) -> Result<StackDiff, String> {
