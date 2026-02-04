@@ -11,19 +11,25 @@ static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
 fn main() -> Result<()>{
     let resources = read_to_string("./output/raw_resources.csv")?;
     let mut resources = resources.split("\n").filter(|v| !v.is_empty()).peekable();
-    let is_helper = resources.peek().map(|v| {
-        let value = v.split(";").next().unwrap_or("");
-        value.contains("::") && value.contains(" ")
-    }).unwrap_or(false);
     
-    if is_helper {
-        println!("Found helpers to create");
-        let mut dto_output = vec![];
-        let mut helper_urls = vec![];
-        let builder_imports = "use crate::shared::Id;";
-        let mut builder_output = vec![builder_imports.to_string()];
-        
-        for r in resources {
+    let first_resource = resources.peek();
+    let mut helper = is_helper(first_resource);
+    
+    let mut resource_group_name = None;
+    
+    let dto_imports = r###"
+        use serde::{Deserialize, Serialize};
+        use serde_json::Value;
+        use crate::{dto_methods, ref_struct};
+        use crate::shared::Id;
+    "###;
+    let builder_imports = "use crate::shared::Id;";
+    let mut dto_output = vec![dto_imports.to_string()];
+    let mut builder_output = vec![builder_imports.to_string()];
+    
+    while let Some(r) = resources.next() {
+        if helper {
+            println!("found helper");
             let mut code_to_write_for_resource = vec![];
             
             let mut split_resource = r.split(";");
@@ -33,9 +39,8 @@ fn main() -> Result<()>{
 
             let struct_name = resource_type_parts.last().context("helper should contain a name for the struct behind a space")?;
             
-            let (prop_infos, mut urls) = props_info(&mut split_resource)?;
+            let prop_infos = props_info(&mut split_resource)?;
             let props = props(&prop_infos)?;
-            helper_urls.append(&mut urls);
 
             let helper_struct = format!(r###"
                 #[derive(Debug, Serialize, Deserialize)]
@@ -49,27 +54,8 @@ fn main() -> Result<()>{
             
             let boilerplate_for_builder = builder(&struct_name, &prop_infos)?;
             builder_output.push(boilerplate_for_builder);
-        }
-        
-        fs::write("output/dto.rs", dto_output.join("").as_bytes())?;
-        fs::write("output/builder.rs", builder_output.join("\n").as_bytes())?;
-        fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
-    } else {
-        println!("Found resources to create");
-        let mut resource_group_name = None;    
-        
-        let imports = r###"
-            use serde::{Deserialize, Serialize};
-            use serde_json::Value;
-            use crate::{dto_methods, ref_struct};
-            use crate::shared::Id;
-        "###;
-        let builder_imports = "use crate::shared::Id;";
-        let mut dto_output = vec![imports.to_string()];
-        let mut builder_output = vec![builder_imports.to_string()];
-        let mut helper_urls = vec![];
-        
-        for r in resources {
+        } else {
+            println!("found resource");    
             let mut code_to_write_for_resource = vec![];
             
             let mut split_resource = r.split(";");
@@ -88,9 +74,8 @@ fn main() -> Result<()>{
             
             code_to_write_for_resource.append(&mut main_struct(&struct_name, &resource_type, &properties_struct_name));
 
-            let (prop_infos, mut urls) = props_info(&mut split_resource)?;
+            let prop_infos = props_info(&mut split_resource)?;
             let props = props(&prop_infos)?;
-            helper_urls.append(&mut urls);
 
             let properties_struct = format!(r###"
                 #[derive(Debug, Serialize, Deserialize)]
@@ -106,15 +91,20 @@ fn main() -> Result<()>{
             builder_output.push(boilerplate_for_builder);
         }
         
-        let resource_group_name = resource_group_name.unwrap().to_lowercase();
-        let output_dir = format!("output/{}", resource_group_name);
+        helper = is_helper(resources.peek());
+    }
+
+    if let Some(group_name) = resource_group_name {
+        let output_dir = format!("output/{}", group_name.to_lowercase());
         
         let _ignore_if_does_not_exist = fs::remove_dir_all(&output_dir);
         let _ignore_if_already_exists = fs::create_dir(&output_dir);
-        fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\n\npub use dto::*;")?;
+    
+        fs::write(&format!("{}/mod.rs", output_dir), "mod dto;\nmod builder;\n\npub use dto::*;\npub use builder::*;")?;
         fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
         fs::write(&format!("{}/builder.rs", output_dir), builder_output.join("\n").as_bytes())?;
-        fs::write("output/helpers", helper_urls.join("\n").as_bytes())?;
+    } else {
+        println!("did not find a resource group name - not outputting")
     }
     
     Ok(())
@@ -179,11 +169,10 @@ struct PropInfo {
     comments: Vec<String>,
 }
 
-fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInfo>, Vec<String>)> {
-    let custom_prop_type_regex = CUSTOM_PROP_TYPE_REGEX.get_or_init(|| Regex::new(r#"(?P<prefix>.*)<a href=\"(?P<url>.+?)\">(?P<name>.+?)</a>"#).unwrap());
+fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<Vec<PropInfo>> {
+    let custom_prop_type_regex = CUSTOM_PROP_TYPE_REGEX.get_or_init(|| Regex::new(r#"(?P<prefix>.*)<a href=\".+\">(?P<name>.+?)</a>"#).unwrap());
     
     let mut prop_info = vec![];
-    let mut helper_urls = vec![];
     
     while let Some(prop) = split_resource.next() {
         let mut prop_split = prop.split("===");
@@ -208,9 +197,8 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInf
                     "Json" => "Value".to_string(),
                     "Array of String" => "Vec<String>".to_string(),
                     _ => { 
-                        println!("could not find type for {}", prop_info);
+                        println!("custom type {}", prop_info);
                         let caps = custom_prop_type_regex.captures(&prop_info).context("failed to capture custom type information")?;
-                        helper_urls.push(caps["url"].replace("./", ""));
                         let name = caps["name"].to_string();
                         
                         if caps["prefix"].is_empty() {
@@ -231,7 +219,7 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<(Vec<PropInf
         prop_info.push(PropInfo { name: prop_name.to_string(), type_as_string: type_info, optional, comments });
     }
     
-    Ok((prop_info, helper_urls))
+    Ok(prop_info)
 }
 
 fn builder(struct_name: &str, props: &Vec<PropInfo>) -> Result<String> {
@@ -270,4 +258,11 @@ fn builder(struct_name: &str, props: &Vec<PropInfo>) -> Result<String> {
         }}
     "###, struct_name, prop_builders, properties);
     Ok(builder)
+}
+
+fn is_helper(resource: Option<&&str>) -> bool {
+    resource.map(|v| {
+        let value = v.split(";").next().unwrap_or("");
+        value.contains("::") && value.contains(" ")
+    }).unwrap_or(false)
 }

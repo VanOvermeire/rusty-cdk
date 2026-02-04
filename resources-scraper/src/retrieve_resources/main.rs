@@ -40,7 +40,7 @@ fn main() -> Result<()> {
     }
     
     while sublinks_to_check.len() > 0 {
-        println!("Checking {} additional links", sublinks_to_check.len());
+        println!("checking {} additional links", sublinks_to_check.len());
         let mut new_sublinks = vec![];
         for url in sublinks_to_check {
             let (name, props, mut additional_links) = retrieve_resource_props(&client, &url)?;
@@ -119,7 +119,7 @@ fn retrieve_resource_props(client: &Client, path: &str) -> Result<(String, HashM
             if name_without_em.starts_with(TYPE_INFO) {
                 if let Some(m) = custom_prop_type_regex.captures(&name_without_em) {
                     if m["url"].starts_with("https://") {
-                        println!("Ignoring external link: {}", &m["url"]);
+                        println!("ignoring external link: {}", &m["url"]);
                     } else {
                         additional_links.push(m["url"].replace("./", ""));                        
                     }
@@ -154,7 +154,7 @@ fn get_specific_resource(client: &Client, suffix: &str) -> Result<Vec<String>> {
         let href = el.attr("href").context("a element should have href")?.to_string();
 
         if href.starts_with("https://") {
-            println!("Ignoring external link: {}", href);
+            println!("ignoring external link: {}", href);
         } else {
             let href = href.replace("./", "");
             resources.push(href);
