@@ -442,10 +442,9 @@ async fn tagging() {
   - new_with...
   - an additional method that determines path (`fifo()`)
   - enums
+- Add user to IAM
 - Lookups
-  - user to IAM
-  - user
-  - accountId
+  - accountId?
   - 'aws signer'
 - force destroy
   - Should empty ecr repo if not empty + EmptyOnDelete false
@@ -486,3 +485,5 @@ async fn tagging() {
 - Think about how to allow, for example, names based on Refs
   - E.g. you should be able to take a BucketRef, add a suffix (using !Sub maybe) and pass that in as the name of a log group
 - Add script to `resources-scraper` to check for missing properties for existing resources
+- When retrieving a role or user, check that the permissions are correct
+  - Probably hard to do without additional context

@@ -3,6 +3,8 @@ use crate::{dto_methods, ref_struct};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+ref_struct!(UserRef);
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum RoleType {
     #[serde(rename = "AWS::IAM::Role")]

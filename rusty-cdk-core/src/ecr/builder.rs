@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::ecr::{
     EncryptionConfiguration, ImageScanningConfiguration, ImageTagMutabilityExclusionFilter, LifecyclePolicy, PublicRepository, PublicRepositoryProperties, PublicRepositoryRef, PublicRepositoryType, PullThroughCacheRule, PullThroughCacheRuleProperties, PullThroughCacheRuleRef, PullThroughCacheRuleType, PullTimeUpdateExclusion, PullTimeUpdateExclusionProperties, PullTimeUpdateExclusionRef, PullTimeUpdateExclusionType, RegistryPolicy, RegistryPolicyProperties, RegistryPolicyRef, RegistryPolicyType, RegistryScanningConfiguration, RegistryScanningConfigurationProperties, RegistryScanningConfigurationRef, RegistryScanningConfigurationType, ReplicationConfiguration, ReplicationConfigurationProperties, ReplicationConfigurationRef, ReplicationConfigurationReplicationConfiguration, ReplicationConfigurationType, ReplicationDestination, ReplicationRule, Repository, RepositoryCatalogData, RepositoryProperties, RepositoryRef, RepositoryType, Rule, ScanningConfigRepositoryFilter, ScanningRule, SigningConfiguration, SigningConfigurationProperties, SigningConfigurationRef, SigningConfigurationType, SigningRepositoryFilter
 };
-use crate::iam::RoleRef;
+use crate::iam::{RoleRef, UserRef};
 use crate::iam::Statement;
 use crate::kms::KeyRef;
 use crate::secretsmanager::SecretRef;
@@ -259,8 +259,8 @@ impl PullThroughCacheRuleBuilder {
     }
 }
 
-// TODO should also accept a user
 pub enum PullTimeUpdateExclusionPrincipals<'a> {
+    User(&'a UserRef),
     Role(&'a RoleRef),
 }
 
@@ -273,6 +273,7 @@ impl PullTimeUpdateExclusionBuilder {
     pub fn new(id: &str, principal: PullTimeUpdateExclusionPrincipals) -> Self {
         let arn = match principal {
             PullTimeUpdateExclusionPrincipals::Role(role) => role.get_arn(),
+            PullTimeUpdateExclusionPrincipals::User(user) => user.get_arn(),
         };
 
         Self {

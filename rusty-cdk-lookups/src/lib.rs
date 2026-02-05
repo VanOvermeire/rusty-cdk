@@ -1,5 +1,5 @@
 use crate::parsing::GenericInput;
-use crate::roles::{find_kms_ref, find_role_ref, find_secret_ref};
+use crate::roles::{find_kms_ref, find_role_ref, find_secret_ref, find_user_ref};
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -18,6 +18,20 @@ pub fn lookup_role_ref(input: TokenStream) -> TokenStream {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     rt.block_on(find_role_ref(&input.resource_id, &input.identifier))
+        .unwrap_or_else(|e| e.into_compile_error().into())
+}
+
+/// Tries to retrieve IAM user information from your AWS environment (the user ARN).
+/// This ensures that the user actually exists in your account and that your deployment will not fail.
+///
+/// You should pass on a unique id for the user, as well as the user name, separated by a comma: `lookup_user_ref!("SomeId","SomeUser")`
+#[proc_macro]
+pub fn lookup_user_ref(input: TokenStream) -> TokenStream {
+    let input: GenericInput = parse_macro_input!(input);
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    rt.block_on(find_user_ref(&input.resource_id, &input.identifier))
         .unwrap_or_else(|e| e.into_compile_error().into())
 }
 
