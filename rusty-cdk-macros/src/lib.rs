@@ -209,6 +209,93 @@ pub fn channel_namespace_name(input: TokenStream) -> TokenStream {
     .into()
 }
 
+#[proc_macro]
+pub fn ecr_repository_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-'])
+        .with_min_length(2)
+        .with_max_length(256);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            EcrRepositoryName(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+// TODO add something for this (and repo name, and repo filter, etc.) where we can only start with a alphanumeric
+#[proc_macro]
+pub fn repo_prefix(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-', '/'])
+        .with_min_length(2)
+        .with_max_length(30);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            EcrRepositoryName(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn url(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '/', '#', ':'])
+        .with_min_length(2)
+        .with_max_length(30);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            URL(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn image_tag_mutability_exclusion_filter_value(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '*', '-']).with_max_length(128);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            ImageTagMutabilityExclusionFilterValue(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn repository_filter(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-']);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            RepositoryFilter(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
 /// Creates a validated `StringForSecret` wrapper for AWS Secrets Manager secret names at compile time.
 ///
 /// This macro ensures that the input string is a valid name for AWS Secrets Manager secrets,
@@ -395,6 +482,34 @@ pub fn non_zero_number(input: TokenStream) -> TokenStream {
     )
     .into()
 }
+
+macro_rules! string_length_check {
+    ($name:ident,$min:literal,$max:literal,$output:ident) => {
+        #[doc = "Checks whether the value that will be wrapped in the "]
+		#[doc = stringify!($output)]
+		#[doc = "struct is between "]
+		#[doc = stringify!($min)]
+		#[doc = "and "]
+        #[doc = stringify!($max)]
+        #[doc = "in length"]
+        #[proc_macro]
+        pub fn $name(input: TokenStream) -> TokenStream {
+            let output: LitStr = syn::parse(input).unwrap();
+            let value = output.value();
+            let len = value.len();
+
+            if len < $min || len > $max {
+                Error::new(value.span(), format!("string should be between {} and {} in length (was {})", $min, $max, len)).into_compile_error().into()
+            } else {
+                quote!(
+                    $output(#value.to_string())
+                ).into()
+            }
+        }
+    }
+}
+string_length_check!(repo_about_text, 0, 10240, RepoAboutText);
+string_length_check!(repo_description, 0, 1024, RepoDescription);
 
 macro_rules! number_check {
     ($name:ident,$min:literal,$max:literal,$output:ident,$type:ty) => {

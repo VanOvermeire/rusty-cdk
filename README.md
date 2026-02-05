@@ -312,16 +312,20 @@ Currently only a limited number of services are (partly) supported:
 - CloudFront
 - Cloudwatch logs
 - DynamoDB
+- ECR(*)
+- Events Schedule
 - IAM
 - Lambda
 - S3
 - SNS
 - SQS
 
+(*): not all builders have been validated
+
 In other words, you can create serverless applications with this library.
 
 To be added at some point:
-- ECR
+
 - DocumentDB
 - CodeBuild
 - CodePipeline
@@ -434,6 +438,15 @@ async fn tagging() {
 
 ## TODO
 
+- unwrap_or_default where I'm doing `let ... else vec![]`
+- Lookups
+  - user to IAM
+  - secret
+  - user
+  - accountId
+  - 'aws signer'
+- force destroy
+  - Should empty ecr repo if not empty + EmptyOnDelete false
 - Pull out the IAM checker in its own crate?
   - Could be useful in general, not only in context of this project
 - Write parser that goes through the AWS docs and retrieves info
@@ -447,6 +460,7 @@ async fn tagging() {
   - adds the mod to lib.rs
 - Could probably also script the SIMPLE builders (if no type state is needed, and would add additional validation via macro later)
 - Additional stack build checks
+  - Enforce length of vecs (look for 'enforce' to see some examples)
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
   - ChannelNamespace name should be unique within the API

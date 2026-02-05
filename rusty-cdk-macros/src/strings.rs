@@ -27,6 +27,10 @@ impl StringRequirements {
         }
     }
 
+    pub(crate) fn with_min_length(self, min_length: usize) -> Self {
+        Self { min_length, ..self }
+    }
+
     pub(crate) fn with_max_length(self, max_length: usize) -> Self {
         Self {
             max_length: Some(max_length),

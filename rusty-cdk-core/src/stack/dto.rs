@@ -5,6 +5,10 @@ use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::cloudwatch::LogGroup;
 use crate::custom_resource::BucketNotification;
 use crate::dynamodb::Table;
+use crate::ecr::{
+    PublicRepository, PullThroughCacheRule, PullTimeUpdateExclusion, RegistryPolicy, RegistryScanningConfiguration,
+    ReplicationConfiguration, Repository,
+};
 use crate::events::Schedule;
 use crate::iam::Role;
 use crate::lambda::{EventSourceMapping, Function, Permission};
@@ -354,14 +358,21 @@ pub enum Resource {
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
     Distribution(Distribution),
+    PublicRepository(PublicRepository),
     Environment(Environment),
     EventSourceMapping(EventSourceMapping),
     Function(Function),
     LogGroup(LogGroup),
     OriginAccessControl(OriginAccessControl),
     Permission(Permission),
+    PullThroughCacheRule(PullThroughCacheRule),
+    PullTimeUpdateExclusion(PullTimeUpdateExclusion),
     Queue(Queue),
     QueuePolicy(QueuePolicy),
+    RegistryScanningConfiguration(RegistryScanningConfiguration),
+    RegistryPolicy(RegistryPolicy),
+    ReplicationConfiguration(ReplicationConfiguration),
+    Repository(Repository),
     Role(Role),
     Secret(Secret),
     Schedule(Schedule),
@@ -403,6 +414,13 @@ impl Resource {
             Resource::Table(r) => r.get_id(),
             Resource::Topic(r) => r.get_id(),
             Resource::TopicPolicy(r) => r.get_id(),
+            Resource::PublicRepository(r) => r.get_id(),
+            Resource::PullThroughCacheRule(r) => r.get_id(),
+            Resource::PullTimeUpdateExclusion(r) => r.get_id(),
+            Resource::RegistryPolicy(r) => r.get_id(),
+            Resource::RegistryScanningConfiguration(r) => r.get_id(),
+            Resource::ReplicationConfiguration(r) => r.get_id(),
+            Resource::Repository(r) => r.get_id(),
         };
         id.clone()
     }
@@ -438,6 +456,13 @@ impl Resource {
             Resource::Table(t) => t.get_resource_id(),
             Resource::Topic(r) => r.get_resource_id(),
             Resource::TopicPolicy(r) => r.get_resource_id(),
+            Resource::PublicRepository(r) => r.get_resource_id(),
+            Resource::PullThroughCacheRule(r) => r.get_resource_id(),
+            Resource::PullTimeUpdateExclusion(r) => r.get_resource_id(),
+            Resource::RegistryPolicy(r) => r.get_resource_id(),
+            Resource::RegistryScanningConfiguration(r) => r.get_resource_id(),
+            Resource::ReplicationConfiguration(r) => r.get_resource_id(),
+            Resource::Repository(r) => r.get_resource_id(),
         }
     }
 
@@ -478,8 +503,15 @@ from_resource!(Function);
 from_resource!(LogGroup);
 from_resource!(OriginAccessControl);
 from_resource!(Permission);
+from_resource!(PullThroughCacheRule);
+from_resource!(PullTimeUpdateExclusion);
+from_resource!(PublicRepository);
 from_resource!(Queue);
 from_resource!(QueuePolicy);
+from_resource!(RegistryPolicy);
+from_resource!(RegistryScanningConfiguration);
+from_resource!(ReplicationConfiguration);
+from_resource!(Repository);
 from_resource!(Role);
 from_resource!(Secret);
 from_resource!(Schedule);

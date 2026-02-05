@@ -2,9 +2,11 @@ mod constants;
 mod http;
 mod id;
 pub(crate) mod macros;
+mod regions;
 mod update_delete_policy;
 
 pub(crate) use constants::*;
 pub use http::*;
 pub use id::*;
+pub use regions::*;
 pub use update_delete_policy::*;

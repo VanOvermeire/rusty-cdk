@@ -1,13 +1,14 @@
 #![allow(dead_code)]
 
 use rusty_cdk_macros::{
-    app_config_name, app_sync_api_name, bucket_tiering, channel_namespace_name, default_root_object, delay_seconds, env_var_key,
-    iam_action, lambda_permission_action, lifecycle_object_sizes, lifecycle_transition_in_days, location_uri, log_group_name,
-    log_retention, max_flexible_time_window, maximum_message_size, memory, message_retention_period, non_zero_number, origin_path,
-    policy_name, receive_message_wait_time, retry_policy_event_age, retry_policy_retries, schedule_at_expression, schedule_cron_expression,
-    schedule_name, schedule_rate_expression, sqs_event_source_max_concurrency, string_for_secret,
-    string_with_only_alphanumerics_and_hyphens, string_with_only_alphanumerics_and_underscores,
-    string_with_only_alphanumerics_underscores_and_hyphens, timeout, toml_file, topic_display_name, visibility_timeout, zip_file,
+    app_config_name, app_sync_api_name, bucket_tiering, channel_namespace_name, default_root_object, delay_seconds, ecr_repository_name,
+    env_var_key, iam_action, image_tag_mutability_exclusion_filter_value, lambda_permission_action, lifecycle_object_sizes,
+    lifecycle_transition_in_days, location_uri, log_group_name, log_retention, max_flexible_time_window, maximum_message_size, memory,
+    message_retention_period, non_zero_number, origin_path, policy_name, receive_message_wait_time, repo_about_text, repo_description,
+    repo_prefix, retry_policy_event_age, retry_policy_retries, schedule_at_expression, schedule_cron_expression, schedule_name,
+    schedule_rate_expression, sqs_event_source_max_concurrency, string_for_secret, string_with_only_alphanumerics_and_hyphens,
+    string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, timeout, toml_file,
+    topic_display_name, url, visibility_timeout, zip_file,
 };
 
 // placeholders for the wrapper structs that exist in the core package //
@@ -47,6 +48,12 @@ struct PolicyName(String);
 struct OriginPath(String);
 struct ZipFile(String);
 struct DefaultRootObject(String);
+struct RepoAboutText(String);
+struct RepoDescription(String);
+struct RepoPrefix(String);
+struct EcrRepositoryName(String);
+struct URL(String);
+struct ImageTagMutabilityExclusionFilterValue(String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -303,4 +310,44 @@ fn create_string_with_only_alphanumerics_and_hyphens_numeric() {
 #[test]
 fn create_string_with_only_alphanumerics_and_hyphens_mixed() {
     string_with_only_alphanumerics_and_hyphens!("another-valid-id-456");
+}
+
+#[test]
+fn create_repo_about_text() {
+    repo_about_text!("some description");
+}
+
+#[test]
+fn create_repo_description() {
+    repo_description!("some description");
+}
+
+#[test]
+fn create_ecr_repository_name() {
+    ecr_repository_name!("some-name");
+}
+
+#[test]
+fn create_repo_prefix() {
+    repo_prefix!("some-name");
+}
+
+#[test]
+fn create_url() {
+    url!("https://example.com");
+}
+
+#[test]
+fn create_url_with_subdomain() {
+    url!("https://example.com/subdomain");
+}
+
+#[test]
+fn create_url_without_https() {
+    url!("example.com");
+}
+
+#[test]
+fn create_image_tag_mutability_exclusion_filter_value() {
+    image_tag_mutability_exclusion_filter_value!("some-filter*");
 }

@@ -841,3 +841,26 @@ pub struct KeyReusePeriod(pub u32);
 /// ```
 #[derive(Debug, Clone)]
 pub struct SuccessFeedbackSampleRate(pub u8);
+
+// TODO note also used for another prop
+#[derive(Debug, Clone)]
+pub struct RepoAboutText(pub String);
+
+#[derive(Debug, Clone)]
+pub struct RepoDescription(pub String);
+
+// TODO RepoName to be consistent?
+#[derive(Debug, Clone)]
+pub struct EcrRepositoryName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct RepoPrefix(pub String);
+
+#[derive(Debug, Clone)]
+pub struct URL(pub String);
+
+#[derive(Debug, Clone)]
+pub struct ImageTagMutabilityExclusionFilterValue(pub String);
+
+#[derive(Debug, Clone)]
+pub struct RepositoryFilter(pub String);

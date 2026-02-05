@@ -5,6 +5,7 @@ pub mod cloudfront;
 pub mod cloudwatch;
 pub mod documentdb;
 pub mod dynamodb;
+pub mod ecr;
 pub mod events;
 pub mod iam;
 pub mod kms;

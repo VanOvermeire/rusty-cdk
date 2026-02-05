@@ -137,26 +137,28 @@ fn main() -> Result<()> {
     }
 
     if let Some(group_name) = resource_group_name {
-        let mut builder_imports_and_other_output: Vec<_> = handled_resource_names
+        let resource_imports: Vec<_> = handled_resource_names
             .into_iter()
-            .map(|v| {
-                format!(
-                    "use crate::{0}::{1};\nuse crate::{0}::{1}Ref;\nuse crate::{0}::{1}Type;\nuse crate::{0}::{1}Properties;",
-                    group_name.to_lowercase(),
-                    v
-                )
+            .flat_map(|v| {
+                vec![
+                    v.clone(), format!("{}Ref", v), format!("{}Type", v), format!("{}Properties", v)
+                ]
             })
             .collect();
-        builder_imports_and_other_output.append(
-            &mut handled_helper_names
-                .into_iter()
-                .map(|v| format!("use crate::{0}::{1};", group_name.to_lowercase(), v))
-                .collect(),
-        );
-        builder_imports_and_other_output.push("use crate::shared::Id;".to_string());
-        builder_imports_and_other_output.push("use serde_json::Value;".to_string());
-        builder_imports_and_other_output.push("use crate::stack::{Resource, StackBuilder};".to_string());
-        builder_imports_and_other_output.append(&mut builder_output);
+        let helper_imports = format!("use crate::{0}::{{ {1} }};", group_name.to_lowercase(), handled_helper_names.join(", "));
+        
+        let mut builder_imports = vec![
+            format!("use crate::{0}::{{ {1} }};", group_name.to_lowercase(), resource_imports.join(",")),
+            helper_imports
+        ];
+        
+        builder_imports.push("use crate::shared::Id;".to_string());
+        builder_imports.push("use serde_json::Value;".to_string());
+        builder_imports.push("use crate::stack::{Resource, StackBuilder};".to_string());
+        
+        let mut all_builder_info = vec![];
+        all_builder_info.append(&mut builder_imports);
+        all_builder_info.append(&mut builder_output);
 
         let output_dir = format!("output/{}", group_name.to_lowercase());
 
@@ -170,7 +172,7 @@ fn main() -> Result<()> {
         fs::write(&format!("{}/dto.rs", output_dir), dto_output.join("").as_bytes())?;
         fs::write(
             &format!("{}/builder.rs", output_dir),
-            builder_imports_and_other_output.join("\n").as_bytes(),
+            all_builder_info.join("\n").as_bytes(),
         )?;
     } else {
         println!("did not find a resource group name - not outputting")
