@@ -6,7 +6,6 @@ pub mod cloudwatch;
 pub mod documentdb;
 pub mod dynamodb;
 pub mod events;
-pub mod ecr;
 pub mod iam;
 pub mod kms;
 pub mod lambda;

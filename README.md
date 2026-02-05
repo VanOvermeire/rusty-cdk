@@ -321,6 +321,7 @@ Currently only a limited number of services are (partly) supported:
 In other words, you can create serverless applications with this library.
 
 To be added at some point:
+- ECR
 - DocumentDB
 - CodeBuild
 - CodePipeline
@@ -404,7 +405,7 @@ Based on `rg '^.*?(\w+Builder).*?$' -N -I -r '$1' | sort | uniq | sed -e 's/^/- 
 - _"I can't find field X of resource Y. And I would like to use resource Z, which is currently not supported"_
   - Check whether it's a legacy field (like `maxTTL` in `DefaultCacheBehavior`). If so, I may not have added it, since there's a newer, recommended, alternative.
   - If it's not a legacy field, I may not have gotten around to adding it yet. I've focussed on the properties that I think are most commonly used/useful. You can always open an issue, or add it yourself.
-  - The same goes for unsupported resources: open an issue or PR!
+  - The same goes for unsupported resources: open an issue or PR! Adding a new resource is simple a matter of running the `resources-scraper`, though adding additional compile-time validation requires manual effort.
 - _"How do I add tags to resources?"_
   - Currently, you can only add tags to the stack, not to individual resources. These tags are then applied when using the `deploy` method. They are not present in the CloudFormation template, because unfortunately, templates do not have a root property for tags. See an example below.
   - In theory, CloudFormation should propagate the tags to its resources, in practice it will do so in 80–90% of cases.
@@ -465,3 +466,4 @@ async fn tagging() {
   - Or at least offer that option
 - Think about how to allow, for example, names based on Refs
   - E.g. you should be able to take a BucketRef, add a suffix (using !Sub maybe) and pass that in as the name of a log group
+- Add script to `resources-scraper` to check for missing properties for existing resources

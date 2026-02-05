@@ -82,7 +82,7 @@ fn main() -> Result<()> {
                     struct_name
                 ));
                 builder_output.push(format!(
-                    "// TODO encountered a helper with name {} but one already exists - check whether they match",
+                    "// TODO encountered a helper with name {} but one already exists - check whether they match\n",
                     struct_name
                 ));
             }
@@ -139,7 +139,13 @@ fn main() -> Result<()> {
     if let Some(group_name) = resource_group_name {
         let mut builder_imports_and_other_output: Vec<_> = handled_resource_names
             .into_iter()
-            .map(|v| format!("use crate::{0}::{1};\nuse crate::{0}::{1}Ref;\nuse crate::{0}::{1}Type;\nuse crate::{0}::{1}Properties;", group_name.to_lowercase(), v))
+            .map(|v| {
+                format!(
+                    "use crate::{0}::{1};\nuse crate::{0}::{1}Ref;\nuse crate::{0}::{1}Type;\nuse crate::{0}::{1}Properties;",
+                    group_name.to_lowercase(),
+                    v
+                )
+            })
             .collect();
         builder_imports_and_other_output.append(
             &mut handled_helper_names
@@ -202,7 +208,6 @@ fn main_struct(struct_name: &str, resource_type: &str, properties_struct_name: &
             #[serde(rename = "Properties")]
             pub(crate) properties: {}
         }}
-
         dto_methods!({});
     "###,
         struct_name, struct_name, type_name, properties_struct_name, struct_name
