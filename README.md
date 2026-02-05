@@ -442,7 +442,6 @@ async fn tagging() {
   - new_with...
   - an additional method that determines path (`fifo()`)
   - enums
-- `unwrap_or_default` where I'm doing `let ... else vec![]`
 - Lookups
   - user to IAM
   - secret

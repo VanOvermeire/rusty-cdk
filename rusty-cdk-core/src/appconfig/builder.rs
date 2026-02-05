@@ -178,13 +178,9 @@ impl ConfigurationProfileBuilder {
     }
 
     pub fn add_validator(mut self, validator: Validator) -> Self {
-        if let Some(mut validators) = self.validators {
-            validators.push(validator);
-            self.validators = Some(validators);
-        } else {
-            self.validators = Some(vec![validator]);
-        }
-
+        let mut validators = self.validators.unwrap_or_default();
+        validators.push(validator);
+        self.validators = Some(validators);
         self
     }
 

@@ -632,14 +632,8 @@ impl OriginBuilder<OriginCustomOriginState> {
         let mut config = self
             .custom_origin_config
             .expect("custom config to be present in Custom Origin State");
-
-        let protocols = if let Some(mut protocols) = config.origin_ssl_protocols {
-            protocols.push(protocol);
-            protocols
-        } else {
-            vec![protocol]
-        };
-
+        let mut protocols = config.origin_ssl_protocols.unwrap_or_default();
+        protocols.push(protocol);
         config.origin_ssl_protocols = Some(protocols);
 
         OriginBuilder {
@@ -1040,12 +1034,9 @@ impl DistributionBuilder<DistributionOriginState> {
 
 impl<T: DistributionState> DistributionBuilder<T> {
     pub fn add_cache_behavior(mut self, behavior: CacheBehavior) -> Self {
-        if let Some(mut behaviors) = self.cache_behaviors {
-            behaviors.push(behavior);
-            self.cache_behaviors = Some(behaviors);
-        } else {
-            self.cache_behaviors = Some(vec![behavior])
-        }
+        let mut behaviors = self.cache_behaviors.unwrap_or_default();
+        behaviors.push(behavior);
+        self.cache_behaviors = Some(behaviors);
         self
     }
 

@@ -417,12 +417,9 @@ impl<T: BucketBuilderState> BucketBuilder<T> {
 
     /// Adds an intelligent tiering configuration to the S3 bucket
     pub fn add_intelligent_tiering(mut self, tiering: IntelligentTieringConfiguration) -> Self {
-        if let Some(mut config) = self.intelligent_tiering_configurations {
-            config.push(tiering);
-            self.intelligent_tiering_configurations = Some(config);
-        } else {
-            self.intelligent_tiering_configurations = Some(vec![tiering]);
-        }
+        let mut config = self.intelligent_tiering_configurations.unwrap_or_default();
+        config.push(tiering);
+        self.intelligent_tiering_configurations = Some(config);
         self
     }
 
@@ -1017,25 +1014,17 @@ impl LifecycleRuleBuilder {
     }
 
     pub fn add_transition(mut self, transition: LifecycleRuleTransition) -> Self {
-        if let Some(mut transitions) = self.transitions {
-            transitions.push(transition);
-            self.transitions = Some(transitions);
-        } else {
-            self.transitions = Some(vec![transition]);
-        }
-
-        Self { ..self }
+        let mut transitions = self.transitions.unwrap_or_default();
+        transitions.push(transition);
+        self.transitions = Some(transitions);
+        self
     }
 
     pub fn add_non_current_version_transitions(mut self, transition: NonCurrentVersionTransition) -> Self {
-        if let Some(mut transitions) = self.non_current_version_transitions {
-            transitions.push(transition);
-            self.non_current_version_transitions = Some(transitions);
-        } else {
-            self.non_current_version_transitions = Some(vec![transition]);
-        }
-
-        Self { ..self }
+        let mut transitions = self.non_current_version_transitions.unwrap_or_default();
+        transitions.push(transition);
+        self.non_current_version_transitions = Some(transitions);
+        self
     }
 
     pub fn build(self) -> LifecycleRule {
@@ -1238,13 +1227,9 @@ impl IntelligentTieringConfigurationBuilder {
     }
 
     pub fn add_tag_filter(mut self, tag_filter: TagFilter) -> Self {
-        if let Some(mut filters) = self.tag_filters {
-            filters.push(tag_filter);
-            self.tag_filters = Some(filters);
-        } else {
-            self.tag_filters = Some(vec![tag_filter]);
-        }
-
+        let mut filters = self.tag_filters.unwrap_or_default();
+        filters.push(tag_filter);
+        self.tag_filters = Some(filters);
         self
     }
 
