@@ -232,7 +232,7 @@ fn props(props: &Vec<PropInfo>) -> Result<Vec<String>> {
                 format!("pub(crate) {}: {},", snake_case(&prop.name), prop.type_as_string)
             };
 
-            format!("{}\n{} // {}", serde_info, prop_name_and_type, prop.comments.join(", "))
+            format!("{}\n{}", serde_info, prop_name_and_type)
         })
         .collect();
 
@@ -312,16 +312,16 @@ fn builder(struct_name: &str, props: &Vec<PropInfo>, helper: bool) -> Result<Str
         .iter()
         .map(|v| {
             if v.optional {
-                format!("{}: Option<{}>", snake_case(&v.name), v.type_as_string)
+                format!("{}: Option<{}>, // {}", snake_case(&v.name), v.type_as_string, v.comments.join(", "))
             } else {
-                format!("{}: {}", snake_case(&v.name), v.type_as_string)
+                format!("{}: {}, // {}", snake_case(&v.name), v.type_as_string, v.comments.join(", "))
             }
         })
         .collect();
     if !helper {
-        struct_fields_definition.insert(0, "id: Id".to_string());
+        struct_fields_definition.insert(0, "id: Id,".to_string());
     }
-    let struct_fields_definition = struct_fields_definition.join(",\n");
+    let struct_fields_definition = struct_fields_definition.join("\n");
 
     let mut struct_fields_init: Vec<_> = props
         .iter()
