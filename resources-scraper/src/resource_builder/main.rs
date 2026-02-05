@@ -22,8 +22,7 @@ fn main() -> Result<()> {
     let mut handled_helper_names = vec![];
     let mut resource_group_name = None;
 
-    let dto_imports = r###"
-        use serde::{Deserialize, Serialize};
+    let dto_imports = r###"use serde::{Deserialize, Serialize};
         use serde_json::Value;
         use crate::{dto_methods, ref_struct};
         use crate::shared::Id;
@@ -255,7 +254,7 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<Vec<PropInfo
     while let Some(prop) = split_resource.next() {
         let mut prop_split = prop.split("===");
         let prop_name = prop_split.next().context("prop should have a name parts, before the =")?;
-        let mut prop_info_split = prop_split.next().context("prop should have info part, after the =")?.split("###");
+        let mut prop_info_split = prop_split.next().context(format!("prop should have info part, after the = (prop name {})", prop_name))?.split("###");
 
         let mut optional = false;
         let mut type_info = "".to_string();
@@ -270,7 +269,7 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<Vec<PropInfo
                 let prop_info = prop_info.replace("Type: ", "");
                 type_info = match prop_info.as_str() {
                     "String" => "String".to_string(),
-                    "Integer" => "u32".to_string(),
+                    "Integer" | "Number" => "u32".to_string(),
                     "Boolean" => "bool".to_string(),
                     "Json" => "Value".to_string(),
                     "Array of String" => "Vec<String>".to_string(),
