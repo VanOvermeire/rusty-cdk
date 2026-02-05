@@ -139,7 +139,7 @@ fn main() -> Result<()> {
     if let Some(group_name) = resource_group_name {
         let mut builder_imports_and_other_output: Vec<_> = handled_resource_names
             .into_iter()
-            .map(|v| format!("use crate::{0}::{1};\nuse crate::{0}::{1}Ref;", group_name.to_lowercase(), v))
+            .map(|v| format!("use crate::{0}::{1};\nuse crate::{0}::{1}Ref;\nuse crate::{0}::{1}Type;\nuse crate::{0}::{1}Properties;", group_name.to_lowercase(), v))
             .collect();
         builder_imports_and_other_output.append(
             &mut handled_helper_names
@@ -390,12 +390,20 @@ fn builder(struct_name: &str, props: &Vec<PropInfo>, helper: bool) -> Result<Str
             pub fn build(self, stack_builder: &mut StackBuilder) -> {0}Ref {{
                 let resource_id = Resource::generate_id("{0}");           
                 
-                // stack_builder.add_resource(...); // TODO
+                let resource = {0} {{
+                     id: self.id,
+                     resource_id: resource_id.clone(),
+                     r#type: {0}Type::{0}Type,
+                     properties: {0}Properties {{
+                         {1}
+                     }},
+                }};
+                // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
                 
                 {0}Ref::internal_new(resource_id)
             }}
         "###,
-            struct_name
+            struct_name, build_method_props
         )
     };
 
