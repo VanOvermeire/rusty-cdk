@@ -5,13 +5,18 @@ use serde::Deserialize;
 #[derive(Debug)]
 pub(crate) struct ResourceInfo {
     pub(crate) identifier: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct ResourceInfoWithArn {
+    pub(crate) identifier: String,
     pub(crate) arn: String,
 }
 
 #[derive(Deserialize, Debug)]
 struct InternalResourceDescription {
     #[serde(rename = "Arn")]
-    arn: String,
+    arn: Option<String>,
 }
 
 pub(crate) struct CloudControlClient {
@@ -26,7 +31,7 @@ impl CloudControlClient {
         }
     }
 
-    pub(crate) async fn get_resource(&self, identifier: &str, type_name: &str) -> Result<ResourceInfo, String> {
+    async fn get_internal_resource(&self, identifier: &str, type_name: &str) -> Result<(String, InternalResourceDescription), String> {
         let result = self
             .client
             .get_resource()
@@ -42,16 +47,33 @@ impl CloudControlClient {
                 properties: Some(props),
                 ..
             }) => {
-                let descr: InternalResourceDescription = serde_json::from_str(&props).map_err(|_| "could not read resource info")?;
-
-                Ok(ResourceInfo {
-                    identifier: id,
-                    arn: descr.arn,
-                })
+                let descr = serde_json::from_str(&props).map_err(|_| "could not read resource info")?;
+                Ok((id, descr))
             }
             _ => Err("missing required resource info".to_string()),
         }
     }
+
+    pub(crate) async fn get_resource_arn(&self, identifier: &str, type_name: &str) -> Result<ResourceInfoWithArn, String> {
+        let (identifier, internal) = self.get_internal_resource(identifier, type_name).await?;
+
+        if let InternalResourceDescription { arn: Some(arn), .. } = internal {
+            Ok(ResourceInfoWithArn { identifier, arn })
+        } else {
+            Err("missing required resource info: arn".to_string())
+        }
+    }
+
+    pub(crate) async fn get_resource(&self, identifier: &str, type_name: &str) -> Result<ResourceInfo, String> {
+        let (identifier, _internal) = self.get_internal_resource(identifier, type_name).await?;
+
+        Ok(ResourceInfo { identifier })
+    }
+}
+
+pub(crate) async fn lookup_arn(identifier: &str, type_name: &str) -> Result<ResourceInfoWithArn, String> {
+    let client = CloudControlClient::new().await;
+    client.get_resource_arn(identifier, type_name).await
 }
 
 pub(crate) async fn lookup(identifier: &str, type_name: &str) -> Result<ResourceInfo, String> {

@@ -444,7 +444,6 @@ async fn tagging() {
   - enums
 - Lookups
   - user to IAM
-  - secret
   - user
   - accountId
   - 'aws signer'

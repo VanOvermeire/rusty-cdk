@@ -7,8 +7,6 @@ use anyhow::{Context, Result};
 use change_case::snake_case;
 use regex::Regex;
 
-// TODO build signature + content
-
 static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
 
 /// Creates DTOs for the scraped Resources
