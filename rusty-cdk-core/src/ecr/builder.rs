@@ -546,21 +546,20 @@ impl ReplicationDestinationBuilder {
 pub enum ImageTagMutability {
     Mutable,
     Immutable,
-    MutableWithExclusion,
-    ImmutableWithExclusion,
+    MutableWithExclusion(Vec<ImageTagMutabilityExclusionFilter>),
+    ImmutableWithExclusion(Vec<ImageTagMutabilityExclusionFilter>),
 }
 
-// TODO only for 'with exclusion' are exclusion filters allowed!
-impl From<ImageTagMutability> for String {
-    fn from(mutability: ImageTagMutability) -> Self {
-        match mutability {
-            ImageTagMutability::Mutable => "MUTABLE".to_string(),
-            ImageTagMutability::Immutable => "IMMUTABLE".to_string(),
-            ImageTagMutability::MutableWithExclusion => "MUTABLE_WITH_EXCLUSION".to_string(),
-            ImageTagMutability::ImmutableWithExclusion => "IMMUTABLE_WITH_EXCLUSION".to_string(),
-        }
-    }
-}
+// impl From<ImageTagMutability> for String {
+//     fn from(mutability: ImageTagMutability) -> Self {
+//         match mutability {
+//             ImageTagMutability::Mutable => "MUTABLE".to_string(),
+//             ImageTagMutability::Immutable => "IMMUTABLE".to_string(),
+//             ImageTagMutability::MutableWithExclusion => "MUTABLE_WITH_EXCLUSION".to_string(),
+//             ImageTagMutability::ImmutableWithExclusion => "IMMUTABLE_WITH_EXCLUSION".to_string(),
+//         }
+//     }
+// }
 
 pub struct RepositoryBuilder {
     id: Id,
@@ -588,11 +587,36 @@ impl RepositoryBuilder {
             repository_name: None,
         }
     }
-
+    
+    // enforce max 5 filters
     pub fn image_tag_mutability(self, image_tag_mutability: ImageTagMutability) -> Self {
-        Self {
-            image_tag_mutability: Some(image_tag_mutability.into()),
-            ..self
+        match image_tag_mutability {
+            ImageTagMutability::Mutable => {
+                Self {
+                    image_tag_mutability: Some("MUTABLE".to_string()),
+                        ..self
+                }
+            }
+            ImageTagMutability::Immutable => {
+                Self {
+                    image_tag_mutability: Some("IMMUTABLE".to_string()),
+                        ..self
+                }
+            }
+            ImageTagMutability::MutableWithExclusion(filters) => {
+                Self {
+                    image_tag_mutability: Some("MUTABLE_WITH_EXCLUSION".to_string()),
+                    image_tag_mutability_exclusion_filters: Some(filters),
+                        ..self
+                }
+            },
+            ImageTagMutability::ImmutableWithExclusion(filters) => {
+                Self {
+                    image_tag_mutability: Some("IMMUTABLE_WITH_EXCLUSION".to_string()),
+                    image_tag_mutability_exclusion_filters: Some(filters),
+                        ..self
+                }
+            },
         }
     }
 
@@ -601,14 +625,6 @@ impl RepositoryBuilder {
             repository_policy_text: Some(repository_policy_text),
             ..self
         }
-    }
-
-    // enforce max 5
-    pub fn add_tag_mutability_exclusion_filter(mut self, tag_mutability_exclusion_filter: ImageTagMutabilityExclusionFilter) -> Self {
-        let mut filters = self.image_tag_mutability_exclusion_filters.unwrap_or_default();
-        filters.push(tag_mutability_exclusion_filter);
-        self.image_tag_mutability_exclusion_filters = Some(filters);
-        self
     }
 
     pub fn encryption_configuration(self, encryption_configuration: EncryptionConfiguration) -> Self {
@@ -875,9 +891,6 @@ impl From<ScanningConfigRepositoryFilterType> for String {
     }
 }
 
-// TODO this is the filter for scanning config
-//  but replication config has a different one
-// and signing config has another one
 pub struct ScanningConfigRepositoryFilterBuilder {
     filter: String,
     filter_type: String,

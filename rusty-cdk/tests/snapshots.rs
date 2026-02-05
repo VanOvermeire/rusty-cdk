@@ -1,4 +1,4 @@
-use rusty_cdk::ecr::{BasicScanFrequency, ImageTagMutabilityExclusionFilterBuilder, ImageTagMutabilityExclusionFilterType, RegistryScanningConfigurationBuilder, RepositoryBuilder, ScanningConfigRepositoryFilterBuilder};
+use rusty_cdk::ecr::{BasicScanFrequency, ImageTagMutability, ImageTagMutabilityExclusionFilterBuilder, ImageTagMutabilityExclusionFilterType, RegistryScanningConfigurationBuilder, RepositoryBuilder, ScanningConfigRepositoryFilterBuilder};
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::appconfig::{
     ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo,
@@ -926,13 +926,13 @@ fn bucket_with_intelligent_tiering_and_metadata_table() {
 #[test]
 fn repo() {
     let mut stack_builder = StackBuilder::new();
+    let filters = vec![ImageTagMutabilityExclusionFilterBuilder::new(ImageTagMutabilityExclusionFilterType::Wildcard, image_tag_mutability_exclusion_filter_value!("example")).build()];
     
     RepositoryBuilder::new("myRepo")
         .empty_on_delete(true)
-        .image_tag_mutability(rusty_cdk::ecr::ImageTagMutability::ImmutableWithExclusion)
+        .image_tag_mutability(ImageTagMutability::ImmutableWithExclusion(filters))
         .repository_name(ecr_repository_name!("my-repo-name"))
         .image_scanning_configuration(true)
-        .add_tag_mutability_exclusion_filter(ImageTagMutabilityExclusionFilterBuilder::new(ImageTagMutabilityExclusionFilterType::Wildcard, image_tag_mutability_exclusion_filter_value!("example")).build())
         .build(&mut stack_builder);
     
     let stack = stack_builder.build().unwrap();
