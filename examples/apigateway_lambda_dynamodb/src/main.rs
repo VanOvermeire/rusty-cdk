@@ -25,7 +25,11 @@ async fn main() {
         .write_capacity(write_capacity)
         .build(&mut stack_builder);
 
-    let bucket = bucket!("configuration-of-sam-van-overmeire");
+    // Create bucket for Lambda code (in practice, this would be pre-existing)
+    // Using the wrapper directly to bypass bucket existence validation
+    // GitHub actions has no credentials and so cannot retrieve bucket info
+    let bucket = Bucket("configuration-of-sam-van-overmeire".to_string());
+
     // this is an empty zip file. CloudFormation looks for a file inside the zip, so replace this with a real zip if you want to deploy this example
     let zipper = zip_file!("./examples/apigateway_lambda_dynamodb/files/empty.zip");
     let memory = memory!(512);
