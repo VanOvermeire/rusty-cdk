@@ -434,6 +434,8 @@ async fn tagging() {
 
 ## TODO
 
+- Pull out the IAM checker in its own crate?
+  - Could be useful in general, not only in context of this project
 - Write parser that goes through the AWS docs and retrieves info
   - Name for the mod (S3 for example)
   - Name of the resource
