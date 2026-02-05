@@ -438,7 +438,11 @@ async fn tagging() {
 
 ## TODO
 
-- unwrap_or_default where I'm doing `let ... else vec![]`
+- Currently at least three ways of doing 'type state', and the first two could/should probably merge
+  - new_with...
+  - an additional method that determines path (`fifo()`)
+  - enums
+- `unwrap_or_default` where I'm doing `let ... else vec![]`
 - Lookups
   - user to IAM
   - secret
@@ -464,6 +468,7 @@ async fn tagging() {
   - Check duplicate ids in intelligent tiering
   - Check the app config json schema
   - ChannelNamespace name should be unique within the API
+  - AWS::ECR::PublicRepository is only available in us-east-1 - could we check that?
 - Probably more idiomatic to implement `Display` for the enums that have to become `String`
 - Do some refactoring/splitting up of files
   - s3 builder is a good candidate for splitting up

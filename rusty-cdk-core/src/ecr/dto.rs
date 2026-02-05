@@ -170,10 +170,10 @@ pub struct RegistryScanningConfigurationProperties {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScanningRule {
-    #[serde(rename = "ScanFrequency")]
-    pub(crate) scan_frequency: String,
+    #[serde(rename = "ScanFrequency", skip_serializing_if = "Option::is_none")]
+    pub(crate) scan_frequency: Option<String>,
     #[serde(rename = "RepositoryFilters")]
-    pub(crate) repository_filters: Vec<RepositoryFilter>,
+    pub(crate) repository_filters: Vec<ScanningConfigRepositoryFilter>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -214,7 +214,7 @@ pub struct ReplicationRule {
     #[serde(rename = "Destinations")]
     pub(crate) destinations: Vec<ReplicationDestination>, // An array of objects representing the destination for a replication rule., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">100</code>
     #[serde(rename = "RepositoryFilters", skip_serializing_if = "Option::is_none")]
-    pub(crate) repository_filters: Option<Vec<RepositoryFilter>>, // An array of objects representing the filters for a replication rule. Specifying a            repository filter for a replication rule provides a method for controlling which            repositories in a private registry are replicated., Minimum: <code class="code">0</code>, Maximum: <code class="code">100</code>
+    pub(crate) repository_filters: Option<Vec<ScanningConfigRepositoryFilter>>, // An array of objects representing the filters for a replication rule. Specifying a            repository filter for a replication rule provides a method for controlling which            repositories in a private registry are replicated., Minimum: <code class="code">0</code>, Maximum: <code class="code">100</code>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -328,11 +328,20 @@ pub struct Rule {
     #[serde(rename = "SigningProfileArn")]
     pub(crate) signing_profile_arn: String,
     #[serde(rename = "RepositoryFilters", skip_serializing_if = "Option::is_none")]
-    pub(crate) repository_filters: Option<Vec<RepositoryFilter>>,
+    pub(crate) repository_filters: Option<Vec<SigningRepositoryFilter>>,
+}
+
+// two struct with the same props, but if they were merged, it would be harder to enforce the filter type
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScanningConfigRepositoryFilter {
+    #[serde(rename = "Filter")]
+    pub(crate) filter: String,
+    #[serde(rename = "FilterType")]
+    pub(crate) filter_type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RepositoryFilter {
+pub struct SigningRepositoryFilter {
     #[serde(rename = "Filter")]
     pub(crate) filter: String,
     #[serde(rename = "FilterType")]

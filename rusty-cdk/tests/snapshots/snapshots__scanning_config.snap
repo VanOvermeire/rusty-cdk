@@ -1,0 +1,28 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "basic": "[RegistryScanningConfiguration]"
+  },
+  "Resources": {
+    "[RegistryScanningConfiguration]": {
+      "Properties": {
+        "Rules": [
+          {
+            "RepositoryFilters": [
+              {
+                "Filter": "prefix*",
+                "FilterType": "WILDCARD"
+              }
+            ],
+            "ScanFrequency": "SCAN_ON_PUSH"
+          }
+        ],
+        "ScanType": "BASIC"
+      },
+      "Type": "AWS::ECR::RegistryScanningConfiguration"
+    }
+  }
+}

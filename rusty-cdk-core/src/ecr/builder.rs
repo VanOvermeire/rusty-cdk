@@ -1,15 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::ecr::{
-    EncryptionConfiguration, ImageScanningConfiguration, ImageTagMutabilityExclusionFilter, LifecyclePolicy, PublicRepository,
-    PublicRepositoryProperties, PublicRepositoryRef, PublicRepositoryType, PullThroughCacheRule, PullThroughCacheRuleProperties,
-    PullThroughCacheRuleRef, PullThroughCacheRuleType, PullTimeUpdateExclusion, PullTimeUpdateExclusionProperties,
-    PullTimeUpdateExclusionRef, PullTimeUpdateExclusionType, RegistryPolicy, RegistryPolicyProperties, RegistryPolicyRef,
-    RegistryPolicyType, RegistryScanningConfiguration, RegistryScanningConfigurationProperties, RegistryScanningConfigurationRef,
-    RegistryScanningConfigurationType, ReplicationConfiguration, ReplicationConfigurationProperties, ReplicationConfigurationRef,
-    ReplicationConfigurationReplicationConfiguration, ReplicationConfigurationType, ReplicationDestination, ReplicationRule, Repository,
-    RepositoryCatalogData, RepositoryFilter, RepositoryProperties, RepositoryRef, RepositoryType, Rule, ScanningRule, SigningConfiguration,
-    SigningConfigurationProperties, SigningConfigurationRef, SigningConfigurationType,
+    EncryptionConfiguration, ImageScanningConfiguration, ImageTagMutabilityExclusionFilter, LifecyclePolicy, PublicRepository, PublicRepositoryProperties, PublicRepositoryRef, PublicRepositoryType, PullThroughCacheRule, PullThroughCacheRuleProperties, PullThroughCacheRuleRef, PullThroughCacheRuleType, PullTimeUpdateExclusion, PullTimeUpdateExclusionProperties, PullTimeUpdateExclusionRef, PullTimeUpdateExclusionType, RegistryPolicy, RegistryPolicyProperties, RegistryPolicyRef, RegistryPolicyType, RegistryScanningConfiguration, RegistryScanningConfigurationProperties, RegistryScanningConfigurationRef, RegistryScanningConfigurationType, ReplicationConfiguration, ReplicationConfigurationProperties, ReplicationConfigurationRef, ReplicationConfigurationReplicationConfiguration, ReplicationConfigurationType, ReplicationDestination, ReplicationRule, Repository, RepositoryCatalogData, RepositoryProperties, RepositoryRef, RepositoryType, Rule, ScanningConfigRepositoryFilter, ScanningRule, SigningConfiguration, SigningConfigurationProperties, SigningConfigurationRef, SigningConfigurationType, SigningRepositoryFilter
 };
 use crate::iam::RoleRef;
 use crate::iam::Statement;
@@ -339,14 +331,12 @@ impl RegistryPolicyBuilder {
 }
 
 pub enum BasicScanFrequency {
-    Manual,
     OnPush,
 }
 
 impl From<BasicScanFrequency> for String {
     fn from(value: BasicScanFrequency) -> Self {
         match value {
-            BasicScanFrequency::Manual => "MANUAL".to_string(),
             BasicScanFrequency::OnPush => "SCAN_ON_PUSH".to_string(),
         }
     }
@@ -402,8 +392,8 @@ impl RegistryScanningConfigurationBuilder<RegistryScanningConfigurationStartStat
 }
 
 impl RegistryScanningConfigurationBuilder<RegistryScanningConfigurationBasicState> {
-    pub fn scanning_rule(mut self, scan_frequency: BasicScanFrequency, repository_filters: Vec<RepositoryFilter>) -> Self {
-        let scanning_rule = ScanningRuleBuilder::new(scan_frequency.into(), repository_filters).build();
+    pub fn scanning_rule(mut self, scan_frequency: Option<BasicScanFrequency>, repository_filters: Vec<ScanningConfigRepositoryFilter>) -> Self {
+        let scanning_rule = ScanningRuleBuilder::new(scan_frequency.map(Into::into), repository_filters).build();
         self.rules.push(scanning_rule);
         self
     }
@@ -414,8 +404,8 @@ impl RegistryScanningConfigurationBuilder<RegistryScanningConfigurationBasicStat
 }
 
 impl RegistryScanningConfigurationBuilder<RegistryScanningConfigurationEnhancedState> {
-    pub fn scanning_rule(mut self, scan_frequency: EnhancedScanFrequency, repository_filters: Vec<RepositoryFilter>) -> Self {
-        let scanning_rule = ScanningRuleBuilder::new(scan_frequency.into(), repository_filters).build();
+    pub fn scanning_rule(mut self, scan_frequency: EnhancedScanFrequency, repository_filters: Vec<ScanningConfigRepositoryFilter>) -> Self {
+        let scanning_rule = ScanningRuleBuilder::new(Some(scan_frequency.into()), repository_filters).build();
         self.rules.push(scanning_rule);
         self
     }
@@ -446,13 +436,13 @@ impl<T: RegistryScanningConfigurationState> RegistryScanningConfigurationBuilder
 
 /// Use the RegistryScanningConfigurationBuilder `scanning_rule` to set scanning rules
 pub(crate) struct ScanningRuleBuilder {
-    scan_frequency: String,
-    repository_filters: Vec<RepositoryFilter>,
+    scan_frequency: Option<String>,
+    repository_filters: Vec<ScanningConfigRepositoryFilter>,
 }
 
 impl ScanningRuleBuilder {
     // enforce max of 100 rules
-    pub(crate) fn new(scan_frequency: String, repository_filters: Vec<RepositoryFilter>) -> Self {
+    pub(crate) fn new(scan_frequency: Option<String>, repository_filters: Vec<ScanningConfigRepositoryFilter>) -> Self {
         Self {
             scan_frequency,
             repository_filters,
@@ -500,7 +490,7 @@ impl ReplicationConfigurationBuilder {
 // enforce max 100 for both
 pub struct ReplicationRuleBuilder {
     destinations: Vec<ReplicationDestination>,
-    repository_filters: Option<Vec<RepositoryFilter>>,
+    repository_filters: Option<Vec<ScanningConfigRepositoryFilter>>,
 }
 
 impl ReplicationRuleBuilder {
@@ -516,7 +506,7 @@ impl ReplicationRuleBuilder {
         self
     }
 
-    pub fn add_repository_filter(mut self, repository_filter: RepositoryFilter) -> Self {
+    pub fn add_repository_filter(mut self, repository_filter: ScanningConfigRepositoryFilter) -> Self {
         let mut filters = self.repository_filters.unwrap_or_default();
         filters.push(repository_filter);
         self.repository_filters = Some(filters);
@@ -560,6 +550,7 @@ pub enum ImageTagMutability {
     ImmutableWithExclusion,
 }
 
+// TODO only for 'with exclusion' are exclusion filters allowed!
 impl From<ImageTagMutability> for String {
     fn from(mutability: ImageTagMutability) -> Self {
         match mutability {
@@ -800,7 +791,7 @@ impl SigningConfigurationBuilder {
             r#type: SigningConfigurationType::SigningConfigurationType,
             properties: SigningConfigurationProperties { rules: self.rules },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         SigningConfigurationRef::internal_new(resource_id)
     }
@@ -844,7 +835,7 @@ impl ImageTagMutabilityExclusionFilterBuilder {
 
 pub struct RuleBuilder {
     signing_profile_arn: String,
-    repository_filters: Option<Vec<RepositoryFilter>>,
+    repository_filters: Option<Vec<SigningRepositoryFilter>>,
 }
 
 impl RuleBuilder {
@@ -857,7 +848,7 @@ impl RuleBuilder {
     }
 
     // Enforce max 100
-    pub fn add_repository_filter(mut self, repository_filter: RepositoryFilter) -> Self {
+    pub fn add_repository_filter(mut self, repository_filter: SigningRepositoryFilter) -> Self {
         let mut filters = self.repository_filters.unwrap_or_default();
         filters.push(repository_filter);
         self.repository_filters = Some(filters);
@@ -872,33 +863,69 @@ impl RuleBuilder {
     }
 }
 
-pub enum RepositoryFilterType {
-    PrefixMatch,
+pub enum ScanningConfigRepositoryFilterType {
+    Wildcard,
 }
 
-impl From<RepositoryFilterType> for String {
-    fn from(filter_type: RepositoryFilterType) -> Self {
+impl From<ScanningConfigRepositoryFilterType> for String {
+    fn from(filter_type: ScanningConfigRepositoryFilterType) -> Self {
         match filter_type {
-            RepositoryFilterType::PrefixMatch => "PREFIX_MATCH".to_string(),
+            ScanningConfigRepositoryFilterType::Wildcard => "WILDCARD".to_string(),
         }
     }
 }
 
-pub struct RepositoryFilterBuilder {
+// TODO this is the filter for scanning config
+//  but replication config has a different one
+// and signing config has another one
+pub struct ScanningConfigRepositoryFilterBuilder {
     filter: String,
     filter_type: String,
 }
 
-impl RepositoryFilterBuilder {
-    pub fn new(filter_type: RepositoryFilterType, filter: String) -> Self {
+impl ScanningConfigRepositoryFilterBuilder {
+    pub fn new(filter_type: ScanningConfigRepositoryFilterType, filter: String) -> Self {
         Self {
             filter,
             filter_type: filter_type.into(),
         }
     }
 
-    pub fn build(self) -> RepositoryFilter {
-        RepositoryFilter {
+    pub fn build(self) -> ScanningConfigRepositoryFilter {
+        ScanningConfigRepositoryFilter {
+            filter: self.filter,
+            filter_type: self.filter_type,
+        }
+    }
+}
+
+pub enum SigningRepositoryFilterType {
+    Wildcard,
+}
+
+impl From<SigningRepositoryFilterType> for String {
+    fn from(filter_type: SigningRepositoryFilterType) -> Self {
+        match filter_type {
+            SigningRepositoryFilterType::Wildcard => "WILDCARD_MATCH".to_string(),
+        }
+    }
+}
+
+pub struct SigningRepositoryFilterBuilder {
+    filter: String,
+    filter_type: String,
+}
+
+impl SigningRepositoryFilterBuilder {
+    pub fn new(filter_type: SigningRepositoryFilterType, filter: String) -> Self {
+        Self {
+            filter,
+            filter_type: filter_type.into(),
+        }
+    }
+
+    pub fn build(self) -> SigningRepositoryFilter {
+        SigningRepositoryFilter {
             filter: self.filter,
             filter_type: self.filter_type,
         }

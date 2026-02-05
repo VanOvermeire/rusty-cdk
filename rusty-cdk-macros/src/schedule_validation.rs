@@ -29,8 +29,6 @@ pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
 
     let minutes = value_parts[0];
 
-    eprintln!("got value {} and minutes is now {}", value, minutes);
-
     if minutes != "*" {
         let minutes_parts = if minutes.contains(",") {
             minutes.split(",").collect()

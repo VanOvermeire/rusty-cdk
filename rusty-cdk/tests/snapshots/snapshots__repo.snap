@@ -1,0 +1,28 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "myRepo": "[Repository]"
+  },
+  "Resources": {
+    "[Repository]": {
+      "Properties": {
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "ImageTagMutability": "IMMUTABLE_WITH_EXCLUSION",
+        "ImageTagMutabilityExclusionFilters": [
+          {
+            "ImageTagMutabilityExclusionFilterType": "WILDCARD",
+            "ImageTagMutabilityExclusionFilterValue": "example"
+          }
+        ],
+        "RepositoryName": "my-repo-name"
+      },
+      "Type": "AWS::ECR::Repository"
+    }
+  }
+}

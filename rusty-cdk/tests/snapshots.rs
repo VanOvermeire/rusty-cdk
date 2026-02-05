@@ -1,3 +1,4 @@
+use rusty_cdk::ecr::{BasicScanFrequency, ImageTagMutabilityExclusionFilterBuilder, ImageTagMutabilityExclusionFilterType, RegistryScanningConfigurationBuilder, RepositoryBuilder, ScanningConfigRepositoryFilterBuilder};
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::appconfig::{
     ApplicationBuilder, ConfigurationProfileBuilder, DeploymentStrategyBuilder, EnvironmentBuilder, ReplicateTo,
@@ -917,6 +918,50 @@ fn bucket_with_intelligent_tiering_and_metadata_table() {
 
     insta::with_settings!({filters => vec![
             (r"S3Bucket[0-9]+", "[S3Bucket]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn repo() {
+    let mut stack_builder = StackBuilder::new();
+    
+    RepositoryBuilder::new("myRepo")
+        .empty_on_delete(true)
+        .image_tag_mutability(rusty_cdk::ecr::ImageTagMutability::ImmutableWithExclusion)
+        .repository_name(ecr_repository_name!("my-repo-name"))
+        .image_scanning_configuration(true)
+        .add_tag_mutability_exclusion_filter(ImageTagMutabilityExclusionFilterBuilder::new(ImageTagMutabilityExclusionFilterType::Wildcard, image_tag_mutability_exclusion_filter_value!("example")).build())
+        .build(&mut stack_builder);
+    
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"Repository[0-9]+", "[Repository]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn scanning_config() {
+    let mut stack_builder = StackBuilder::new();
+    
+    RegistryScanningConfigurationBuilder::new_basic_scan_type("basic")
+        .scanning_rule(Some(BasicScanFrequency::OnPush), vec![ScanningConfigRepositoryFilterBuilder::new(rusty_cdk::ecr::ScanningConfigRepositoryFilterType::Wildcard, "prefix*".to_string()).build()])
+        .build(&mut stack_builder);
+    
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"RegistryScanningConfiguration[0-9]+", "[RegistryScanningConfiguration]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

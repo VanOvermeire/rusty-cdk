@@ -7,7 +7,7 @@ use crate::custom_resource::BucketNotification;
 use crate::dynamodb::Table;
 use crate::ecr::{
     PublicRepository, PullThroughCacheRule, PullTimeUpdateExclusion, RegistryPolicy, RegistryScanningConfiguration,
-    ReplicationConfiguration, Repository,
+    ReplicationConfiguration, Repository, SigningConfiguration,
 };
 use crate::events::Schedule;
 use crate::iam::Role;
@@ -376,6 +376,7 @@ pub enum Resource {
     Role(Role),
     Secret(Secret),
     Schedule(Schedule),
+    SigningConfiguration(SigningConfiguration),
     Subscription(Subscription),
     Table(Table),
     Topic(Topic),
@@ -421,6 +422,7 @@ impl Resource {
             Resource::RegistryScanningConfiguration(r) => r.get_id(),
             Resource::ReplicationConfiguration(r) => r.get_id(),
             Resource::Repository(r) => r.get_id(),
+            Resource::SigningConfiguration(r) => r.get_id(),
         };
         id.clone()
     }
@@ -463,6 +465,7 @@ impl Resource {
             Resource::RegistryScanningConfiguration(r) => r.get_resource_id(),
             Resource::ReplicationConfiguration(r) => r.get_resource_id(),
             Resource::Repository(r) => r.get_resource_id(),
+            Resource::SigningConfiguration(r) => r.get_resource_id(),
         }
     }
 
@@ -515,6 +518,7 @@ from_resource!(Repository);
 from_resource!(Role);
 from_resource!(Secret);
 from_resource!(Schedule);
+from_resource!(SigningConfiguration);
 from_resource!(Subscription);
 from_resource!(Table);
 from_resource!(Topic);
