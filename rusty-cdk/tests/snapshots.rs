@@ -186,9 +186,9 @@ fn lambda_with_custom_log_group() {
 }
 
 #[test]
-fn sns() {
+fn sns_with_output() {
     let mut stack_builder = StackBuilder::new();
-    TopicBuilder::new("topic")
+    let topic_ref = TopicBuilder::new("topic")
         .topic_name(string_with_only_alphanumerics_underscores_and_hyphens!("some-name"))
         .display_name(topic_display_name!("Some Display-Name"))
         .tracing_config(TracingConfig::PassThrough)
@@ -197,7 +197,9 @@ fn sns() {
         .content_based_deduplication(true)
         .archive_policy(archive_policy!(30))
         .build(&mut stack_builder);
-    let stack = stack_builder.build().unwrap();
+    let stack = stack_builder
+        .add_output("MyOutput", topic_ref.get_ref())
+        .build().unwrap();
 
     let synthesized = stack.synth().unwrap();
     let synthesized: Value = serde_json::from_str(&synthesized).unwrap();

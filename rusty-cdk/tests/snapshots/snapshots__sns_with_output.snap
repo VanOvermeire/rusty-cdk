@@ -6,6 +6,13 @@ expression: synthesized
   "Metadata": {
     "topic": "[SnsTopic]"
   },
+  "Outputs": {
+    "MyOutput": {
+      "Value": {
+        "Ref": "[SnsTopic]"
+      }
+    }
+  },
   "Resources": {
     "[SnsTopic]": {
       "Properties": {
