@@ -7,6 +7,8 @@ use anyhow::{Context, Result};
 use change_case::snake_case;
 use regex::Regex;
 
+// TODO build signature + content
+
 static CUSTOM_PROP_TYPE_REGEX: OnceLock<Regex> = OnceLock::new();
 
 /// Creates DTOs for the scraped Resources
@@ -135,14 +137,19 @@ fn main() -> Result<()> {
     }
 
     if let Some(group_name) = resource_group_name {
-        handled_resource_names.append(&mut handled_helper_names);
-
         let mut builder_imports_and_other_output: Vec<_> = handled_resource_names
             .into_iter()
-            .map(|v| format!("use crate::{}::{};", group_name.to_lowercase(), v))
+            .map(|v| format!("use crate::{0}::{1};\nuse crate::{0}::{1}Ref;", group_name.to_lowercase(), v))
             .collect();
+        builder_imports_and_other_output.append(
+            &mut handled_helper_names
+                .into_iter()
+                .map(|v| format!("use crate::{0}::{1};", group_name.to_lowercase(), v))
+                .collect(),
+        );
         builder_imports_and_other_output.push("use crate::shared::Id;".to_string());
         builder_imports_and_other_output.push("use serde_json::Value;".to_string());
+        builder_imports_and_other_output.push("use crate::stack::{Resource, StackBuilder};".to_string());
         builder_imports_and_other_output.append(&mut builder_output);
 
         let output_dir = format!("output/{}", group_name.to_lowercase());
@@ -361,6 +368,37 @@ fn builder(struct_name: &str, props: &Vec<PropInfo>, helper: bool) -> Result<Str
         .collect::<Vec<_>>()
         .join("\n");
 
+    let build_method_props = props
+        .iter()
+        .map(|v| format!("{0}: self.{0}", snake_case(&v.name)))
+        .collect::<Vec<_>>()
+        .join(",\n");
+    let build_method = if helper {
+        format!(
+            r###"
+            pub fn build(self) -> {0} {{
+                {0} {{
+                    {1}
+                }}
+            }}
+        "###,
+            struct_name, build_method_props
+        )
+    } else {
+        format!(
+            r###"
+            pub fn build(self, stack_builder: &mut StackBuilder) -> {0}Ref {{
+                let resource_id = Resource::generate_id("{0}");           
+                
+                // stack_builder.add_resource(...); // TODO
+                
+                {0}Ref::internal_new(resource_id)
+            }}
+        "###,
+            struct_name
+        )
+    };
+
     let builder = format!(
         r###"
         pub struct {0}Builder {{
@@ -376,12 +414,10 @@ fn builder(struct_name: &str, props: &Vec<PropInfo>, helper: bool) -> Result<Str
             
             {4}
             
-            pub fn build(self) -> {0} {{
-                todo!();
-            }}
+            {5}
         }}
     "###,
-        struct_name, struct_fields_definition, struct_constructor_args, struct_fields_init, optional_prop_builders,
+        struct_name, struct_fields_definition, struct_constructor_args, struct_fields_init, optional_prop_builders, build_method,
     );
 
     Ok(builder)
