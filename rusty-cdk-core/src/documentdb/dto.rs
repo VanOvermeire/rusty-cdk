@@ -57,7 +57,7 @@ pub struct DBClusterProperties {
     #[serde(rename = "PreferredBackupWindow", skip_serializing_if = "Option::is_none")]
     pub(crate) preferred_backup_window: Option<String>,
     #[serde(rename = "BackupRetentionPeriod", skip_serializing_if = "Option::is_none")]
-    pub(crate) backup_retention_period: Option<u32>,
+    pub(crate) backup_retention_period: Option<u16>,
     #[serde(rename = "RestoreType", skip_serializing_if = "Option::is_none")]
     pub(crate) restore_type: Option<String>,
     #[serde(rename = "MasterUserSecretKmsKeyId", skip_serializing_if = "Option::is_none")]
@@ -65,7 +65,7 @@ pub struct DBClusterProperties {
     #[serde(rename = "MasterUserPassword", skip_serializing_if = "Option::is_none")]
     pub(crate) master_user_password: Option<String>,
     #[serde(rename = "Port", skip_serializing_if = "Option::is_none")]
-    pub(crate) port: Option<u32>,
+    pub(crate) port: Option<u16>,
     #[serde(rename = "StorageType", skip_serializing_if = "Option::is_none")]
     pub(crate) storage_type: Option<String>,
     #[serde(rename = "MasterUsername", skip_serializing_if = "Option::is_none")]
