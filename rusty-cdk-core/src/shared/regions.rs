@@ -75,3 +75,23 @@ impl From<Region> for String {
         }
     }
 }
+
+pub enum AvailabilityZone {
+    A,
+    B,
+    C,
+    D,
+    E
+}
+
+impl From<AvailabilityZone> for String {
+    fn from(az: AvailabilityZone) -> String {
+        match az {
+            AvailabilityZone::A => "a".to_string(),
+            AvailabilityZone::B => "b".to_string(),
+            AvailabilityZone::C => "c".to_string(),
+            AvailabilityZone::D => "d".to_string(),
+            AvailabilityZone::E => "e".to_string(),
+        }
+    }
+}

@@ -311,6 +311,7 @@ Currently only a limited number of services are (partly) supported:
 - AppConfig
 - CloudFront
 - Cloudwatch logs
+- DocumentDB(*)
 - DynamoDB
 - ECR(*)
 - Events Schedule
@@ -326,7 +327,6 @@ In other words, you can create serverless applications with this library.
 
 To be added at some point:
 
-- DocumentDB
 - CodeBuild
 - CodePipeline
 - Cloudwatch (-logs)
@@ -438,12 +438,19 @@ async fn tagging() {
 
 ## TODO
 
+- Start using regex in the macros?
+  - But try to keep errors as descriptive as possible
 - Currently at least three ways of doing 'type state', and the first two could/should probably merge
   - new_with...
   - an additional method that determines path (`fifo()`)
   - enums
 - Add user to IAM
 - Lookups
+  - availabiltiy zone
+  - subnet
+  - security group
+  - vpc
+  - ca certificate
   - accountId?
   - 'aws signer'
 - force destroy

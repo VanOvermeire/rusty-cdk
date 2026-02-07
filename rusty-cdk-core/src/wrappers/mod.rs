@@ -864,3 +864,15 @@ pub struct ImageTagMutabilityExclusionFilterValue(pub String);
 
 #[derive(Debug, Clone)]
 pub struct RepositoryFilter(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocumentDBSubscriptionName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocumentDBSubnetGroupName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocumentDbCapacityUnits(pub f32);
+
+#[derive(Debug, Clone)]
+pub struct DocumentDbInstanceClass(pub String);

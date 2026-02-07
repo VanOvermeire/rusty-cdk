@@ -26,6 +26,7 @@ mod bucket_name;
 mod bucket_tiering;
 mod file_util;
 mod iam_validation;
+mod instance_class;
 mod location_uri;
 mod object_sizes;
 mod rate_expression;
@@ -37,6 +38,7 @@ mod transition_in_days;
 use crate::bucket_tiering::BucketTiering;
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
+use crate::instance_class::validate_document_db_instance_class;
 use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
 use crate::rate_expression::RateExpression;
@@ -49,7 +51,7 @@ use quote::__private::Span;
 use quote::quote;
 use std::env;
 use syn::spanned::Spanned;
-use syn::{Error, LitInt, LitStr, parse_macro_input};
+use syn::{Error, LitFloat, LitInt, LitStr, parse_macro_input};
 
 /// Creates a validated `StringWithOnlyAlphaNumericsAndUnderscores` wrapper at compile time.
 ///
@@ -96,6 +98,41 @@ pub fn topic_display_name(input: TokenStream) -> TokenStream {
     .into()
 }
 
+#[proc_macro]
+pub fn document_db_subnet_group_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value == "default" {
+        return Error::new(output.span(), "DocumentDBSubnetGroupName must not be 'default'").into_compile_error().into()
+    }
+    
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-', ' ']).with_min_length(1).with_max_length(255);
+    
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            DocumentDBSubnetGroupName(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn document_db_subscription_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.len() >= 255 {
+        Error::new(output.span(), format!("DocumentDBSubscriptionName must be less than 255 characters (was {})", value.len())).into_compile_error()
+    } else {
+        quote!(
+            DocumentDBSubscriptionName(#value.to_string())
+        )
+    }
+    .into()
+}
+
 /// Creates a validated `StringWithOnlyAlphaNumericsUnderscoresAndHyphens` wrapper at compile time.
 ///
 /// # Validation Rules
@@ -112,6 +149,20 @@ pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream
     match validate_string(&value, requirements) {
         Ok(()) => quote!(
             StringWithOnlyAlphaNumericsUnderscoresAndHyphens(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn document_db_instance_class(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    match validate_document_db_instance_class(&value) {
+        Ok(()) => quote!(
+            DocumentDbInstanceClass(#value.to_string())
         ),
         Err(e) => Error::new(output.span(), e).into_compile_error(),
     }
@@ -731,6 +782,37 @@ pub fn bucket_name(input: TokenStream) -> TokenStream {
             bucket_name::update_file_storage(bucket_name::FileStorageInput::Invalid(&value));
             e.into_compile_error().into()
         }
+    }
+}
+
+#[proc_macro]
+pub fn document_db_capacity_units(input: TokenStream) -> TokenStream {
+    let output = match syn::parse::<LitFloat>(input) {
+        Ok(v) => v,
+        Err(_) => {
+            return Error::new(Span::call_site(), "value is not a _floating point_ number".to_string())
+                .into_compile_error()
+                .into();
+        }
+    };
+
+    let as_number: syn::Result<f32> = output.base10_parse();
+
+    if let Ok(num) = as_number {
+        if num.fract() == 0.0 || num.fract() == 0.5 {
+            quote! {
+                DocumentDbCapacityUnits(#num)
+            }
+            .into()
+        } else {
+            Error::new(output.span(), format!("value should be in increments of 0.5 (was {})", num))
+                .into_compile_error()
+                .into()
+        }
+    } else {
+        Error::new(output.span(), "value is not a valid f32 number".to_string())
+            .into_compile_error()
+            .into()
     }
 }
 

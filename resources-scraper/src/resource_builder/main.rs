@@ -263,7 +263,7 @@ fn props_info(split_resource: &mut std::str::Split<&str>) -> Result<Vec<PropInfo
         while let Some(prop_info) = prop_info_split.next() {
             let prop_info = prop_info.trim();
 
-            if prop_info == "Required: No" {
+            if prop_info == "Required: No" || prop_info == "Required: Conditional" {
                 optional = true;
             } else if prop_info.starts_with("Type: ") {
                 let prop_info = prop_info.replace("Type: ", "");

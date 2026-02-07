@@ -1,14 +1,7 @@
 #![allow(dead_code)]
 
 use rusty_cdk_macros::{
-    app_config_name, app_sync_api_name, bucket_tiering, channel_namespace_name, default_root_object, delay_seconds, ecr_repository_name,
-    env_var_key, iam_action, image_tag_mutability_exclusion_filter_value, lambda_permission_action, lifecycle_object_sizes,
-    lifecycle_transition_in_days, location_uri, log_group_name, log_retention, max_flexible_time_window, maximum_message_size, memory,
-    message_retention_period, non_zero_number, origin_path, policy_name, receive_message_wait_time, repo_about_text, repo_description,
-    repo_prefix, retry_policy_event_age, retry_policy_retries, schedule_at_expression, schedule_cron_expression, schedule_name,
-    schedule_rate_expression, sqs_event_source_max_concurrency, string_for_secret, string_with_only_alphanumerics_and_hyphens,
-    string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, timeout, toml_file,
-    topic_display_name, url, visibility_timeout, zip_file,
+    app_config_name, app_sync_api_name, bucket_tiering, channel_namespace_name, default_root_object, delay_seconds, document_db_capacity_units, ecr_repository_name, env_var_key, iam_action, image_tag_mutability_exclusion_filter_value, lambda_permission_action, lifecycle_object_sizes, lifecycle_transition_in_days, location_uri, log_group_name, log_retention, max_flexible_time_window, maximum_message_size, memory, message_retention_period, non_zero_number, origin_path, policy_name, receive_message_wait_time, repo_about_text, repo_description, repo_prefix, retry_policy_event_age, retry_policy_retries, schedule_at_expression, schedule_cron_expression, schedule_name, schedule_rate_expression, sqs_event_source_max_concurrency, string_for_secret, string_with_only_alphanumerics_and_hyphens, string_with_only_alphanumerics_and_underscores, string_with_only_alphanumerics_underscores_and_hyphens, timeout, toml_file, topic_display_name, url, visibility_timeout, zip_file, document_db_instance_class
 };
 
 // placeholders for the wrapper structs that exist in the core package //
@@ -54,6 +47,8 @@ struct RepoPrefix(String);
 struct EcrRepositoryName(String);
 struct URL(String);
 struct ImageTagMutabilityExclusionFilterValue(String);
+struct DocumentDbCapacityUnits(f32);
+struct DocumentDbInstanceClass(String);
 
 #[test]
 fn create_non_zero_number_should_compile_for_non_zero_number() {
@@ -350,4 +345,19 @@ fn create_url_without_https() {
 #[test]
 fn create_image_tag_mutability_exclusion_filter_value() {
     image_tag_mutability_exclusion_filter_value!("some-filter*");
+}
+
+#[test]
+fn create_document_db_capacity_units() {
+    document_db_capacity_units!(32.0);
+}
+
+#[test]
+fn create_document_db_capacity_units_half_unit() {
+    document_db_capacity_units!(32.5);
+}
+
+#[test]
+fn document_db_instance_class() {
+    document_db_instance_class!("db.t4.2xlarge");
 }

@@ -4,6 +4,7 @@ use crate::appsync::{AppSyncApi, ChannelNamespace};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::cloudwatch::LogGroup;
 use crate::custom_resource::BucketNotification;
+use crate::documentdb::{DBCluster, DBClusterParameterGroup, DBSubnetGroup, GlobalCluster};
 use crate::dynamodb::Table;
 use crate::ecr::{
     PublicRepository, PullThroughCacheRule, PullTimeUpdateExclusion, RegistryPolicy, RegistryScanningConfiguration,
@@ -358,6 +359,9 @@ pub enum Resource {
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
     Distribution(Distribution),
+    DocumentDBSubnetGroup(DBSubnetGroup),
+    DocumentDBGlobalCluster(GlobalCluster),
+    DocumentDBDBClusterParameterGroup(DBClusterParameterGroup),
     PublicRepository(PublicRepository),
     Environment(Environment),
     EventSourceMapping(EventSourceMapping),
@@ -423,6 +427,9 @@ impl Resource {
             Resource::ReplicationConfiguration(r) => r.get_id(),
             Resource::Repository(r) => r.get_id(),
             Resource::SigningConfiguration(r) => r.get_id(),
+            Resource::DocumentDBGlobalCluster(r) => r.get_id(),
+            Resource::DocumentDBSubnetGroup(r) => r.get_id(),
+            Resource::DocumentDBDBClusterParameterGroup(r) => r.get_id(),
         };
         id.clone()
     }
@@ -466,6 +473,9 @@ impl Resource {
             Resource::ReplicationConfiguration(r) => r.get_resource_id(),
             Resource::Repository(r) => r.get_resource_id(),
             Resource::SigningConfiguration(r) => r.get_resource_id(),
+            Resource::DocumentDBGlobalCluster(r) => r.get_resource_id(),
+            Resource::DocumentDBSubnetGroup(r) => r.get_resource_id(),
+            Resource::DocumentDBDBClusterParameterGroup(r) => r.get_resource_id(),
         }
     }
 
@@ -484,6 +494,23 @@ macro_rules! from_resource {
             }
         }
     };
+}
+
+// TODO separate macro for these cases
+impl From<DBSubnetGroup> for Resource {
+    fn from(value: DBSubnetGroup) -> Self {
+        Resource::DocumentDBSubnetGroup(value)
+    }
+}
+impl From<GlobalCluster> for Resource {
+    fn from(value: GlobalCluster) -> Self {
+        Resource::DocumentDBGlobalCluster(value)
+    }
+}
+impl From<DBClusterParameterGroup> for Resource {
+    fn from(value: DBClusterParameterGroup) -> Self {
+        Resource::DocumentDBDBClusterParameterGroup(value)
+    }
 }
 
 from_resource!(ApiGatewayV2Api);
