@@ -60,8 +60,7 @@ pub struct DBClusterBuilder {
     use_latest_restorable_time: Option<bool>,
     // The list of log types that need to be enabled for exporting to Amazon CloudWatch            Logs. You can enable audit logs or profiler logs
     enable_cloudwatch_logs_exports: Option<Vec<String>>,
-    // The cluster identifier of the new global cluster., Pattern: <code class="code">[A-Za-z][0-9A-Za-z-:._]*</code>, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    global_cluster_identifier: Option<String>,
+    global_cluster_identifier: Option<Value>,
     network_type: Option<String>,
     // The daily time range during which automated backups are created if            automated backups are enabled using the <code class="code">BackupRetentionPeriod</code> parameter., The default is a 30-minute window selected at random from an 8-hour block of time for each AWS Region., Constraints:
     preferred_backup_window: Option<String>,
@@ -77,14 +76,11 @@ pub struct DBClusterBuilder {
     engine_version: Option<String>,
     // TODO arn for simplicity
     kms_key_id: Option<String>,
-     // The identifier of the source cluster from which to restore., Constraints:
-    source_db_cluster_identifier: Option<String>,
-    // The cluster identifier. This parameter is stored as a lowercase            string., Constraints:, Example: <code class="code">my-cluster</code>
-    db_cluster_identifier: Option<String>,
+    source_db_cluster_identifier: Option<Value>,
+    db_cluster_identifier: Option<Value>,
     // The weekly time range during which system maintenance can occur,            in Universal Coordinated Time (UTC)., Format: <code class="code">ddd:hh24:mi-ddd:hh24:mi</code>, The default is a 30-minute window selected at random from an 8-hour block of time for each AWS Region, occurring on a random day of the week., Valid days: Mon, Tue, Wed, Thu, Fri, Sat, Sun, Constraints: Minimum 30-minute window.
     preferred_maintenance_window: Option<String>,
-    // The name of the cluster parameter group to associate with this cluster.
-    db_cluster_parameter_group_name: Option<String>,
+    db_cluster_parameter_group_name: Option<Value>,
 }
 
 impl DBClusterBuilder {
@@ -206,9 +202,9 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn global_cluster_identifier(self, global_cluster_identifier: String) -> Self {
+    pub fn global_cluster_identifier(self, global_cluster_identifier: &GlobalClusterRef) -> Self {
         Self {
-            global_cluster_identifier: Some(global_cluster_identifier),
+            global_cluster_identifier: Some(global_cluster_identifier.get_ref()),
             ..self
         }
     }
@@ -287,16 +283,16 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn source_db_cluster_identifier(self, source_db_cluster_identifier: String) -> Self {
+    pub fn source_db_cluster_identifier(self, source_db_cluster_identifier: &DBClusterRef) -> Self {
         Self {
-            source_db_cluster_identifier: Some(source_db_cluster_identifier),
+            source_db_cluster_identifier: Some(source_db_cluster_identifier.get_ref()),
             ..self
         }
     }
 
-    pub fn db_cluster_identifier(self, db_cluster_identifier: String) -> Self {
+    pub fn db_cluster_identifier(self, db_cluster_identifier: &DBClusterRef) -> Self {
         Self {
-            db_cluster_identifier: Some(db_cluster_identifier),
+            db_cluster_identifier: Some(db_cluster_identifier.get_ref()),
             ..self
         }
     }
@@ -308,9 +304,9 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn db_cluster_parameter_group_name(self, db_cluster_parameter_group_name: String) -> Self {
+    pub fn db_cluster_parameter_group_name(self, db_cluster_parameter_group_name: &DBClusterParameterGroupRef) -> Self {
         Self {
-            db_cluster_parameter_group_name: Some(db_cluster_parameter_group_name),
+            db_cluster_parameter_group_name: Some(db_cluster_parameter_group_name.get_ref()),
             ..self
         }
     }

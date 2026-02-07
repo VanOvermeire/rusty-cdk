@@ -51,7 +51,7 @@ pub struct DBClusterProperties {
     #[serde(rename = "EnableCloudwatchLogsExports", skip_serializing_if = "Option::is_none")]
     pub(crate) enable_cloudwatch_logs_exports: Option<Vec<String>>,
     #[serde(rename = "GlobalClusterIdentifier", skip_serializing_if = "Option::is_none")]
-    pub(crate) global_cluster_identifier: Option<String>,
+    pub(crate) global_cluster_identifier: Option<Value>,
     #[serde(rename = "NetworkType", skip_serializing_if = "Option::is_none")]
     pub(crate) network_type: Option<String>,
     #[serde(rename = "PreferredBackupWindow", skip_serializing_if = "Option::is_none")]
@@ -75,13 +75,13 @@ pub struct DBClusterProperties {
     #[serde(rename = "KmsKeyId", skip_serializing_if = "Option::is_none")]
     pub(crate) kms_key_id: Option<String>,
     #[serde(rename = "SourceDBClusterIdentifier", skip_serializing_if = "Option::is_none")]
-    pub(crate) source_db_cluster_identifier: Option<String>,
+    pub(crate) source_db_cluster_identifier: Option<Value>,
     #[serde(rename = "DBClusterIdentifier", skip_serializing_if = "Option::is_none")]
-    pub(crate) db_cluster_identifier: Option<String>,
+    pub(crate) db_cluster_identifier: Option<Value>,
     #[serde(rename = "PreferredMaintenanceWindow", skip_serializing_if = "Option::is_none")]
     pub(crate) preferred_maintenance_window: Option<String>,
     #[serde(rename = "DBClusterParameterGroupName", skip_serializing_if = "Option::is_none")]
-    pub(crate) db_cluster_parameter_group_name: Option<String>,
+    pub(crate) db_cluster_parameter_group_name: Option<Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
