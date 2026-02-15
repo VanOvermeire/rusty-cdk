@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::documentdb::{
     DBCluster, DBClusterParameterGroup, DBClusterParameterGroupProperties, DBClusterParameterGroupRef, DBClusterParameterGroupType,
     DBClusterProperties, DBClusterRef, DBClusterType, DBInstance, DBInstanceProperties, DBInstanceRef, DBInstanceType, DBSubnetGroup,
@@ -5,10 +7,12 @@ use crate::documentdb::{
     EventSubscriptionType, GlobalCluster, GlobalClusterProperties, GlobalClusterRef, GlobalClusterType,
 };
 use crate::documentdb::{ServerlessV2ScalingConfiguration};
+use crate::kms::KeyRef;
 use crate::shared::{AvailabilityZone, Id, Region};
 use crate::sns::TopicRef;
 use crate::stack::{Resource, StackBuilder};
-use crate::wrappers::{DocumentDBSubnetGroupName, DocumentDBSubscriptionName, DocumentDbCapacityUnits, DocumentDbInstanceClass};
+use crate::type_state;
+use crate::wrappers::{DocDBSubnetGroupName, DocDBSubscriptionName, DocDbCapacityUnits, DocDbInstanceClass, DocDbMasterPassword, DocDbMasterUsername};
 use serde_json::Value;
 
 pub enum NetworkType {
@@ -39,53 +43,95 @@ impl From<StorageType> for String {
     }
 }
 
-pub struct DBClusterBuilder {
+pub enum RestoreType {
+    FullCopy,
+    CopyOnWrite,
+}
+
+impl From<RestoreType> for String {
+    fn from(restore_type: RestoreType) -> Self {
+        match restore_type {
+            RestoreType::FullCopy => "full-copy".to_string(),
+            RestoreType::CopyOnWrite => "copy-on-write".to_string(),
+        }
+    }
+}
+
+pub enum EngineVersion {
+    // V3 also exists, but is deprecated
+    V4,
+    V5,
+}
+
+impl From<EngineVersion> for String {
+    fn from(engine_version: EngineVersion) -> Self {
+        match engine_version {
+            EngineVersion::V4 => "Version 4.0".to_string(),
+            EngineVersion::V5 => "Version 5.0".to_string(),
+        }
+    }
+}
+
+pub enum CloudwatchLogExport {
+    Audit,
+    Profiler,
+}
+
+impl From<CloudwatchLogExport> for String {
+    fn from(log_export: CloudwatchLogExport) -> Self {
+        match log_export {
+            CloudwatchLogExport::Audit => "audit".to_string(),
+            CloudwatchLogExport::Profiler => "profiler".to_string(),
+        }
+    }
+}
+
+type_state!(
+    DbClusterState,
+    DbClusterStartState,
+    DbClusterManualPasswordState,
+    DbClusterAutomaticPasswordState,
+);
+
+// TODO validation for restore time, backup window, maintenance window
+// TODO latest restorable time not together with restore time
+pub struct DBClusterBuilder<T: DbClusterState> {
+    phantom: PhantomData<T>,
     id: Id,
     availability_zones: Option<Vec<String>>,
-     // TODO cannot be combined with specified user password
     manage_master_user_password: Option<bool>,
-    // TODO only with the above
     rotate_master_user_password: Option<bool>,
-    // TODO only with above, ARN
-    master_user_secret_kms_key_id: Option<String>,
+    master_user_secret_kms_key_id: Option<Value>,
     db_subnet_group_name: Option<String>,
     storage_encrypted: Option<bool>,
-    // The date and time to restore the cluster to., Valid values: A time in Universal Coordinated Time (UTC) format., Constraints:, Example: <code class="code">2015-03-07T23:45:00Z</code>
     restore_to_time: Option<String>,
+    use_latest_restorable_time: Option<bool>,
     deletion_protection: Option<bool>,
     serverless_v2_scaling_configuration: Option<ServerlessV2ScalingConfiguration>,
     vpc_security_group_ids: Option<Vec<String>>,
     snapshot_identifier: Option<String>,
-    // A value that is set to <code class="code">true</code> to restore the cluster to the latest            restorable backup time, and <code class="code">false</code> otherwise., Default: <code class="code">false</code>, Constraints: Cannot be specified if the <code class="code">RestoreToTime</code> parameter is            provided.
-    use_latest_restorable_time: Option<bool>,
-    // The list of log types that need to be enabled for exporting to Amazon CloudWatch            Logs. You can enable audit logs or profiler logs
     enable_cloudwatch_logs_exports: Option<Vec<String>>,
     global_cluster_identifier: Option<Value>,
     network_type: Option<String>,
-    // The daily time range during which automated backups are created if            automated backups are enabled using the <code class="code">BackupRetentionPeriod</code> parameter., The default is a 30-minute window selected at random from an 8-hour block of time for each AWS Region., Constraints:
-    preferred_backup_window: Option<String>,
     backup_retention_period: Option<u16>,
-    restore_type: Option<String>, // The type of restore to be performed. You can specify one of the following values:, Constraints: You can't specify <code class="code">copy-on-write</code> if the engine version of the source DB cluster is earlier than 1.11., If you don't specify a <code class="code">RestoreType</code> value, then the new DB cluster is            restored as a full copy of the source DB cluster.
-    // The password for the master database user. This password can            contain any printable ASCII character except forward slash (/),            double quote ("), or the "at" symbol (@)., Constraints: Must contain from 8 to 100 characters.
+    restore_type: Option<String>,
+    master_username: Option<String>,
     master_user_password: Option<String>,
     port: Option<u16>,
     storage_type: Option<String>,
-    // The name of the master user for the cluster., Constraints:
-    master_username: Option<String>,
-    // The version number of the database engine to use.
     engine_version: Option<String>,
-    // TODO arn for simplicity
-    kms_key_id: Option<String>,
+    kms_key_id: Option<Value>,
     source_db_cluster_identifier: Option<Value>,
     db_cluster_identifier: Option<Value>,
-    // The weekly time range during which system maintenance can occur,            in Universal Coordinated Time (UTC)., Format: <code class="code">ddd:hh24:mi-ddd:hh24:mi</code>, The default is a 30-minute window selected at random from an 8-hour block of time for each AWS Region, occurring on a random day of the week., Valid days: Mon, Tue, Wed, Thu, Fri, Sat, Sun, Constraints: Minimum 30-minute window.
+    preferred_backup_window: Option<String>,
     preferred_maintenance_window: Option<String>,
     db_cluster_parameter_group_name: Option<Value>,
 }
 
-impl DBClusterBuilder {
+impl DBClusterBuilder<DbClusterStartState> {
     pub fn new(id: &str) -> Self {
-        Self {
+        DBClusterBuilder {
+            phantom: Default::default(),
             id: Id(id.to_string()),
             availability_zones: None,
             manage_master_user_password: None,
@@ -117,17 +163,52 @@ impl DBClusterBuilder {
             db_cluster_parameter_group_name: None,
         }
     }
+}
 
-    pub fn availability_zones(self, availability_zones: Vec<String>) -> Self {
-        Self {
-            availability_zones: Some(availability_zones),
-            ..self
-        }
-    }
-
+impl DBClusterBuilder<DbClusterAutomaticPasswordState> {
     pub fn manage_master_user_password(self, manage_master_user_password: bool) -> Self {
         Self {
             manage_master_user_password: Some(manage_master_user_password),
+            ..self
+        }
+    }
+    
+    pub fn rotate_master_user_password(self, rotate_master_user_password: bool) -> Self {
+        Self {
+            rotate_master_user_password: Some(rotate_master_user_password),
+            ..self
+        }
+    }
+    
+    pub fn master_user_secret_kms_key_id(self, master_user_secret_kms_key_id: &KeyRef) -> Self {
+        Self {
+            master_user_secret_kms_key_id: Some(master_user_secret_kms_key_id.get_arn()),
+            ..self
+        }
+    }
+    
+    pub fn build(self, stack_builder: &mut StackBuilder) -> DBClusterRef {
+        self.build_internal(stack_builder)
+    }
+}
+
+impl DBClusterBuilder<DbClusterManualPasswordState> {
+    pub fn master_user_password(self, master_user_password: DocDbMasterPassword) -> Self {
+        Self {
+            master_user_password: Some(master_user_password.0),
+            ..self
+        }
+    }
+    
+    pub fn build(self, stack_builder: &mut StackBuilder) -> DBClusterRef {
+        self.build_internal(stack_builder)
+    }
+}
+
+impl<T: DbClusterState> DBClusterBuilder<T> {
+    pub fn availability_zones(self, availability_zones: Vec<String>) -> Self {
+        Self {
+            availability_zones: Some(availability_zones),
             ..self
         }
     }
@@ -142,13 +223,6 @@ impl DBClusterBuilder {
     pub fn storage_encrypted(self, storage_encrypted: bool) -> Self {
         Self {
             storage_encrypted: Some(storage_encrypted),
-            ..self
-        }
-    }
-
-    pub fn rotate_master_user_password(self, rotate_master_user_password: bool) -> Self {
-        Self {
-            rotate_master_user_password: Some(rotate_master_user_password),
             ..self
         }
     }
@@ -195,9 +269,9 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn enable_cloudwatch_logs_exports(self, enable_cloudwatch_logs_exports: Vec<String>) -> Self {
+    pub fn enable_cloudwatch_logs_exports(self, enable_cloudwatch_logs_exports: Vec<CloudwatchLogExport>) -> Self {
         Self {
-            enable_cloudwatch_logs_exports: Some(enable_cloudwatch_logs_exports),
+            enable_cloudwatch_logs_exports: Some(enable_cloudwatch_logs_exports.into_iter().map(Into::into).collect()),
             ..self
         }
     }
@@ -230,23 +304,9 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn restore_type(self, restore_type: String) -> Self {
+    pub fn restore_type(self, restore_type: RestoreType) -> Self {
         Self {
-            restore_type: Some(restore_type),
-            ..self
-        }
-    }
-
-    pub fn master_user_secret_kms_key_id(self, master_user_secret_kms_key_id: String) -> Self {
-        Self {
-            master_user_secret_kms_key_id: Some(master_user_secret_kms_key_id),
-            ..self
-        }
-    }
-
-    pub fn master_user_password(self, master_user_password: String) -> Self {
-        Self {
-            master_user_password: Some(master_user_password),
+            restore_type: Some(restore_type.into()),
             ..self
         }
     }
@@ -262,23 +322,24 @@ impl DBClusterBuilder {
         }
     }
 
-    pub fn master_username(self, master_username: String) -> Self {
+    pub fn master_username(self, master_username: DocDbMasterUsername) -> Self {
         Self {
-            master_username: Some(master_username),
+            master_username: Some(master_username.0),
             ..self
         }
     }
 
-    pub fn engine_version(self, engine_version: String) -> Self {
+    pub fn engine_version(self, engine_version: EngineVersion) -> Self {
         Self {
-            engine_version: Some(engine_version),
+            engine_version: Some(engine_version.into()),
             ..self
         }
     }
 
-    pub fn kms_key_id(self, kms_key_id: String) -> Self {
+    pub fn kms_key_id(self, kms_key_id: &KeyRef) -> Self {
+        // in theory, you can also pass in a key id, but ARN works for all use cases
         Self {
-            kms_key_id: Some(kms_key_id),
+            kms_key_id: Some(kms_key_id.get_arn()),
             ..self
         }
     }
@@ -310,8 +371,8 @@ impl DBClusterBuilder {
             ..self
         }
     }
-
-    pub fn build(self, stack_builder: &mut StackBuilder) -> DBClusterRef {
+    
+    fn build_internal(self, stack_builder: &mut StackBuilder) -> DBClusterRef {
         let resource_id = Resource::generate_id("DBCluster");
 
         let resource = DBCluster {
@@ -349,7 +410,7 @@ impl DBClusterBuilder {
                 db_cluster_parameter_group_name: self.db_cluster_parameter_group_name,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         DBClusterRef::internal_new(resource_id)
     }
@@ -414,7 +475,7 @@ pub struct DBInstanceBuilder {
 
 impl DBInstanceBuilder {
     // TODO should probably also accept global cluster ref
-    pub fn new(id: &str, db_cluster_identifier: &DBClusterRef, db_instance_class: DocumentDbInstanceClass) -> Self {
+    pub fn new(id: &str, db_cluster_identifier: &DBClusterRef, db_instance_class: DocDbInstanceClass) -> Self {
         Self {
             id: Id(id.to_string()),
             certificate_rotation_restart: None,
@@ -514,7 +575,7 @@ impl DBSubnetGroupBuilder {
         }
     }
 
-    pub fn db_subnet_group_name(self, db_subnet_group_name: DocumentDBSubnetGroupName) -> Self {
+    pub fn db_subnet_group_name(self, db_subnet_group_name: DocDBSubnetGroupName) -> Self {
         Self {
             db_subnet_group_name: Some(db_subnet_group_name.0),
             ..self
@@ -668,7 +729,7 @@ impl EventSubscriptionBuilder {
         }
     }
 
-    pub fn subscription_name(self, subscription_name: DocumentDBSubscriptionName) -> Self {
+    pub fn subscription_name(self, subscription_name: DocDBSubscriptionName) -> Self {
         Self {
             subscription_name: Some(subscription_name.0),
             ..self
@@ -705,20 +766,6 @@ impl From<GlobalEngine> for String {
     fn from(engine: GlobalEngine) -> Self {
         match engine {
             GlobalEngine::Docdb => "docdb".to_string(),
-        }
-    }
-}
-
-pub enum EngineVersion {
-    Version4_0,
-    Version5_0,
-}
-
-impl From<EngineVersion> for String {
-    fn from(engine_version: EngineVersion) -> Self {
-        match engine_version {
-            EngineVersion::Version4_0 => "4.0".to_string(),
-            EngineVersion::Version5_0 => "5.0".to_string(),
         }
     }
 }
@@ -811,7 +858,7 @@ pub struct ServerlessV2ScalingConfigurationBuilder {
 }
 
 impl ServerlessV2ScalingConfigurationBuilder {
-    pub fn new(max_capacity: DocumentDbCapacityUnits, min_capacity: DocumentDbCapacityUnits) -> Self {
+    pub fn new(max_capacity: DocDbCapacityUnits, min_capacity: DocDbCapacityUnits) -> Self {
         Self {
             min_capacity: min_capacity.0,
             max_capacity: max_capacity.0,

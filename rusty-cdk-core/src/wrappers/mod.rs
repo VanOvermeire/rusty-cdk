@@ -866,13 +866,19 @@ pub struct ImageTagMutabilityExclusionFilterValue(pub String);
 pub struct RepositoryFilter(pub String);
 
 #[derive(Debug, Clone)]
-pub struct DocumentDBSubscriptionName(pub String);
+pub struct DocDBSubscriptionName(pub String);
 
 #[derive(Debug, Clone)]
-pub struct DocumentDBSubnetGroupName(pub String);
+pub struct DocDBSubnetGroupName(pub String);
 
 #[derive(Debug, Clone)]
-pub struct DocumentDbCapacityUnits(pub f32);
+pub struct DocDbCapacityUnits(pub f32);
 
 #[derive(Debug, Clone)]
-pub struct DocumentDbInstanceClass(pub String);
+pub struct DocDbInstanceClass(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocDbMasterUsername(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocDbMasterPassword(pub String);

@@ -6,3 +6,5 @@ output
 Cargo.lock
 
 .gemini
+plan
+ralph.sh

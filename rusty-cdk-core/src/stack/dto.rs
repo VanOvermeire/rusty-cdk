@@ -359,9 +359,10 @@ pub enum Resource {
     ConfigurationProfile(ConfigurationProfile),
     DeploymentStrategy(DeploymentStrategy),
     Distribution(Distribution),
-    DocumentDBSubnetGroup(DBSubnetGroup),
-    DocumentDBGlobalCluster(GlobalCluster),
-    DocumentDBDBClusterParameterGroup(DBClusterParameterGroup),
+    DocDBSubnetGroup(DBSubnetGroup),
+    DocDBGlobalCluster(GlobalCluster),
+    DocDBCluster(DBCluster),
+    DocDBClusterParameterGroup(DBClusterParameterGroup),
     PublicRepository(PublicRepository),
     Environment(Environment),
     EventSourceMapping(EventSourceMapping),
@@ -427,9 +428,10 @@ impl Resource {
             Resource::ReplicationConfiguration(r) => r.get_id(),
             Resource::Repository(r) => r.get_id(),
             Resource::SigningConfiguration(r) => r.get_id(),
-            Resource::DocumentDBGlobalCluster(r) => r.get_id(),
-            Resource::DocumentDBSubnetGroup(r) => r.get_id(),
-            Resource::DocumentDBDBClusterParameterGroup(r) => r.get_id(),
+            Resource::DocDBGlobalCluster(r) => r.get_id(),
+            Resource::DocDBSubnetGroup(r) => r.get_id(),
+            Resource::DocDBClusterParameterGroup(r) => r.get_id(),
+            Resource::DocDBCluster(r) => r.get_id(),
         };
         id.clone()
     }
@@ -473,9 +475,10 @@ impl Resource {
             Resource::ReplicationConfiguration(r) => r.get_resource_id(),
             Resource::Repository(r) => r.get_resource_id(),
             Resource::SigningConfiguration(r) => r.get_resource_id(),
-            Resource::DocumentDBGlobalCluster(r) => r.get_resource_id(),
-            Resource::DocumentDBSubnetGroup(r) => r.get_resource_id(),
-            Resource::DocumentDBDBClusterParameterGroup(r) => r.get_resource_id(),
+            Resource::DocDBGlobalCluster(r) => r.get_resource_id(),
+            Resource::DocDBSubnetGroup(r) => r.get_resource_id(),
+            Resource::DocDBClusterParameterGroup(r) => r.get_resource_id(),
+            Resource::DocDBCluster(r) => r.get_id(),
         }
     }
 
@@ -488,30 +491,21 @@ impl Resource {
 
 macro_rules! from_resource {
     ($name:ident) => {
+        from_resource!($name, $name);
+    };
+    ($name:ident, $resource_name:ident) => {
         impl From<$name> for Resource {
             fn from(value: $name) -> Self {
-                Resource::$name(value)
+                Resource::$resource_name(value)
             }
         }
     };
 }
 
-// TODO separate macro for these cases
-impl From<DBSubnetGroup> for Resource {
-    fn from(value: DBSubnetGroup) -> Self {
-        Resource::DocumentDBSubnetGroup(value)
-    }
-}
-impl From<GlobalCluster> for Resource {
-    fn from(value: GlobalCluster) -> Self {
-        Resource::DocumentDBGlobalCluster(value)
-    }
-}
-impl From<DBClusterParameterGroup> for Resource {
-    fn from(value: DBClusterParameterGroup) -> Self {
-        Resource::DocumentDBDBClusterParameterGroup(value)
-    }
-}
+from_resource!(DBCluster, DocDBCluster);
+from_resource!(GlobalCluster, DocDBGlobalCluster);
+from_resource!(DBSubnetGroup, DocDBSubnetGroup);
+from_resource!(DBClusterParameterGroup, DocDBClusterParameterGroup);
 
 from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Integration);

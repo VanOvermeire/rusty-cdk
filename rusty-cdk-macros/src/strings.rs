@@ -61,6 +61,9 @@ pub(crate) fn validate_string(value: &str, requirements: StringRequirements) -> 
             .chars()
             .any(|c| !c.is_alphanumeric() && !requirements.allowed_chars.contains(&c))
     {
+        if requirements.allowed_chars.is_empty() {
+            return Err(format!("value should only contain alphanumeric characters"));
+        }
         return Err(format!(
             "value should only contain alphanumeric characters and {:?}",
             requirements.allowed_chars

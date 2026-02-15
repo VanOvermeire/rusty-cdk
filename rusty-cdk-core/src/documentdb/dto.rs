@@ -61,7 +61,7 @@ pub struct DBClusterProperties {
     #[serde(rename = "RestoreType", skip_serializing_if = "Option::is_none")]
     pub(crate) restore_type: Option<String>,
     #[serde(rename = "MasterUserSecretKmsKeyId", skip_serializing_if = "Option::is_none")]
-    pub(crate) master_user_secret_kms_key_id: Option<String>,
+    pub(crate) master_user_secret_kms_key_id: Option<Value>,
     #[serde(rename = "MasterUserPassword", skip_serializing_if = "Option::is_none")]
     pub(crate) master_user_password: Option<String>,
     #[serde(rename = "Port", skip_serializing_if = "Option::is_none")]
@@ -73,7 +73,7 @@ pub struct DBClusterProperties {
     #[serde(rename = "EngineVersion", skip_serializing_if = "Option::is_none")]
     pub(crate) engine_version: Option<String>,
     #[serde(rename = "KmsKeyId", skip_serializing_if = "Option::is_none")]
-    pub(crate) kms_key_id: Option<String>,
+    pub(crate) kms_key_id: Option<Value>,
     #[serde(rename = "SourceDBClusterIdentifier", skip_serializing_if = "Option::is_none")]
     pub(crate) source_db_cluster_identifier: Option<Value>,
     #[serde(rename = "DBClusterIdentifier", skip_serializing_if = "Option::is_none")]

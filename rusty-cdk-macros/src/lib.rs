@@ -38,7 +38,7 @@ mod transition_in_days;
 use crate::bucket_tiering::BucketTiering;
 use crate::file_util::get_absolute_file_path;
 use crate::iam_validation::{PermissionValidator, ValidationResponse};
-use crate::instance_class::validate_document_db_instance_class;
+use crate::instance_class::validate_doc_db_instance_class;
 use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
 use crate::rate_expression::RateExpression;
@@ -99,19 +99,23 @@ pub fn topic_display_name(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn document_db_subnet_group_name(input: TokenStream) -> TokenStream {
+pub fn doc_db_subnet_group_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
     if value == "default" {
-        return Error::new(output.span(), "DocumentDBSubnetGroupName must not be 'default'").into_compile_error().into()
+        return Error::new(output.span(), "name must not be 'default'")
+            .into_compile_error()
+            .into();
     }
-    
-    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-', ' ']).with_min_length(1).with_max_length(255);
-    
+
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec!['.', '_', '-', ' '])
+        .with_min_length(1)
+        .with_max_length(255);
+
     match validate_string(&value, requirements) {
         Ok(()) => quote!(
-            DocumentDBSubnetGroupName(#value.to_string())
+            DocDBSubnetGroupName(#value.to_string())
         ),
         Err(e) => Error::new(output.span(), e).into_compile_error(),
     }
@@ -119,15 +123,19 @@ pub fn document_db_subnet_group_name(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn document_db_subscription_name(input: TokenStream) -> TokenStream {
+pub fn doc_db_subscription_name(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
     if value.len() >= 255 {
-        Error::new(output.span(), format!("DocumentDBSubscriptionName must be less than 255 characters (was {})", value.len())).into_compile_error()
+        Error::new(
+            output.span(),
+            format!("name must be less than 255 characters (was {})", value.len()),
+        )
+        .into_compile_error()
     } else {
         quote!(
-            DocumentDBSubscriptionName(#value.to_string())
+            DocDBSubscriptionName(#value.to_string())
         )
     }
     .into()
@@ -156,13 +164,13 @@ pub fn string_with_only_alphanumerics_underscores_and_hyphens(input: TokenStream
 }
 
 #[proc_macro]
-pub fn document_db_instance_class(input: TokenStream) -> TokenStream {
+pub fn doc_db_instance_class(input: TokenStream) -> TokenStream {
     let output: LitStr = syn::parse(input).unwrap();
     let value = output.value();
 
-    match validate_document_db_instance_class(&value) {
+    match validate_doc_db_instance_class(&value) {
         Ok(()) => quote!(
-            DocumentDbInstanceClass(#value.to_string())
+            DocDbInstanceClass(#value.to_string())
         ),
         Err(e) => Error::new(output.span(), e).into_compile_error(),
     }
@@ -233,6 +241,43 @@ pub fn schedule_name(input: TokenStream) -> TokenStream {
         Err(e) => Error::new(output.span(), e).into_compile_error(),
     }
     .into()
+}
+
+#[proc_macro]
+pub fn doc_db_master_username(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+    let requirements = StringRequirements::not_empty_with_allowed_chars(vec![]).with_max_length(64);
+
+    match validate_string(&value, requirements) {
+        Ok(()) => quote!(
+            DocDbMasterUsername(#value.to_string())
+        ),
+        Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn doc_db_master_pass(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.contains("/") || value.contains("\"") || value.contains("@") {
+        return Error::new(output.span(), "password cannot contain forward slash, double quote, or @")
+            .into_compile_error()
+            .into();
+    }
+    
+    if value.len() < 8 || value.len() > 100 {
+        return Error::new(output.span(), "password must be between 8 and 100 characters")
+            .into_compile_error()
+            .into();
+    }
+
+    quote!(
+        DocDbMasterPassword(#value.to_string())
+    ).into()
 }
 
 /// Creates a validated `ChannelNamespaceName` wrapper for AppSync Api at compile time.
@@ -786,7 +831,7 @@ pub fn bucket_name(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn document_db_capacity_units(input: TokenStream) -> TokenStream {
+pub fn doc_db_capacity_units(input: TokenStream) -> TokenStream {
     let output = match syn::parse::<LitFloat>(input) {
         Ok(v) => v,
         Err(_) => {
@@ -801,7 +846,7 @@ pub fn document_db_capacity_units(input: TokenStream) -> TokenStream {
     if let Ok(num) = as_number {
         if num.fract() == 0.0 || num.fract() == 0.5 {
             quote! {
-                DocumentDbCapacityUnits(#num)
+                DocDbCapacityUnits(#num)
             }
             .into()
         } else {
