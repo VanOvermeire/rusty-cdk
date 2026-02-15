@@ -1,3 +1,4 @@
+use rusty_cdk::docdb::{CloudwatchLogExport, DBClusterBuilder, DBInstanceBuilder, EngineVersion};
 use rusty_cdk::ecr::{BasicScanFrequency, ImageTagMutability, ImageTagMutabilityExclusionFilterBuilder, ImageTagMutabilityExclusionFilterType, RegistryScanningConfigurationBuilder, RepositoryBuilder, ScanningConfigRepositoryFilterBuilder};
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
 use rusty_cdk_core::appconfig::{
@@ -55,6 +56,35 @@ fn dynamodb() {
 
     insta::with_settings!({filters => vec![
             (r"DynamoDBTable[0-9]+", "[DynamoDBTable]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn docdb() {
+    let mut stack_builder = StackBuilder::new();
+    
+    let cluster_ref = DBClusterBuilder::new("cluster")
+        .master_username(doc_db_master_username!("myuser"))
+        .master_user_password(doc_db_master_pass!("secret-pass")) // probably not a good idea to hardcode passwords
+        .backup_retention_period(doc_db_backup_retention_period!(7))
+        .deletion_protection(false)
+        .enable_cloudwatch_logs_exports(vec![CloudwatchLogExport::Audit])
+        .engine_version(EngineVersion::V4)
+        .build(&mut stack_builder);
+    
+    DBInstanceBuilder::new("instance", &cluster_ref, doc_db_instance_class!("db.t3.medium"))
+        .build(&mut stack_builder);
+    
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"DBInstance[0-9]+", "[DBInstance]"),
+            (r"DBCluster[0-9]+", "[DBCluster]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

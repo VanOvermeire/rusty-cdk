@@ -4,7 +4,7 @@ use crate::appsync::{AppSyncApi, ChannelNamespace};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
 use crate::cloudwatch::LogGroup;
 use crate::custom_resource::BucketNotification;
-use crate::documentdb::{DBCluster, DBClusterParameterGroup, DBSubnetGroup, GlobalCluster};
+use crate::docdb::{DBCluster, DBClusterParameterGroup, DBInstance, DBSubnetGroup, EventSubscription, GlobalCluster};
 use crate::dynamodb::Table;
 use crate::ecr::{
     PublicRepository, PullThroughCacheRule, PullTimeUpdateExclusion, RegistryPolicy, RegistryScanningConfiguration,
@@ -362,7 +362,9 @@ pub enum Resource {
     DocDBSubnetGroup(DBSubnetGroup),
     DocDBGlobalCluster(GlobalCluster),
     DocDBCluster(DBCluster),
+    DocDBInstance(DBInstance),
     DocDBClusterParameterGroup(DBClusterParameterGroup),
+    DocDBEventSubscription(EventSubscription),
     PublicRepository(PublicRepository),
     Environment(Environment),
     EventSourceMapping(EventSourceMapping),
@@ -432,6 +434,8 @@ impl Resource {
             Resource::DocDBSubnetGroup(r) => r.get_id(),
             Resource::DocDBClusterParameterGroup(r) => r.get_id(),
             Resource::DocDBCluster(r) => r.get_id(),
+            Resource::DocDBInstance(r) => r.get_id(),
+            Resource::DocDBEventSubscription(r) => r.get_id(),
         };
         id.clone()
     }
@@ -478,7 +482,9 @@ impl Resource {
             Resource::DocDBGlobalCluster(r) => r.get_resource_id(),
             Resource::DocDBSubnetGroup(r) => r.get_resource_id(),
             Resource::DocDBClusterParameterGroup(r) => r.get_resource_id(),
-            Resource::DocDBCluster(r) => r.get_id(),
+            Resource::DocDBCluster(r) => r.get_resource_id(),
+            Resource::DocDBInstance(r) => r.get_resource_id(),
+            Resource::DocDBEventSubscription(r) => r.get_resource_id(),
         }
     }
 
@@ -503,9 +509,11 @@ macro_rules! from_resource {
 }
 
 from_resource!(DBCluster, DocDBCluster);
+from_resource!(DBInstance, DocDBInstance);
 from_resource!(GlobalCluster, DocDBGlobalCluster);
 from_resource!(DBSubnetGroup, DocDBSubnetGroup);
 from_resource!(DBClusterParameterGroup, DocDBClusterParameterGroup);
+from_resource!(EventSubscription, DocDBEventSubscription);
 
 from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Integration);

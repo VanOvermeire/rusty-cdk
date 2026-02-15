@@ -1,0 +1,34 @@
+---
+source: rusty-cdk/tests/snapshots.rs
+expression: synthesized
+---
+{
+  "Metadata": {
+    "cluster": "[DBCluster]",
+    "instance": "[DBInstance]"
+  },
+  "Resources": {
+    "[DBCluster]": {
+      "Properties": {
+        "BackupRetentionPeriod": 7,
+        "DeletionProtection": false,
+        "EnableCloudwatchLogsExports": [
+          "audit"
+        ],
+        "EngineVersion": "4.0.0",
+        "MasterUserPassword": "secret-pass",
+        "MasterUsername": "myuser"
+      },
+      "Type": "AWS::DocDB::DBCluster"
+    },
+    "[DBInstance]": {
+      "Properties": {
+        "DBClusterIdentifier": {
+          "Ref": "[DBCluster]"
+        },
+        "DBInstanceClass": "db.t3.medium"
+      },
+      "Type": "AWS::DocDB::DBInstance"
+    }
+  }
+}

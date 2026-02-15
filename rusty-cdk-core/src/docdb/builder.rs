@@ -1,18 +1,18 @@
 use std::marker::PhantomData;
 
-use crate::documentdb::{
+use crate::docdb::{
     DBCluster, DBClusterParameterGroup, DBClusterParameterGroupProperties, DBClusterParameterGroupRef, DBClusterParameterGroupType,
     DBClusterProperties, DBClusterRef, DBClusterType, DBInstance, DBInstanceProperties, DBInstanceRef, DBInstanceType, DBSubnetGroup,
     DBSubnetGroupProperties, DBSubnetGroupRef, DBSubnetGroupType, EventSubscription, EventSubscriptionProperties, EventSubscriptionRef,
     EventSubscriptionType, GlobalCluster, GlobalClusterProperties, GlobalClusterRef, GlobalClusterType,
 };
-use crate::documentdb::{ServerlessV2ScalingConfiguration};
+use crate::docdb::{ServerlessV2ScalingConfiguration};
 use crate::kms::KeyRef;
 use crate::shared::{AvailabilityZone, Id, Region};
 use crate::sns::TopicRef;
 use crate::stack::{Resource, StackBuilder};
 use crate::type_state;
-use crate::wrappers::{DocDBSubnetGroupName, DocDBSubscriptionName, DocDbCapacityUnits, DocDbInstanceClass, DocDbMasterPassword, DocDbMasterUsername};
+use crate::wrappers::{DocDBSubnetGroupName, DocDBSubscriptionName, DocDbBackupRetentionPeriod, DocDbCapacityUnits, DocDbInstanceClass, DocDbMasterPassword, DocDbMasterUsername};
 use serde_json::Value;
 
 pub enum NetworkType {
@@ -66,8 +66,8 @@ pub enum EngineVersion {
 impl From<EngineVersion> for String {
     fn from(engine_version: EngineVersion) -> Self {
         match engine_version {
-            EngineVersion::V4 => "Version 4.0".to_string(),
-            EngineVersion::V5 => "Version 5.0".to_string(),
+            EngineVersion::V4 => "4.0.0".to_string(),
+            EngineVersion::V5 => "5.0.0".to_string(),
         }
     }
 }
@@ -95,6 +95,7 @@ type_state!(
 
 // TODO validation for restore time, backup window, maintenance window
 // TODO latest restorable time not together with restore time
+// TODO when no snapshot identifier or global cluster identifier, user name is required
 pub struct DBClusterBuilder<T: DbClusterState> {
     phantom: PhantomData<T>,
     id: Id,
@@ -163,16 +164,79 @@ impl DBClusterBuilder<DbClusterStartState> {
             db_cluster_parameter_group_name: None,
         }
     }
-}
-
-impl DBClusterBuilder<DbClusterAutomaticPasswordState> {
-    pub fn manage_master_user_password(self, manage_master_user_password: bool) -> Self {
-        Self {
+    
+    pub fn manage_master_user_password(self, manage_master_user_password: bool) -> DBClusterBuilder<DbClusterAutomaticPasswordState> {
+        DBClusterBuilder {
             manage_master_user_password: Some(manage_master_user_password),
-            ..self
+            phantom: Default::default(),
+            id: self.id,
+            availability_zones: self.availability_zones,
+            rotate_master_user_password: self.rotate_master_user_password,
+            master_user_secret_kms_key_id: self.master_user_secret_kms_key_id,
+            db_subnet_group_name: self.db_subnet_group_name,
+            storage_encrypted: self.storage_encrypted,
+            restore_to_time: self.restore_to_time,
+            use_latest_restorable_time: self.use_latest_restorable_time,
+            deletion_protection: self.deletion_protection,
+            serverless_v2_scaling_configuration: self.serverless_v2_scaling_configuration,
+            vpc_security_group_ids: self.vpc_security_group_ids,
+            snapshot_identifier: self.snapshot_identifier,
+            enable_cloudwatch_logs_exports: self.enable_cloudwatch_logs_exports,
+            global_cluster_identifier: self.global_cluster_identifier,
+            network_type: self.network_type,
+            backup_retention_period: self.backup_retention_period,
+            restore_type: self.restore_type,
+            master_username: self.master_username,
+            port: self.port,
+            storage_type: self.storage_type,
+            engine_version: self.engine_version,
+            kms_key_id: self.kms_key_id,
+            source_db_cluster_identifier: self.source_db_cluster_identifier,
+            db_cluster_identifier: self.db_cluster_identifier,
+            preferred_backup_window: self.preferred_backup_window,
+            preferred_maintenance_window: self.preferred_maintenance_window,
+            db_cluster_parameter_group_name: self.db_cluster_parameter_group_name,
+            master_user_password: self.master_user_password,
         }
     }
     
+    pub fn master_user_password(self, master_user_password: DocDbMasterPassword) -> DBClusterBuilder<DbClusterManualPasswordState> {
+        DBClusterBuilder {
+            master_user_password: Some(master_user_password.0),
+            phantom: Default::default(),
+            id: self.id,
+            availability_zones: self.availability_zones,
+            manage_master_user_password: self.manage_master_user_password,
+            rotate_master_user_password: self.rotate_master_user_password,
+            master_user_secret_kms_key_id: self.master_user_secret_kms_key_id,
+            db_subnet_group_name: self.db_subnet_group_name,
+            storage_encrypted: self.storage_encrypted,
+            restore_to_time: self.restore_to_time,
+            use_latest_restorable_time: self.use_latest_restorable_time,
+            deletion_protection: self.deletion_protection,
+            serverless_v2_scaling_configuration: self.serverless_v2_scaling_configuration,
+            vpc_security_group_ids: self.vpc_security_group_ids,
+            snapshot_identifier: self.snapshot_identifier,
+            enable_cloudwatch_logs_exports: self.enable_cloudwatch_logs_exports,
+            global_cluster_identifier: self.global_cluster_identifier,
+            network_type: self.network_type,
+            backup_retention_period: self.backup_retention_period,
+            restore_type: self.restore_type,
+            master_username: self.master_username,
+            port: self.port,
+            storage_type: self.storage_type,
+            engine_version: self.engine_version,
+            kms_key_id: self.kms_key_id,
+            source_db_cluster_identifier: self.source_db_cluster_identifier,
+            db_cluster_identifier: self.db_cluster_identifier,
+            preferred_backup_window: self.preferred_backup_window,
+            preferred_maintenance_window: self.preferred_maintenance_window,
+            db_cluster_parameter_group_name: self.db_cluster_parameter_group_name,
+        }
+    }
+}
+
+impl DBClusterBuilder<DbClusterAutomaticPasswordState> {    
     pub fn rotate_master_user_password(self, rotate_master_user_password: bool) -> Self {
         Self {
             rotate_master_user_password: Some(rotate_master_user_password),
@@ -192,14 +256,7 @@ impl DBClusterBuilder<DbClusterAutomaticPasswordState> {
     }
 }
 
-impl DBClusterBuilder<DbClusterManualPasswordState> {
-    pub fn master_user_password(self, master_user_password: DocDbMasterPassword) -> Self {
-        Self {
-            master_user_password: Some(master_user_password.0),
-            ..self
-        }
-    }
-    
+impl DBClusterBuilder<DbClusterManualPasswordState> {    
     pub fn build(self, stack_builder: &mut StackBuilder) -> DBClusterRef {
         self.build_internal(stack_builder)
     }
@@ -297,9 +354,9 @@ impl<T: DbClusterState> DBClusterBuilder<T> {
         }
     }
 
-    pub fn backup_retention_period(self, backup_retention_period: u16) -> Self {
+    pub fn backup_retention_period(self, backup_retention_period: DocDbBackupRetentionPeriod) -> Self {
         Self {
-            backup_retention_period: Some(backup_retention_period),
+            backup_retention_period: Some(backup_retention_period.0),
             ..self
         }
     }
@@ -552,7 +609,7 @@ impl DBInstanceBuilder {
                 auto_minor_version_upgrade: None, // not applicable for DocumentDB
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         DBInstanceRef::internal_new(resource_id)
     }
@@ -752,7 +809,7 @@ impl EventSubscriptionBuilder {
                 subscription_name: self.subscription_name,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         EventSubscriptionRef::internal_new(resource_id)
     }

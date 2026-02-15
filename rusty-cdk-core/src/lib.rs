@@ -3,7 +3,7 @@ pub mod appconfig;
 pub mod appsync;
 pub mod cloudfront;
 pub mod cloudwatch;
-mod documentdb; // TODO pub when ready
+pub mod docdb;
 pub mod dynamodb;
 pub mod ecr;
 pub mod events;

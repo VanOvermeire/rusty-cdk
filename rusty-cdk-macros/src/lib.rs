@@ -657,6 +657,7 @@ number_check!(max_flexible_time_window, 1, 1440, MaxFlexibleTimeWindow, u16);
 number_check!(archive_policy, 1, 365, ArchivePolicy, u16);
 number_check!(key_reuse_period, 60, 86400, KeyReusePeriod, u32);
 number_check!(success_feedback_sample_rate, 0, 100, SuccessFeedbackSampleRate, u8);
+number_check!(doc_db_backup_retention_period, 1, 35, DocDbBackupRetentionPeriod, u16);
 
 const NO_REMOTE_OVERRIDE_ENV_VAR_NAME: &str = "RUSTY_CDK_NO_REMOTE";
 const RUSTY_CDK_RECHECK_ENV_VAR_NAME: &str = "RUSTY_CDK_RECHECK";

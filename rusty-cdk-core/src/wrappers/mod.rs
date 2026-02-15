@@ -882,3 +882,6 @@ pub struct DocDbMasterUsername(pub String);
 
 #[derive(Debug, Clone)]
 pub struct DocDbMasterPassword(pub String);
+
+#[derive(Debug, Clone)]
+pub struct DocDbBackupRetentionPeriod(pub u16);
