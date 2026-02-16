@@ -14,6 +14,6 @@ The following describes the process of adding resources that are not yet support
   - If a reference (id, name, arn) from another AWS resource is required, use a `Ref` to retrieve the (for example) ARN. E.g. if you need the ARN of a KMS key, use the `KeyRef` struct. You will also have to change the type of the relevant `builder` property and `dto` property to `Value`.
     - If the resource for which you need a `Ref` is not supported yet, add the `Ref` and create a lookup in `rusty-cdk-lookups`
   - If a certain value can only be used together with another, consider combining them in a single enum or struct
-  - If a group of values is mutually exclusive, use type-state to enforce this. For example, a DynamoDB table has different properties depending on whether it is provisioned or on-demand.
+  - If a group of values is mutually exclusive, use type-state to enforce this. For example, a DynamoDB table has different properties depending on whether it is provisioned or on-demand. You can use the `type_state` macro to generate the necessary type trait and structs.
 - Once you've improved the builders, you should test the output of your builder against `cfn-lint` (a sanity check that will stop at least some errors) and an actual deploy to AWS (the real check). Look at the `examples` directory for some examples (and optionally add your own).
 - Finally, if the deployment succeeds, add one or more snapshot tests to `rusty-cdk/tests/snapshots.rs`.
