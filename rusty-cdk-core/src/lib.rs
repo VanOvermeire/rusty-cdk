@@ -2,6 +2,7 @@ pub mod apigateway;
 pub mod appconfig;
 pub mod appsync;
 pub mod cloudfront;
+pub mod cloudwatch;
 pub mod cloudwatch_logs;
 pub mod docdb;
 pub mod dynamodb;
