@@ -1,4 +1,4 @@
-use crate::cloudwatch::{LogGroup, LogGroupProperties, LogGroupRef, LogGroupType};
+use crate::cloudwatch_logs::{LogGroup, LogGroupProperties, LogGroupRef, LogGroupType};
 use crate::shared::Id;
 use crate::stack::{Resource, StackBuilder};
 use crate::wrappers::{LogGroupName, RetentionInDays};

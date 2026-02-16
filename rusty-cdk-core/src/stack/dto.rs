@@ -2,7 +2,7 @@ use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Ro
 use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::appsync::{AppSyncApi, ChannelNamespace};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
-use crate::cloudwatch::LogGroup;
+use crate::cloudwatch_logs::LogGroup;
 use crate::custom_resource::BucketNotification;
 use crate::docdb::{DBCluster, DBClusterParameterGroup, DBInstance, DBSubnetGroup, EventSubscription, GlobalCluster};
 use crate::dynamodb::Table;

@@ -1,4 +1,4 @@
-use crate::cloudwatch::{LogGroupBuilder, LogGroupRef};
+use crate::cloudwatch_logs::{LogGroupBuilder, LogGroupRef};
 use crate::iam::{
     AssumeRolePolicyDocumentBuilder, Effect, Permission as IamPermission, Policy, PrincipalBuilder, RoleBuilder, RolePropertiesBuilder,
     RoleRef, StatementBuilder, find_missing_services, map_toml_dependencies_to_services,

@@ -10,7 +10,7 @@ use rusty_cdk_core::cloudfront::{
     OriginAccessControlType, OriginBuilder, ParametersInCacheKeyAndForwardedToOriginBuilder, QueryString, SigningBehavior, SigningProtocol,
     ViewerProtocolPolicy,
 };
-use rusty_cdk_core::cloudwatch::LogGroupBuilder;
+use rusty_cdk_core::cloudwatch_logs::LogGroupBuilder;
 use rusty_cdk_core::dynamodb::AttributeType;
 use rusty_cdk_core::dynamodb::Key;
 use rusty_cdk_core::dynamodb::TableBuilder;
