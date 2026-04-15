@@ -1,3 +1,4 @@
+use rusty_cdk::cloudwatch::{AlarmAction, AlarmBuilder, ComparisonOperator, DimensionBuilder, Namespace, Statistic, TreatMissingData};
 use rusty_cdk::docdb::{CloudwatchLogExport, DBClusterBuilder, DBInstanceBuilder, EngineVersion};
 use rusty_cdk::ecr::{BasicScanFrequency, ImageTagMutability, ImageTagMutabilityExclusionFilterBuilder, ImageTagMutabilityExclusionFilterType, RegistryScanningConfigurationBuilder, RepositoryBuilder, ScanningConfigRepositoryFilterBuilder};
 use rusty_cdk_core::apigateway::ApiGatewayV2Builder;
@@ -292,6 +293,54 @@ fn lambda_with_sns_subscription() {
             (r"SnsTopic[0-9]+", "[SnsTopic]"),
             (r"SnsSubscription[0-9]+", "[SnsSubscription]"),
             (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+        ]},{
+            insta::assert_json_snapshot!(synthesized);
+    });
+}
+
+#[test]
+fn lambda_with_alarm() {
+    let mut stack_builder = StackBuilder::new();
+    let zip_file = zip_file!("./rusty-cdk/tests/example.zip");
+    let memory = memory!(512);
+    let timeout = timeout!(30);
+    let bucket = get_bucket();
+
+    let (fun, _role, _log) = FunctionBuilder::new("fun", Architecture::ARM64, memory, timeout)
+        .code(Code::Zip(Zip::new(bucket, zip_file)))
+        .handler("bootstrap")
+        .runtime(Runtime::ProvidedAl2023)
+        .build(&mut stack_builder);
+    TopicBuilder::new("topic")
+        .add_subscription(SubscriptionType::Lambda(&fun))
+        .build(&mut stack_builder);
+    let topic = TopicBuilder::new("UpdateAlarmTopic").build(&mut stack_builder);
+    AlarmBuilder::new("UpdateAlarm")
+        .alarm_name(cloudwatch_alarm_name!("UpdateKeyErrorAlarm"))
+        .metric_alarm(period!(300), cloudwatch_metric_name!("Errors"), Namespace::Lambda)
+        .comparison_operator(ComparisonOperator::GreaterThanOrEqualToThreshold)
+        .threshold(1)
+        .evaluation_periods(3)
+        .dimensions(vec![DimensionBuilder::new("FunctionName".to_string(), fun.get_ref()).build()])
+        .statistic(Statistic::Sum)
+        .treat_missing_data(TreatMissingData::NotBreaching)
+        .alarm_actions(vec![AlarmAction::Sns(&topic)])
+        .build(&mut stack_builder);
+    
+    let stack = stack_builder.build().unwrap();
+
+    let synthesized = stack.synth().unwrap();
+    let synthesized: Value = serde_json::from_str(&synthesized).unwrap();
+
+    insta::with_settings!({filters => vec![
+            (r"LambdaFunction[0-9]+", "[LambdaFunction]"),
+            (r"LambdaFunctionRole[0-9]+", "[LambdaFunctionRole]"),
+            (r"LogGroup[0-9]+", "[LogGroup]"),
+            (r"Asset[0-9]+\.zip", "[Asset]"),
+            (r"SnsTopic[0-9]+", "[SnsTopic]"),
+            (r"SnsSubscription[0-9]+", "[SnsSubscription]"),
+            (r"LambdaPermission[0-9]+", "[LambdaPermission]"),
+            (r"Alarm[0-9]+", "[Alarm]"),
         ]},{
             insta::assert_json_snapshot!(synthesized);
     });

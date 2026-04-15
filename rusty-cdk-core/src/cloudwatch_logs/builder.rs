@@ -26,7 +26,7 @@ impl From<LogGroupClass> for String {
 ///
 /// ```rust
 /// use rusty_cdk_core::stack::StackBuilder;
-/// use rusty_cdk_core::cloudwatch::{LogGroupBuilder, LogGroupClass};
+/// use rusty_cdk_core::cloudwatch_logs::{LogGroupBuilder, LogGroupClass};
 /// use rusty_cdk_core::wrappers::*;
 /// use rusty_cdk_macros::log_group_name;
 ///

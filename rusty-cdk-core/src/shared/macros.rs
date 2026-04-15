@@ -89,6 +89,7 @@ macro_rules! ref_struct {
     };
 }
 
+// TODO might be nice to have a trait for this
 /// Generated a ref struct, which is used to reference a given resource when you need it as a dependency of some other resource.
 /// To allow the other resources to depend on this one, the ref struct has methods for retrieving the Ref, ARN, and other attributes.
 ///

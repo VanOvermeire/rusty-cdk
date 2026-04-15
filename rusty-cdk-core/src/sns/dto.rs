@@ -1,4 +1,5 @@
 use crate::iam::PolicyDocument;
+use crate::intrinsic::{get_att, get_ref};
 use crate::shared::Id;
 use crate::{dto_methods, ref_struct_with_id_methods};
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,65 @@ pub(crate) enum TopicType {
     TopicType,
 }
 
-ref_struct_with_id_methods!(TopicRef);
+// custom because get_arn is different
+pub struct TopicRef {
+    id: Id,
+    resource_id: String,
+    ref_name: Option<String>,
+    arn_value: Option<String>,
+}
+
+impl TopicRef {
+    pub(crate) fn internal_new(id: Id, resource_id: String) -> Self {
+        Self {
+            id,
+            resource_id,
+            ref_name: None,
+            arn_value: None,
+        }
+    }
+
+    pub fn new(id: &str, resource_id: &str, ref_name: &str, arn_value: &str) -> Self {
+        Self {
+            id: Id(id.to_string()),
+            resource_id: resource_id.to_string(),
+            ref_name: Some(ref_name.to_string()),
+            arn_value: Some(arn_value.to_string()),
+        }
+    }
+
+    pub(crate) fn get_id(&self) -> &Id {
+        &self.id
+    }
+
+    pub(crate) fn get_resource_id(&self) -> &str {
+        self.resource_id.as_str()
+    }
+
+    pub fn get_ref(&self) -> Value {
+        if let Some(val) = &self.ref_name {
+            Value::String(val.to_string())
+        } else {
+            get_ref(self.get_resource_id())
+        }
+    }
+
+    pub fn get_arn(&self) -> Value {
+        if let Some(val) = &self.arn_value {
+            Value::String(val.to_string())
+        } else {
+            self.get_ref()
+        }
+    }
+
+    pub fn get_att(&self, id: &str) -> Value {
+        if self.ref_name.is_some() && self.arn_value.is_some() {
+            unimplemented!("get att is not supported for an imported RoleRef")
+        } else {
+            get_att(self.get_resource_id(), id)
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Topic {

@@ -2,6 +2,7 @@ use crate::apigateway::{ApiGatewayV2Api, ApiGatewayV2Integration, ApiGatewayV2Ro
 use crate::appconfig::{Application, ConfigurationProfile, DeploymentStrategy, Environment};
 use crate::appsync::{AppSyncApi, ChannelNamespace};
 use crate::cloudfront::{CachePolicy, Distribution, OriginAccessControl};
+use crate::cloudwatch::{Alarm, AnomalyDetector, CompositeAlarm, Dashboard, InsightRule, MetricStream};
 use crate::cloudwatch_logs::LogGroup;
 use crate::custom_resource::BucketNotification;
 use crate::docdb::{DBCluster, DBClusterParameterGroup, DBInstance, DBSubnetGroup, EventSubscription, GlobalCluster};
@@ -345,6 +346,8 @@ impl Stack {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Resource {
+    Alarm(Alarm),
+    AnomalyDetector(AnomalyDetector),
     ApiGatewayV2Api(ApiGatewayV2Api),
     ApiGatewayV2Integration(ApiGatewayV2Integration),
     ApiGatewayV2Route(ApiGatewayV2Route),
@@ -356,7 +359,9 @@ pub enum Resource {
     BucketPolicy(BucketPolicy),
     CachePolicy(CachePolicy),
     ChannelNamespace(ChannelNamespace),
+    CompositeAlarm(CompositeAlarm),
     ConfigurationProfile(ConfigurationProfile),
+    Dashboard(Dashboard),
     DeploymentStrategy(DeploymentStrategy),
     Distribution(Distribution),
     DocDBSubnetGroup(DBSubnetGroup),
@@ -369,7 +374,9 @@ pub enum Resource {
     Environment(Environment),
     EventSourceMapping(EventSourceMapping),
     Function(Function),
+    InsightRule(InsightRule),
     LogGroup(LogGroup),
+    MetricStream(MetricStream),
     OriginAccessControl(OriginAccessControl),
     Permission(Permission),
     PullThroughCacheRule(PullThroughCacheRule),
@@ -393,6 +400,8 @@ pub enum Resource {
 impl Resource {
     pub fn get_id(&self) -> Id {
         let id = match self {
+            Resource::Alarm(r) => r.get_id(),
+            Resource::AnomalyDetector(r) => r.get_id(),
             Resource::ApiGatewayV2Api(r) => r.get_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_id(),
             Resource::ApiGatewayV2Route(r) => r.get_id(),
@@ -404,13 +413,17 @@ impl Resource {
             Resource::BucketPolicy(r) => r.get_id(),
             Resource::CachePolicy(r) => r.get_id(),
             Resource::ChannelNamespace(r) => r.get_id(),
+            Resource::CompositeAlarm(r) => r.get_id(),
             Resource::ConfigurationProfile(r) => r.get_id(),
+            Resource::Dashboard(r) => r.get_id(),
             Resource::DeploymentStrategy(r) => r.get_id(),
             Resource::Distribution(r) => r.get_id(),
             Resource::Environment(r) => r.get_id(),
             Resource::EventSourceMapping(r) => r.get_id(),
             Resource::Function(r) => r.get_id(),
+            Resource::InsightRule(r) => r.get_id(),
             Resource::LogGroup(r) => r.get_id(),
+            Resource::MetricStream(r) => r.get_id(),
             Resource::OriginAccessControl(r) => r.get_id(),
             Resource::Permission(r) => r.get_id(),
             Resource::Queue(r) => r.get_id(),
@@ -442,6 +455,8 @@ impl Resource {
 
     pub fn get_resource_id(&self) -> &str {
         match self {
+            Resource::Alarm(r) => r.get_resource_id(),
+            Resource::AnomalyDetector(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Api(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Integration(r) => r.get_resource_id(),
             Resource::ApiGatewayV2Route(r) => r.get_resource_id(),
@@ -453,13 +468,17 @@ impl Resource {
             Resource::BucketPolicy(r) => r.get_resource_id(),
             Resource::CachePolicy(r) => r.get_resource_id(),
             Resource::ChannelNamespace(r) => r.get_resource_id(),
+            Resource::CompositeAlarm(r) => r.get_resource_id(),
             Resource::ConfigurationProfile(r) => r.get_resource_id(),
+            Resource::Dashboard(r) => r.get_resource_id(),
             Resource::DeploymentStrategy(r) => r.get_resource_id(),
             Resource::Distribution(r) => r.get_resource_id(),
             Resource::Environment(r) => r.get_resource_id(),
             Resource::EventSourceMapping(r) => r.get_resource_id(),
             Resource::Function(r) => r.get_resource_id(),
+            Resource::InsightRule(r) => r.get_resource_id(),
             Resource::LogGroup(r) => r.get_resource_id(),
+            Resource::MetricStream(r) => r.get_resource_id(),
             Resource::OriginAccessControl(r) => r.get_resource_id(),
             Resource::Permission(r) => r.get_resource_id(),
             Resource::Queue(r) => r.get_resource_id(),
@@ -515,6 +534,8 @@ from_resource!(DBSubnetGroup, DocDBSubnetGroup);
 from_resource!(DBClusterParameterGroup, DocDBClusterParameterGroup);
 from_resource!(EventSubscription, DocDBEventSubscription);
 
+from_resource!(Alarm);
+from_resource!(AnomalyDetector);
 from_resource!(ApiGatewayV2Api);
 from_resource!(ApiGatewayV2Integration);
 from_resource!(ApiGatewayV2Route);
@@ -526,13 +547,17 @@ from_resource!(BucketNotification);
 from_resource!(BucketPolicy);
 from_resource!(CachePolicy);
 from_resource!(ChannelNamespace);
+from_resource!(CompositeAlarm);
 from_resource!(ConfigurationProfile);
+from_resource!(Dashboard);
 from_resource!(DeploymentStrategy);
 from_resource!(Distribution);
 from_resource!(Environment);
 from_resource!(EventSourceMapping);
 from_resource!(Function);
+from_resource!(InsightRule);
 from_resource!(LogGroup);
+from_resource!(MetricStream);
 from_resource!(OriginAccessControl);
 from_resource!(Permission);
 from_resource!(PullThroughCacheRule);

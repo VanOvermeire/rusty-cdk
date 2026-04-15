@@ -40,10 +40,10 @@ pub struct AlarmProperties {
     pub(crate) statistic: Option<String>,
     #[serde(rename = "MetricName", skip_serializing_if = "Option::is_none")]
     pub(crate) metric_name: Option<String>,
-    #[serde(rename = "ComparisonOperator")]
-    pub(crate) comparison_operator: String,
-    #[serde(rename = "EvaluationPeriods")]
-    pub(crate) evaluation_periods: u32,
+    #[serde(rename = "ComparisonOperator", skip_serializing_if = "Option::is_none")]
+    pub(crate) comparison_operator: Option<String>,
+    #[serde(rename = "EvaluationPeriods", skip_serializing_if = "Option::is_none")]
+    pub(crate) evaluation_periods: Option<u32>,
     #[serde(rename = "Dimensions", skip_serializing_if = "Option::is_none")]
     pub(crate) dimensions: Option<Vec<Dimension>>,
     #[serde(rename = "Namespace", skip_serializing_if = "Option::is_none")]
@@ -63,11 +63,11 @@ pub struct AlarmProperties {
     #[serde(rename = "Metrics", skip_serializing_if = "Option::is_none")]
     pub(crate) metrics: Option<Vec<MetricDataQuery>>,
     #[serde(rename = "AlarmActions", skip_serializing_if = "Option::is_none")]
-    pub(crate) alarm_actions: Option<Vec<String>>,
+    pub(crate) alarm_actions: Option<Vec<Value>>,
     #[serde(rename = "InsufficientDataActions", skip_serializing_if = "Option::is_none")]
-    pub(crate) insufficient_data_actions: Option<Vec<String>>,
+    pub(crate) insufficient_data_actions: Option<Vec<Value>>,
     #[serde(rename = "OKActions", skip_serializing_if = "Option::is_none")]
-    pub(crate) ok_actions: Option<Vec<String>>,
+    pub(crate) ok_actions: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -261,10 +261,10 @@ pub struct MetricStreamProperties {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Dimension {
-    #[serde(rename = "Value")]
-    pub(crate) value: String,
     #[serde(rename = "Name")]
     pub(crate) name: String,
+    #[serde(rename = "Value")]
+    pub(crate) value: Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -286,21 +286,13 @@ pub struct MetricDataQuery {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Tag {
-    #[serde(rename = "Value")]
-    pub(crate) value: String,
-    #[serde(rename = "Key")]
-    pub(crate) key: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Configuration {
     #[serde(rename = "ExcludedTimeRanges", skip_serializing_if = "Option::is_none")]
     pub(crate) excluded_time_ranges: Option<Vec<Range>>,
     #[serde(rename = "MetricTimeZone", skip_serializing_if = "Option::is_none")]
     pub(crate) metric_time_zone: Option<String>,
 }
-// TODO encountered a helper with name Dimension but one already exists - check whether they match
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetricCharacteristics {
     #[serde(rename = "PeriodicSpikes", skip_serializing_if = "Option::is_none")]
@@ -326,7 +318,7 @@ pub struct SingleMetricAnomalyDetector {
     #[serde(rename = "MetricName", skip_serializing_if = "Option::is_none")]
     pub(crate) metric_name: Option<String>,
 }
-// TODO encountered a helper with name Tag but one already exists - check whether they match
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetricStreamFilter {
     #[serde(rename = "MetricNames", skip_serializing_if = "Option::is_none")]
@@ -334,7 +326,7 @@ pub struct MetricStreamFilter {
     #[serde(rename = "Namespace")]
     pub(crate) namespace: String,
 }
-// TODO encountered a helper with name MetricStreamFilter but one already exists - check whether they match
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetricStreamStatisticsConfiguration {
     #[serde(rename = "AdditionalStatistics")]
@@ -342,7 +334,7 @@ pub struct MetricStreamStatisticsConfiguration {
     #[serde(rename = "IncludeMetrics")]
     pub(crate) include_metrics: Vec<MetricStreamStatisticsMetric>,
 }
-// TODO encountered a helper with name Tag but one already exists - check whether they match
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetricStat {
     #[serde(rename = "Period")]
@@ -362,7 +354,7 @@ pub struct Range {
     #[serde(rename = "StartTime")]
     pub(crate) start_time: String,
 }
-// TODO encountered a helper with name MetricDataQuery but one already exists - check whether they match// TODO encountered a helper with name Dimension but one already exists - check whether they match
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetricStreamStatisticsMetric {
     #[serde(rename = "MetricName")]
@@ -373,11 +365,10 @@ pub struct MetricStreamStatisticsMetric {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metric {
-    #[serde(rename = "MetricName", skip_serializing_if = "Option::is_none")]
-    pub(crate) metric_name: Option<String>,
+    #[serde(rename = "MetricName")]
+    pub(crate) metric_name: String,
     #[serde(rename = "Dimensions", skip_serializing_if = "Option::is_none")]
     pub(crate) dimensions: Option<Vec<Dimension>>,
     #[serde(rename = "Namespace", skip_serializing_if = "Option::is_none")]
     pub(crate) namespace: Option<String>,
 }
-// TODO encountered a helper with name MetricStat but one already exists - check whether they match// TODO encountered a helper with name Dimension but one already exists - check whether they match// TODO encountered a helper with name Metric but one already exists - check whether they match// TODO encountered a helper with name Dimension but one already exists - check whether they match

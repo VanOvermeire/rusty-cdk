@@ -885,3 +885,26 @@ pub struct DocDbMasterPassword(pub String);
 
 #[derive(Debug, Clone)]
 pub struct DocDbBackupRetentionPeriod(pub u16);
+
+/// A wrapper for CloudWatch alarm periods.
+///
+/// # Validation Rules (when using the macro)
+/// - Must be one of the following values: 10, 20, 30, 60, or a multiple of 60.
+///
+/// # Recommended Usage
+/// Use the `period!` macro from `rusty-cdk-macros` for compile-time validation:
+///
+/// ```rust
+/// use rusty_cdk_core::wrappers::Period;
+/// use rusty_cdk_macros::period;
+///
+/// let period = period!(60);
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct Period(pub u32);
+
+#[derive(Debug, Clone)]
+pub struct CloudwatchMetricName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct CloudwatchAlarmName(pub String);

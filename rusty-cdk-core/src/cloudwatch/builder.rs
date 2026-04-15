@@ -1,46 +1,563 @@
+use std::marker::PhantomData;
+
+use crate::cloudwatch::dto::{
+    Configuration, Dimension, Metric, MetricCharacteristics, MetricDataQuery, MetricMathAnomalyDetector, MetricStat, MetricStreamFilter,
+    MetricStreamStatisticsConfiguration, MetricStreamStatisticsMetric, Range, SingleMetricAnomalyDetector,
+};
 use crate::cloudwatch::{
     Alarm, AlarmProperties, AlarmRef, AlarmType, AnomalyDetector, AnomalyDetectorProperties, AnomalyDetectorRef, AnomalyDetectorType,
     CompositeAlarm, CompositeAlarmProperties, CompositeAlarmRef, CompositeAlarmType, Dashboard, DashboardProperties, DashboardRef,
     DashboardType, InsightRule, InsightRuleProperties, InsightRuleRef, InsightRuleType, MetricStream, MetricStreamProperties,
     MetricStreamRef, MetricStreamType,
 };
-use crate::cloudwatch::{
-    Configuration, Dimension, Metric, MetricCharacteristics, MetricDataQuery, MetricMathAnomalyDetector, MetricStat, MetricStreamFilter,
-    MetricStreamStatisticsConfiguration, MetricStreamStatisticsMetric, Range, SingleMetricAnomalyDetector, Tag,
-};
+use crate::lambda::FunctionRef;
 use crate::shared::Id;
+use crate::sns::TopicRef;
 use crate::stack::{Resource, StackBuilder};
+use crate::type_state;
+use crate::wrappers::{CloudwatchAlarmName, CloudwatchMetricName, Period};
 use serde_json::Value;
 
-pub struct AlarmBuilder {
-    id: Id,
-    threshold_metric_id: Option<String>, // In an alarm based on an anomaly detection model, this is the ID of the            <code class="code">ANOMALY_DETECTION_BAND</code> function used as the threshold for the            alarm., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    actions_enabled: Option<bool>, // Indicates whether actions should be executed during any changes to the alarm state. The default is TRUE.
-    period: Option<u32>, // The period, in seconds, over which the statistic is applied. This is required for an alarm based on a            metric. Valid values are 10, 20, 30, 60, and any multiple of 60., For an alarm based on a math expression, you can't            specify <code class="code">Period</code>, and instead you use the <code class="code">Metrics</code> parameter., Minimum: 10
-    extended_statistic: Option<String>, // The percentile statistic for the metric associated with the alarm. Specify a value between			p0.0 and p100., For an alarm based on a metric, you must specify either <code class="code">Statistic</code>           or <code class="code">ExtendedStatistic</code> but not both., For an alarm based on a math expression, you can't            specify <code class="code">ExtendedStatistic</code>. Instead, you use <code class="code">Metrics</code>.
-    datapoints_to_alarm: Option<u32>, // The number of datapoints that must be breaching to trigger the alarm.		           This is used only if you are setting an "M out of N" alarm. In that case, this value is the M, 		           and the value that you set for <code class="code">EvaluationPeriods</code> is the N value.		           For more information, see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarm-evaluation">Evaluating		           an Alarm</a> in the Amazon CloudWatch User Guide., If you omit this parameter, CloudWatch uses the same value here that you set       for <code class="code">EvaluationPeriods</code>, and the alarm goes to alarm state if that many consecutive        periods are breaching., Minimum: <code class="code">1</code>
-    statistic: Option<String>, // The statistic for the metric associated with the alarm, other than percentile.		    For percentile statistics, use <code class="code">ExtendedStatistic</code>., For an alarm based on a metric, you must specify either <code class="code">Statistic</code>       or <code class="code">ExtendedStatistic</code> but not both., For an alarm based on a math expression, you can't            specify <code class="code">Statistic</code>. Instead, you use <code class="code">Metrics</code>., Allowed values: <code class="code">SampleCount | Average | Sum | Minimum | Maximum</code>
-    metric_name: Option<String>, // The name of the metric associated with the alarm. This is required for an alarm based on a 		       metric. For an alarm based on a math expression, you use <code class="code">Metrics</code> instead and you can't 		       specify <code class="code">MetricName</code>., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    comparison_operator: String, // The arithmetic operation to use when comparing the specified			statistic and threshold. The specified statistic value is used as the first operand., Required: Yes, Allowed values: <code class="code">GreaterThanOrEqualToThreshold | GreaterThanThreshold | LessThanThreshold | LessThanOrEqualToThreshold | LessThanLowerOrGreaterThanUpperThreshold | LessThanLowerThreshold | GreaterThanUpperThreshold</code>
-    evaluation_periods: u32, // The number of periods over which data is compared to the specified threshold. 		           If you are setting an alarm that requires that a number of consecutive data points be 		           breaching to trigger the alarm, this value specifies that number. If you 		           are setting an "M out of N" alarm, this value is the N, and <code class="code">DatapointsToAlarm</code> 		           is the M., For more information, see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarm-evaluation">Evaluating           an Alarm</a> in the Amazon CloudWatch User Guide., Required: Yes, Minimum: <code class="code">1</code>
-    dimensions: Option<Vec<Dimension>>, // The dimensions for the metric associated with the alarm. For an alarm based on a math expression, you can't            specify <code class="code">Dimensions</code>. Instead, you use <code class="code">Metrics</code>., Maximum: <code class="code">30</code>
-    namespace: Option<String>, // The namespace of the metric associated with the alarm. This is required for an alarm based on a            metric. For an alarm based on a math expression, you can't            specify <code class="code">Namespace</code> and you use <code class="code">Metrics</code> instead., For a list of namespaces for metrics from AWS services, see            <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/aws-services-cloudwatch-metrics.html">AWS Services That Publish CloudWatchMetrics.           </a>, Pattern: <code class="code">[^:].*</code>, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    alarm_description: Option<String>, // The description of the alarm., Minimum: <code class="code">0</code>, Maximum: <code class="code">1024</code>
-    evaluate_low_sample_count_percentile: Option<String>, // Used only for alarms based on percentiles. If <code class="code">ignore</code>, the alarm state            does not change during periods with too few data points to be statistically significant.            If <code class="code">evaluate</code> or this parameter is not used, the alarm is always evaluated            and possibly changes state no matter how many data points are available., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    threshold: Option<u32>,                               // The value to compare with the specified statistic.
-    treat_missing_data: Option<String>, // Sets how this alarm is to handle missing data points. Valid values are <code class="code">breaching</code>, <code class="code">notBreaching</code>, <code class="code">ignore</code>,           and <code class="code">missing</code>. For more information, see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarms-and-missing-data">                Configuring How CloudWatchAlarms Treat Missing Data</a> in the             Amazon CloudWatchUser Guide., If you omit this parameter, the default behavior of <code class="code">missing</code> is used., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    alarm_name: Option<String>, // The name of the alarm. If you don't specify a name, CloudFormation generates a unique physical ID and uses that ID for the alarm name., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    unit: Option<String>, // The unit of the metric associated with the alarm. Specify this only if you are creating an alarm		           based on a single metric. Do not specify this if you are specifying a <code class="code">Metrics</code> array., You can specify the following values: Seconds, Microseconds, Milliseconds, Bytes, Kilobytes, 		           Megabytes, Gigabytes, Terabytes, Bits, Kilobits, Megabits, Gigabits, Terabits, Percent, Count, 		           Bytes/Second, Kilobytes/Second, Megabytes/Second, Gigabytes/Second, Terabytes/Second, Bits/Second, 		           Kilobits/Second, Megabits/Second, Gigabits/Second, Terabits/Second, Count/Second, or None., Allowed values: <code class="code">Seconds | Microseconds | Milliseconds | Bytes | Kilobytes | Megabytes | Gigabytes | Terabytes | Bits | Kilobits | Megabits | Gigabits | Terabits | Percent | Count | Bytes/Second | Kilobytes/Second | Megabytes/Second | Gigabytes/Second | Terabytes/Second | Bits/Second | Kilobits/Second | Megabits/Second | Gigabits/Second | Terabits/Second | Count/Second | None</code>
-    metrics: Option<Vec<MetricDataQuery>>, // An array that enables you to create an alarm based on the result of a metric math expression. Each        item in the array either retrieves a metric or performs a math expression., If you specify the <code class="code">Metrics</code> parameter, you cannot specify <code class="code">MetricName</code>, <code class="code">Dimensions</code>,            <code class="code">Period</code>, <code class="code">Namespace</code>, <code class="code">Statistic</code>, <code class="code">ExtendedStatistic</code>, or <code class="code">Unit</code>.
-    alarm_actions: Option<Vec<String>>, // The list of actions to execute when this alarm transitions into an ALARM state from any other state. 			Specify each action as an Amazon Resource Name (ARN). For more information about creating alarms and the actions 			that you can specify, see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html">PutMetricAlarm</a> in the 		           Amazon CloudWatch API Reference., Maximum: <code class="code">5</code>
-    insufficient_data_actions: Option<Vec<String>>, // The actions to execute when this alarm transitions to the            <code class="code">INSUFFICIENT_DATA</code> state from any other state. Each action is specified            as an Amazon Resource Name (ARN)., Maximum: <code class="code">5</code>
-    ok_actions: Option<Vec<String>>, // The actions to execute when this alarm transitions to the <code class="code">OK</code> state            from any other state. Each action is specified as an Amazon Resource Name            (ARN)., Maximum: <code class="code">5</code>
+#[derive(Debug)]
+pub enum ComparisonOperator {
+    GreaterThanOrEqualToThreshold,
+    GreaterThanThreshold,
+    LessThanThreshold,
+    LessThanOrEqualToThreshold,
+    LessThanLowerOrGreaterThanUpperThreshold,
+    LessThanLowerThreshold,
+    GreaterThanUpperThreshold,
 }
 
-impl AlarmBuilder {
-    pub fn new(id: &str, comparison_operator: String, evaluation_periods: u32) -> Self {
+impl From<ComparisonOperator> for String {
+    fn from(value: ComparisonOperator) -> Self {
+        match value {
+            ComparisonOperator::GreaterThanOrEqualToThreshold => "GreaterThanOrEqualToThreshold".to_string(),
+            ComparisonOperator::GreaterThanThreshold => "GreaterThanThreshold".to_string(),
+            ComparisonOperator::LessThanThreshold => "LessThanThreshold".to_string(),
+            ComparisonOperator::LessThanOrEqualToThreshold => "LessThanOrEqualToThreshold".to_string(),
+            ComparisonOperator::LessThanLowerOrGreaterThanUpperThreshold => "LessThanLowerOrGreaterThanUpperThreshold".to_string(),
+            ComparisonOperator::LessThanLowerThreshold => "LessThanLowerThreshold".to_string(),
+            ComparisonOperator::GreaterThanUpperThreshold => "GreaterThanUpperThreshold".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Statistic {
+    SampleCount,
+    Average,
+    Sum,
+    Minimum,
+    Maximum,
+}
+
+impl From<Statistic> for String {
+    fn from(value: Statistic) -> Self {
+        match value {
+            Statistic::SampleCount => "SampleCount".to_string(),
+            Statistic::Average => "Average".to_string(),
+            Statistic::Sum => "Sum".to_string(),
+            Statistic::Minimum => "Minimum".to_string(),
+            Statistic::Maximum => "Maximum".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum TreatMissingData {
+    Breaching,
+    NotBreaching,
+    Ignore,
+    Missing,
+}
+
+impl From<TreatMissingData> for String {
+    fn from(value: TreatMissingData) -> Self {
+        match value {
+            TreatMissingData::Breaching => "breaching".to_string(),
+            TreatMissingData::NotBreaching => "notBreaching".to_string(),
+            TreatMissingData::Ignore => "ignore".to_string(),
+            TreatMissingData::Missing => "missing".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Unit {
+    Seconds,
+    Microseconds,
+    Milliseconds,
+    Bytes,
+    Kilobytes,
+    Megabytes,
+    Gigabytes,
+    Terabytes,
+    Bits,
+    Kilobits,
+    Megabits,
+    Gigabits,
+    Terabits,
+    Percent,
+    Count,
+    BytesPerSecond,
+    KilobytesPerSecond,
+    MegabytesPerSecond,
+    GigabytesPerSecond,
+    TerabytesPerSecond,
+    BitsPerSecond,
+    KilobitsPerSecond,
+    MegabitsPerSecond,
+    GigabitsPerSecond,
+    TerabitsPerSecond,
+    CountPerSecond,
+    None,
+}
+
+impl From<Unit> for String {
+    fn from(value: Unit) -> Self {
+        match value {
+            Unit::Seconds => "Seconds".to_string(),
+            Unit::Microseconds => "Microseconds".to_string(),
+            Unit::Milliseconds => "Milliseconds".to_string(),
+            Unit::Bytes => "Bytes".to_string(),
+            Unit::Kilobytes => "Kilobytes".to_string(),
+            Unit::Megabytes => "Megabytes".to_string(),
+            Unit::Gigabytes => "Gigabytes".to_string(),
+            Unit::Terabytes => "Terabytes".to_string(),
+            Unit::Bits => "Bits".to_string(),
+            Unit::Kilobits => "Kilobits".to_string(),
+            Unit::Megabits => "Megabits".to_string(),
+            Unit::Gigabits => "Gigabits".to_string(),
+            Unit::Terabits => "Terabits".to_string(),
+            Unit::Percent => "Percent".to_string(),
+            Unit::Count => "Count".to_string(),
+            Unit::BytesPerSecond => "Bytes/Second".to_string(),
+            Unit::KilobytesPerSecond => "Kilobytes/Second".to_string(),
+            Unit::MegabytesPerSecond => "Megabytes/Second".to_string(),
+            Unit::GigabytesPerSecond => "Gigabytes/Second".to_string(),
+            Unit::TerabytesPerSecond => "Terabytes/Second".to_string(),
+            Unit::BitsPerSecond => "Bits/Second".to_string(),
+            Unit::KilobitsPerSecond => "Kilobits/Second".to_string(),
+            Unit::MegabitsPerSecond => "Megabits/Second".to_string(),
+            Unit::GigabitsPerSecond => "Gigabits/Second".to_string(),
+            Unit::TerabitsPerSecond => "Terabits/Second".to_string(),
+            Unit::CountPerSecond => "Count/Second".to_string(),
+            Unit::None => "None".to_string(),
+        }
+    }
+}
+
+pub enum Namespace {
+    AmplifyHosting,
+    ApiGateway,
+    AppFlow,
+    MGN,
+    AppRunner,
+    AppStream,
+    AppSync,
+    Athena,
+    Aurora,
+    Backup,
+    BedrockGuardrails,
+    Billing,
+    BraketByDevice,
+    CertificateManager,
+    ACMPrivateCA,
+    Chatbot,
+    ChimeVoiceConnector,
+    ChimeSDK,
+    ClientVPN,
+    CloudFront,
+    CloudHSM,
+    CloudSearch,
+    CloudTrail,
+    CWAgent,
+    ApplicationSignals,
+    CloudWatchMetricStreams,
+    RUM,
+    CloudWatchSynthetics,
+    Logs,
+    CodeBuild,
+    Cognito,
+    Comprehend,
+    Config,
+    Connect,
+    DataLifecycleManager,
+    DataSync,
+    DevOpsGuru,
+    DMS,
+    DX,
+    DirectoryService,
+    DocDB,
+    DynamoDB,
+    DAX,
+    EC2,
+    ElasticGPUs,
+    EC2Spot,
+    AutoScaling,
+    ElasticBeanstalk,
+    EBS,
+    ECR,
+    ECS,
+    ECSContainerInsights,
+    ECSManagedScaling,
+    EFS,
+    ElasticInference,
+    EKS,
+    ContainerInsights,
+    ApplicationELB,
+    NetworkELB,
+    GatewayELB,
+    ELB,
+    ElastiCache,
+    ES,
+    ElasticMapReduce,
+    EMRServerless,
+    MediaConnect,
+    MediaConvert,
+    MediaLive,
+    MediaPackage,
+    MediaStore,
+    MediaTailor,
+    SMSVoice,
+    SocialMessaging,
+    Events,
+    FSx,
+    GameLift,
+    GlobalAccelerator,
+    Glue,
+    GroundStation,
+    HealthLake,
+    Inspector,
+    IVS,
+    IVSChat,
+    IoT,
+    IoTFleetWise,
+    IoTSiteWise,
+    IoTTwinMaker,
+    KMS,
+    Cassandra,
+    KinesisAnalytics,
+    Firehose,
+    Kinesis,
+    KinesisVideo,
+    Lambda,
+    Lex,
+    LicenseManagerLicenseUsage,
+    LicenseManagerLinuxSubscriptions,
+    Location,
+    Lookoutequipment,
+    LookoutVision,
+    ML,
+    Managedblockchain,
+    Prometheus,
+    Kafka,
+    KafkaConnect,
+    MWAA,
+    MemoryDB,
+    AmazonMQ,
+    Neptune,
+    NetworkFirewall,
+    NetworkManager,
+    Omics,
+    Outposts,
+    PanoramaDeviceMetrics,
+    Personalize,
+    Pinpoint,
+    Polly,
+    PrivateLinkEndpoints,
+    PrivateLinkServices,
+    Private5G,
+    QApps,
+    QBusiness,
+    Q,
+    QuickSight,
+    Redshift,
+    RDS,
+    Rekognition,
+    RePostPrivate,
+    Route53,
+    Route53RecoveryReadiness,
+    SageMaker,
+    SageMakerModelBuildingPipeline,
+    SecretsManager,
+    SecurityLake,
+    ServiceCatalog,
+    DDoSProtection,
+    SES,
+    Simspaceweaver,
+    SNS,
+    SQS,
+    S3,
+    S3StorageLens,
+    SWF,
+    States,
+    StorageGateway,
+    SSMRunCommand,
+    Textract,
+    Timestream,
+    Transfer,
+    Transcribe,
+    Translate,
+    TrustedAdvisor,
+    NATGateway,
+    TransitGateway,
+    VPN,
+    IPAM,
+    WAFV2,
+    WAF,
+    WorkMail,
+    WorkSpaces,
+    WorkSpacesWeb,
+}
+
+impl From<Namespace> for String {
+    fn from(value: Namespace) -> Self {
+        match value {
+            Namespace::AmplifyHosting => "AWS/AmplifyHosting".to_string(),
+            Namespace::ApiGateway => "AWS/ApiGateway".to_string(),
+            Namespace::AppFlow => "AWS/AppFlow".to_string(),
+            Namespace::MGN => "AWS/MGN".to_string(),
+            Namespace::AppRunner => "AWS/AppRunner".to_string(),
+            Namespace::AppStream => "AWS/AppStream".to_string(),
+            Namespace::AppSync => "AWS/AppSync".to_string(),
+            Namespace::Athena => "AWS/Athena".to_string(),
+            Namespace::Aurora => "AWS/RDS".to_string(),
+            Namespace::Backup => "AWS/Backup".to_string(),
+            Namespace::BedrockGuardrails => "AWS/Bedrock/Guardrails".to_string(),
+            Namespace::Billing => "AWS/Billing".to_string(),
+            Namespace::BraketByDevice => "AWS/Braket/By Device".to_string(),
+            Namespace::CertificateManager => "AWS/CertificateManager".to_string(),
+            Namespace::ACMPrivateCA => "AWS/ACMPrivateCA".to_string(),
+            Namespace::Chatbot => "AWS/Chatbot".to_string(),
+            Namespace::ChimeVoiceConnector => "AWS/ChimeVoiceConnector".to_string(),
+            Namespace::ChimeSDK => "AWS/ChimeSDK".to_string(),
+            Namespace::ClientVPN => "AWS/ClientVPN".to_string(),
+            Namespace::CloudFront => "AWS/CloudFront".to_string(),
+            Namespace::CloudHSM => "AWS/CloudHSM".to_string(),
+            Namespace::CloudSearch => "AWS/CloudSearch".to_string(),
+            Namespace::CloudTrail => "AWS/CloudTrail".to_string(),
+            Namespace::CWAgent => "CWAgent".to_string(),
+            Namespace::ApplicationSignals => "ApplicationSignals".to_string(),
+            Namespace::CloudWatchMetricStreams => "AWS/CloudWatch/MetricStreams".to_string(),
+            Namespace::RUM => "AWS/RUM".to_string(),
+            Namespace::CloudWatchSynthetics => "CloudWatchSynthetics".to_string(),
+            Namespace::Logs => "AWS/Logs".to_string(),
+            Namespace::CodeBuild => "AWS/CodeBuild".to_string(),
+            Namespace::Cognito => "AWS/Cognito".to_string(),
+            Namespace::Comprehend => "AWS/Comprehend".to_string(),
+            Namespace::Config => "AWS/Config".to_string(),
+            Namespace::Connect => "AWS/Connect".to_string(),
+            Namespace::DataLifecycleManager => "AWS/DataLifecycleManager".to_string(),
+            Namespace::DataSync => "AWS/DataSync".to_string(),
+            Namespace::DevOpsGuru => "AWS/DevOps-Guru".to_string(),
+            Namespace::DMS => "AWS/DMS".to_string(),
+            Namespace::DX => "AWS/DX".to_string(),
+            Namespace::DirectoryService => "AWS/DirectoryService".to_string(),
+            Namespace::DocDB => "AWS/DocDB".to_string(),
+            Namespace::DynamoDB => "AWS/DynamoDB".to_string(),
+            Namespace::DAX => "AWS/DAX".to_string(),
+            Namespace::EC2 => "AWS/EC2".to_string(),
+            Namespace::ElasticGPUs => "AWS/ElasticGPUs".to_string(),
+            Namespace::EC2Spot => "AWS/EC2Spot".to_string(),
+            Namespace::AutoScaling => "AWS/AutoScaling".to_string(),
+            Namespace::ElasticBeanstalk => "AWS/ElasticBeanstalk".to_string(),
+            Namespace::EBS => "AWS/EBS".to_string(),
+            Namespace::ECR => "AWS/ECR".to_string(),
+            Namespace::ECS => "AWS/ECS".to_string(),
+            Namespace::ECSContainerInsights => "AWS/ECS/ContainerInsights".to_string(),
+            Namespace::ECSManagedScaling => "AWS/ECS/ManagedScaling".to_string(),
+            Namespace::EFS => "AWS/EFS".to_string(),
+            Namespace::ElasticInference => "AWS/ElasticInference".to_string(),
+            Namespace::EKS => "AWS/EKS".to_string(),
+            Namespace::ContainerInsights => "ContainerInsights".to_string(),
+            Namespace::ApplicationELB => "AWS/ApplicationELB".to_string(),
+            Namespace::NetworkELB => "AWS/NetworkELB".to_string(),
+            Namespace::GatewayELB => "AWS/GatewayELB".to_string(),
+            Namespace::ELB => "AWS/ELB".to_string(),
+            Namespace::ElastiCache => "AWS/ElastiCache".to_string(),
+            Namespace::ES => "AWS/ES".to_string(),
+            Namespace::ElasticMapReduce => "AWS/ElasticMapReduce".to_string(),
+            Namespace::EMRServerless => "AWS/EMRServerless".to_string(),
+            Namespace::MediaConnect => "AWS/MediaConnect".to_string(),
+            Namespace::MediaConvert => "AWS/MediaConvert".to_string(),
+            Namespace::MediaLive => "AWS/MediaLive".to_string(),
+            Namespace::MediaPackage => "AWS/MediaPackage".to_string(),
+            Namespace::MediaStore => "AWS/MediaStore".to_string(),
+            Namespace::MediaTailor => "AWS/MediaTailor".to_string(),
+            Namespace::SMSVoice => "AWS/SMSVoice".to_string(),
+            Namespace::SocialMessaging => "AWS/SocialMessaging".to_string(),
+            Namespace::Events => "AWS/Events".to_string(),
+            Namespace::FSx => "AWS/FSx".to_string(),
+            Namespace::GameLift => "AWS/GameLift".to_string(),
+            Namespace::GlobalAccelerator => "AWS/GlobalAccelerator".to_string(),
+            Namespace::Glue => "Glue".to_string(),
+            Namespace::GroundStation => "AWS/GroundStation".to_string(),
+            Namespace::HealthLake => "AWS/HealthLake".to_string(),
+            Namespace::Inspector => "AWS/Inspector".to_string(),
+            Namespace::IVS => "AWS/IVS".to_string(),
+            Namespace::IVSChat => "AWS/IVSChat".to_string(),
+            Namespace::IoT => "AWS/IoT".to_string(),
+            Namespace::IoTFleetWise => "AWS/IoTFleetWise".to_string(),
+            Namespace::IoTSiteWise => "AWS/IoTSiteWise".to_string(),
+            Namespace::IoTTwinMaker => "AWS/IoTTwinMaker".to_string(),
+            Namespace::KMS => "AWS/KMS".to_string(),
+            Namespace::Cassandra => "AWS/Cassandra".to_string(),
+            Namespace::KinesisAnalytics => "AWS/KinesisAnalytics".to_string(),
+            Namespace::Firehose => "AWS/Firehose".to_string(),
+            Namespace::Kinesis => "AWS/Kinesis".to_string(),
+            Namespace::KinesisVideo => "AWS/KinesisVideo".to_string(),
+            Namespace::Lambda => "AWS/Lambda".to_string(),
+            Namespace::Lex => "AWS/Lex".to_string(),
+            Namespace::LicenseManagerLicenseUsage => "AWSLicenseManager/licenseUsage".to_string(),
+            Namespace::LicenseManagerLinuxSubscriptions => "AWS/LicenseManager/LinuxSubscriptions".to_string(),
+            Namespace::Location => "AWS/Location".to_string(),
+            Namespace::Lookoutequipment => "AWS/lookoutequipment".to_string(),
+            Namespace::LookoutVision => "AWS/LookoutVision".to_string(),
+            Namespace::ML => "AWS/ML".to_string(),
+            Namespace::Managedblockchain => "AWS/managedblockchain".to_string(),
+            Namespace::Prometheus => "AWS/Prometheus".to_string(),
+            Namespace::Kafka => "AWS/Kafka".to_string(),
+            Namespace::KafkaConnect => "AWS/KafkaConnect".to_string(),
+            Namespace::MWAA => "AWS/MWAA".to_string(),
+            Namespace::MemoryDB => "AWS/MemoryDB".to_string(),
+            Namespace::AmazonMQ => "AWS/AmazonMQ".to_string(),
+            Namespace::Neptune => "AWS/Neptune".to_string(),
+            Namespace::NetworkFirewall => "AWS/NetworkFirewall".to_string(),
+            Namespace::NetworkManager => "AWS/NetworkManager".to_string(),
+            Namespace::Omics => "AWS/Omics".to_string(),
+            Namespace::Outposts => "AWS/Outposts".to_string(),
+            Namespace::PanoramaDeviceMetrics => "AWS/PanoramaDeviceMetrics".to_string(),
+            Namespace::Personalize => "AWS/Personalize".to_string(),
+            Namespace::Pinpoint => "AWS/Pinpoint".to_string(),
+            Namespace::Polly => "AWS/Polly".to_string(),
+            Namespace::PrivateLinkEndpoints => "AWS/PrivateLinkEndpoints".to_string(),
+            Namespace::PrivateLinkServices => "AWS/PrivateLinkServices".to_string(),
+            Namespace::Private5G => "AWS/Private5G".to_string(),
+            Namespace::QApps => "AWS/QApps".to_string(),
+            Namespace::QBusiness => "AWS/QBusiness".to_string(),
+            Namespace::Q => "AWS/Q".to_string(),
+            Namespace::QuickSight => "AWS/QuickSight".to_string(),
+            Namespace::Redshift => "AWS/Redshift".to_string(),
+            Namespace::RDS => "AWS/RDS".to_string(),
+            Namespace::Rekognition => "AWS/Rekognition".to_string(),
+            Namespace::RePostPrivate => "AWS/rePostPrivate".to_string(),
+            Namespace::Route53 => "AWS/Route53".to_string(),
+            Namespace::Route53RecoveryReadiness => "AWS/Route53RecoveryReadiness".to_string(),
+            Namespace::SageMaker => "AWS/SageMaker".to_string(),
+            Namespace::SageMakerModelBuildingPipeline => "AWS/SageMaker/ModelBuildingPipeline".to_string(),
+            Namespace::SecretsManager => "AWS/SecretsManager".to_string(),
+            Namespace::SecurityLake => "AWS/SecurityLake".to_string(),
+            Namespace::ServiceCatalog => "AWS/ServiceCatalog".to_string(),
+            Namespace::DDoSProtection => "AWS/DDoSProtection".to_string(),
+            Namespace::SES => "AWS/SES".to_string(),
+            Namespace::Simspaceweaver => "AWS/simspaceweaver".to_string(),
+            Namespace::SNS => "AWS/SNS".to_string(),
+            Namespace::SQS => "AWS/SQS".to_string(),
+            Namespace::S3 => "AWS/S3".to_string(),
+            Namespace::S3StorageLens => "AWS/S3/Storage-Lens".to_string(),
+            Namespace::SWF => "AWS/SWF".to_string(),
+            Namespace::States => "AWS/States".to_string(),
+            Namespace::StorageGateway => "AWS/StorageGateway".to_string(),
+            Namespace::SSMRunCommand => "AWS/SSM-RunCommand".to_string(),
+            Namespace::Textract => "AWS/Textract".to_string(),
+            Namespace::Timestream => "AWS/Timestream".to_string(),
+            Namespace::Transfer => "AWS/Transfer".to_string(),
+            Namespace::Transcribe => "AWS/Transcribe".to_string(),
+            Namespace::Translate => "AWS/Translate".to_string(),
+            Namespace::TrustedAdvisor => "AWS/TrustedAdvisor".to_string(),
+            Namespace::NATGateway => "AWS/NATGateway".to_string(),
+            Namespace::TransitGateway => "AWS/TransitGateway".to_string(),
+            Namespace::VPN => "AWS/VPN".to_string(),
+            Namespace::IPAM => "AWS/IPAM".to_string(),
+            Namespace::WAFV2 => "AWS/WAFV2".to_string(),
+            Namespace::WAF => "WAF".to_string(),
+            Namespace::WorkMail => "AWS/WorkMail".to_string(),
+            Namespace::WorkSpaces => "AWS/WorkSpaces".to_string(),
+            Namespace::WorkSpacesWeb => "AWS/WorkSpacesWeb".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum RuleState {
+    ENABLED,
+    DISABLED,
+}
+
+impl From<RuleState> for String {
+    fn from(value: RuleState) -> Self {
+        match value {
+            RuleState::ENABLED => "ENABLED".to_string(),
+            RuleState::DISABLED => "DISABLED".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum OutputFormat {
+    Json,
+    OpenTelemetry1_0,
+    OpenTelemetry0_7,
+}
+
+impl From<OutputFormat> for String {
+    fn from(value: OutputFormat) -> Self {
+        match value {
+            OutputFormat::Json => "json".to_string(),
+            OutputFormat::OpenTelemetry1_0 => "opentelemetry1.0".to_string(),
+            OutputFormat::OpenTelemetry0_7 => "opentelemetry0.7".to_string(),
+        }
+    }
+}
+
+pub enum AlarmAction<'a> {
+    Lambda(&'a FunctionRef),
+    Sns(&'a TopicRef)
+}
+
+type_state!(
+    CloudwatchAlarmState,
+    StartState,
+    MetricAlarmState,
+    MetricAlarmStatSelectedState,
+    MathAlarmState,
+);
+
+pub struct AlarmBuilder<T: CloudwatchAlarmState> {
+    phantom_data: PhantomData<T>,
+    id: Id,
+    threshold_metric_id: Option<String>,
+    actions_enabled: Option<bool>,
+    period: Option<u32>,
+    statistic: Option<String>,
+    extended_statistic: Option<String>,
+    datapoints_to_alarm: Option<u32>,
+    metric_name: Option<String>,
+    comparison_operator: Option<String>,
+    evaluation_periods: Option<u32>,
+    dimensions: Option<Vec<Dimension>>,
+    namespace: Option<String>,
+    evaluate_low_sample_count_percentile: Option<String>,
+    threshold: Option<u32>,
+    treat_missing_data: Option<String>,
+    alarm_name: Option<String>,
+    unit: Option<String>,
+    metrics: Option<Vec<MetricDataQuery>>,
+    alarm_actions: Option<Vec<Value>>,
+    insufficient_data_actions: Option<Vec<Value>>,
+    ok_actions: Option<Vec<Value>>,
+}
+
+impl AlarmBuilder<StartState> {
+    // TODO docs saying you have to chose between metric and math
+    pub fn new(id: &str) -> AlarmBuilder<StartState> {
         Self {
+            phantom_data: Default::default(), 
             id: Id(id.to_string()),
+            comparison_operator: None,
+            evaluation_periods: None,
             threshold_metric_id: None,
             actions_enabled: None,
             period: None,
@@ -48,11 +565,8 @@ impl AlarmBuilder {
             datapoints_to_alarm: None,
             statistic: None,
             metric_name: None,
-            comparison_operator,
-            evaluation_periods,
             dimensions: None,
             namespace: None,
-            alarm_description: None,
             evaluate_low_sample_count_percentile: None,
             threshold: None,
             treat_missing_data: None,
@@ -65,6 +579,175 @@ impl AlarmBuilder {
         }
     }
 
+    pub fn metric_alarm(self, period: Period, metric_name: CloudwatchMetricName, namespace: Namespace) -> AlarmBuilder<MetricAlarmState> {
+        AlarmBuilder {
+            phantom_data: PhantomData,
+            period: Some(period.0),
+            metric_name: Some(metric_name.0),
+            namespace: Some(namespace.into()),
+            id: self.id,
+            threshold_metric_id: self.threshold_metric_id,
+            actions_enabled: self.actions_enabled,
+            statistic: self.statistic,
+            extended_statistic: self.extended_statistic,
+            datapoints_to_alarm: self.datapoints_to_alarm,
+            comparison_operator: self.comparison_operator,
+            evaluation_periods: self.evaluation_periods,
+            dimensions: self.dimensions,
+            evaluate_low_sample_count_percentile: self.evaluate_low_sample_count_percentile,
+            threshold: self.threshold,
+            treat_missing_data: self.treat_missing_data,
+            alarm_name: self.alarm_name,
+            unit: self.unit,
+            metrics: self.metrics,
+            alarm_actions: self.alarm_actions,
+            insufficient_data_actions: self.insufficient_data_actions,
+            ok_actions: self.ok_actions,
+        }
+    }
+    
+    pub fn math_alarm(self, metrics: Vec<MetricDataQuery>) -> AlarmBuilder<MathAlarmState> {
+        AlarmBuilder {
+            phantom_data: PhantomData,
+            metrics: Some(metrics),
+            id: self.id,
+            threshold_metric_id: self.threshold_metric_id,
+            actions_enabled: self.actions_enabled,
+            statistic: self.statistic,
+            extended_statistic: self.extended_statistic,
+            datapoints_to_alarm: self.datapoints_to_alarm,
+            comparison_operator: self.comparison_operator,
+            evaluation_periods: self.evaluation_periods,
+            dimensions: self.dimensions,
+            evaluate_low_sample_count_percentile: self.evaluate_low_sample_count_percentile,
+            threshold: self.threshold,
+            treat_missing_data: self.treat_missing_data,
+            alarm_name: self.alarm_name,
+            unit: self.unit,
+            alarm_actions: self.alarm_actions,
+            insufficient_data_actions: self.insufficient_data_actions,
+            ok_actions: self.ok_actions,
+            period: None,
+            metric_name: None,
+            namespace: None,
+        }
+    }
+}
+
+impl AlarmBuilder<MetricAlarmState> {
+    pub fn extended_statistic(self, extended_statistic: String) -> AlarmBuilder<MetricAlarmStatSelectedState> {
+        AlarmBuilder {
+            extended_statistic: Some(extended_statistic),
+            phantom_data: PhantomData,
+            period: self.period,
+            metric_name: self.metric_name,
+            namespace: self.namespace,
+            id: self.id,
+            threshold_metric_id: self.threshold_metric_id,
+            actions_enabled: self.actions_enabled,
+            datapoints_to_alarm: self.datapoints_to_alarm,
+            comparison_operator: self.comparison_operator,
+            evaluation_periods: self.evaluation_periods,
+            dimensions: self.dimensions,
+            evaluate_low_sample_count_percentile: self.evaluate_low_sample_count_percentile,
+            threshold: self.threshold,
+            treat_missing_data: self.treat_missing_data,
+            alarm_name: self.alarm_name,
+            unit: self.unit,
+            metrics: self.metrics,
+            alarm_actions: self.alarm_actions,
+            insufficient_data_actions: self.insufficient_data_actions,
+            ok_actions: self.ok_actions,
+            statistic: None,
+        }
+    }
+    
+    pub fn statistic(self, statistic: Statistic) -> AlarmBuilder<MetricAlarmStatSelectedState> {        
+        AlarmBuilder {
+            statistic: Some(statistic.into()),
+            phantom_data: PhantomData,
+            period: self.period,
+            metric_name: self.metric_name,
+            namespace: self.namespace,
+            id: self.id,
+            threshold_metric_id: self.threshold_metric_id,
+            actions_enabled: self.actions_enabled,
+            datapoints_to_alarm: self.datapoints_to_alarm,
+            comparison_operator: self.comparison_operator,
+            evaluation_periods: self.evaluation_periods,
+            dimensions: self.dimensions,
+            evaluate_low_sample_count_percentile: self.evaluate_low_sample_count_percentile,
+            threshold: self.threshold,
+            treat_missing_data: self.treat_missing_data,
+            alarm_name: self.alarm_name,
+            unit: self.unit,
+            metrics: self.metrics,
+            alarm_actions: self.alarm_actions,
+            insufficient_data_actions: self.insufficient_data_actions,
+            ok_actions: self.ok_actions,
+            extended_statistic: None,
+        }
+    }
+    
+    // TODO partial list of dimensions?
+    pub fn dimensions(self, dimensions: Vec<Dimension>) -> Self {
+        Self {
+            dimensions: Some(dimensions),
+            ..self
+        }
+    }
+    
+    // TODO Do not specify this if you are specifying a <code class="code">Metrics</code> array.
+    pub fn unit(self, unit: Unit) -> Self {
+        Self {
+            unit: Some(unit.into()),
+            ..self
+        }
+    }
+}
+
+impl AlarmBuilder<MetricAlarmStatSelectedState> {
+    pub fn dimensions(self, dimensions: Vec<Dimension>) -> Self {
+        Self {
+            dimensions: Some(dimensions),
+            ..self
+        }
+    }
+    
+    // TODO Do not specify this if you are specifying a <code class="code">Metrics</code> array.
+    pub fn unit(self, unit: Unit) -> Self {
+        Self {
+            unit: Some(unit.into()),
+            ..self
+        }
+    }
+    
+    pub fn build(self, stack_builder: &mut StackBuilder) -> AlarmRef {
+        self.build_internal(stack_builder)
+    }
+}
+
+impl AlarmBuilder<MathAlarmState> {
+    pub fn build(self, stack_builder: &mut StackBuilder) -> AlarmRef {
+        self.build_internal(stack_builder)
+    }
+}
+
+impl<T: CloudwatchAlarmState> AlarmBuilder<T> {
+    pub fn comparison_operator(self, comparison_operator: ComparisonOperator) -> Self {
+        Self {
+            comparison_operator: Some(comparison_operator.into()),
+            ..self
+        }
+    }
+    
+    pub fn evaluation_periods(self, evaluation_periods: u32) -> Self {
+        Self {
+            evaluation_periods: Some(evaluation_periods),
+            ..self
+        }
+    }
+    
     pub fn threshold_metric_id(self, threshold_metric_id: String) -> Self {
         Self {
             threshold_metric_id: Some(threshold_metric_id),
@@ -79,20 +762,7 @@ impl AlarmBuilder {
         }
     }
 
-    pub fn period(self, period: u32) -> Self {
-        Self {
-            period: Some(period),
-            ..self
-        }
-    }
-
-    pub fn extended_statistic(self, extended_statistic: String) -> Self {
-        Self {
-            extended_statistic: Some(extended_statistic),
-            ..self
-        }
-    }
-
+    // TODO This is used only if you are setting an "M out of N" alarm. In that case, this value is the M, and the value that you set for <code class="code">EvaluationPeriods</code> is the N value.
     pub fn datapoints_to_alarm(self, datapoints_to_alarm: u32) -> Self {
         Self {
             datapoints_to_alarm: Some(datapoints_to_alarm),
@@ -100,41 +770,7 @@ impl AlarmBuilder {
         }
     }
 
-    pub fn statistic(self, statistic: String) -> Self {
-        Self {
-            statistic: Some(statistic),
-            ..self
-        }
-    }
-
-    pub fn metric_name(self, metric_name: String) -> Self {
-        Self {
-            metric_name: Some(metric_name),
-            ..self
-        }
-    }
-
-    pub fn dimensions(self, dimensions: Vec<Dimension>) -> Self {
-        Self {
-            dimensions: Some(dimensions),
-            ..self
-        }
-    }
-
-    pub fn namespace(self, namespace: String) -> Self {
-        Self {
-            namespace: Some(namespace),
-            ..self
-        }
-    }
-
-    pub fn alarm_description(self, alarm_description: String) -> Self {
-        Self {
-            alarm_description: Some(alarm_description),
-            ..self
-        }
-    }
-
+    // TODO Used only for alarms based on percentiles. If <code class="code">ignore</code>, the alarm state            does not change during periods with too few data points to be statistically significant.            If <code class="code">evaluate</code> or this parameter is not used, the alarm is always evaluated            and possibly changes state no matter how many data points are available., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
     pub fn evaluate_low_sample_count_percentile(self, evaluate_low_sample_count_percentile: String) -> Self {
         Self {
             evaluate_low_sample_count_percentile: Some(evaluate_low_sample_count_percentile),
@@ -149,53 +785,51 @@ impl AlarmBuilder {
         }
     }
 
-    pub fn treat_missing_data(self, treat_missing_data: String) -> Self {
+    pub fn treat_missing_data(self, treat_missing_data: TreatMissingData) -> Self {
         Self {
-            treat_missing_data: Some(treat_missing_data),
+            treat_missing_data: Some(treat_missing_data.into()),
             ..self
         }
     }
 
-    pub fn alarm_name(self, alarm_name: String) -> Self {
+    pub fn alarm_name(self, alarm_name: CloudwatchAlarmName) -> Self {
         Self {
-            alarm_name: Some(alarm_name),
+            alarm_name: Some(alarm_name.0),
+            ..self
+        }
+    }
+    
+    pub fn ok_actions(self, actions: Vec<AlarmAction>) -> Self {
+        Self {
+            ok_actions: Some(actions.into_iter().map(|v| match v {
+                AlarmAction::Lambda(f) => f.get_arn(),
+                AlarmAction::Sns(t) => t.get_arn(),
+            }).collect()),
             ..self
         }
     }
 
-    pub fn unit(self, unit: String) -> Self {
-        Self { unit: Some(unit), ..self }
-    }
-
-    pub fn metrics(self, metrics: Vec<MetricDataQuery>) -> Self {
+    pub fn alarm_actions(self, actions: Vec<AlarmAction>) -> Self {
         Self {
-            metrics: Some(metrics),
+            alarm_actions: Some(actions.into_iter().map(|v| match v {
+                AlarmAction::Lambda(f) => f.get_arn(),
+                AlarmAction::Sns(t) => t.get_arn(),
+            }).collect()),
             ..self
         }
     }
 
-    pub fn alarm_actions(self, alarm_actions: Vec<String>) -> Self {
+    pub fn insufficient_data_actions(self, actions: Vec<AlarmAction>) -> Self {
         Self {
-            alarm_actions: Some(alarm_actions),
+            insufficient_data_actions: Some(actions.into_iter().map(|v| match v {
+                AlarmAction::Lambda(f) => f.get_arn(),
+                AlarmAction::Sns(t) => t.get_arn(),
+            }).collect()),
             ..self
         }
     }
 
-    pub fn insufficient_data_actions(self, insufficient_data_actions: Vec<String>) -> Self {
-        Self {
-            insufficient_data_actions: Some(insufficient_data_actions),
-            ..self
-        }
-    }
-
-    pub fn ok_actions(self, ok_actions: Vec<String>) -> Self {
-        Self {
-            ok_actions: Some(ok_actions),
-            ..self
-        }
-    }
-
-    pub fn build(self, stack_builder: &mut StackBuilder) -> AlarmRef {
+    fn build_internal(self, stack_builder: &mut StackBuilder) -> AlarmRef {
         let resource_id = Resource::generate_id("Alarm");
 
         let resource = Alarm {
@@ -214,7 +848,6 @@ impl AlarmBuilder {
                 evaluation_periods: self.evaluation_periods,
                 dimensions: self.dimensions,
                 namespace: self.namespace,
-                alarm_description: self.alarm_description,
                 evaluate_low_sample_count_percentile: self.evaluate_low_sample_count_percentile,
                 threshold: self.threshold,
                 treat_missing_data: self.treat_missing_data,
@@ -224,24 +857,26 @@ impl AlarmBuilder {
                 alarm_actions: self.alarm_actions,
                 insufficient_data_actions: self.insufficient_data_actions,
                 ok_actions: self.ok_actions,
+                alarm_description: None,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         AlarmRef::internal_new(resource_id)
     }
 }
 
+// TODO
 pub struct AnomalyDetectorBuilder {
     id: Id,
-    dimensions: Option<Vec<Dimension>>, // The dimensions of the metric associated with the anomaly detection band.
-    namespace: Option<String>,          // The namespace of the metric associated with the anomaly detection band.
-    metric_name: Option<String>,        // The name of the metric associated with the anomaly detection band.
-    metric_characteristics: Option<MetricCharacteristics>, // Use this object to include parameters to provide information about your metric to CloudWatch to help it build more accurate anomaly detection models.          Currently, it includes the <code class="code">PeriodicSpikes</code> parameter.
-    metric_math_anomaly_detector: Option<MetricMathAnomalyDetector>, // The CloudWatch metric math expression for this anomaly detector.
-    configuration: Option<Configuration>, // Specifies details about how the anomaly detection model is to be trained, including time ranges to exclude        when training and updating the model. The configuration can also include the time zone to use for the metric.
-    single_metric_anomaly_detector: Option<SingleMetricAnomalyDetector>, // The CloudWatch metric and statistic for this anomaly detector.
-    stat: Option<String>,                 // The statistic of the metric associated with the anomaly detection band.
+    dimensions: Option<Vec<Dimension>>,
+    namespace: Option<String>,
+    metric_name: Option<String>,
+    metric_characteristics: Option<MetricCharacteristics>,
+    metric_math_anomaly_detector: Option<MetricMathAnomalyDetector>,
+    configuration: Option<Configuration>,
+    single_metric_anomaly_detector: Option<SingleMetricAnomalyDetector>,
+    stat: Option<String>,
 }
 
 impl AnomalyDetectorBuilder {
@@ -330,7 +965,7 @@ impl AnomalyDetectorBuilder {
                 stat: self.stat,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         AnomalyDetectorRef::internal_new(resource_id)
     }
@@ -450,7 +1085,7 @@ impl CompositeAlarmBuilder {
                 actions_enabled: self.actions_enabled,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         CompositeAlarmRef::internal_new(resource_id)
     }
@@ -458,11 +1093,13 @@ impl CompositeAlarmBuilder {
 
 pub struct DashboardBuilder {
     id: Id,
-    dashboard_body: String, // The detailed information about the dashboard in JSON format, including the widgets to include and their location			on the dashboard.  This parameter is required., For more information about the syntax, 		       	see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html">Dashboard Body Structure and Syntax</a>., Required: Yes
-    dashboard_name: Option<String>, // The name of the dashboard. The name must be between 1 and 255 characters. If you do not specify a name, one will be generated automatically.
+    dashboard_body: String,
+    dashboard_name: Option<String>,
 }
 
 impl DashboardBuilder {
+    // TODO
+    // The detailed information about the dashboard in JSON format, see <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html">Dashboard Body Structure and Syntax</a>
     pub fn new(id: &str, dashboard_body: String) -> Self {
         Self {
             id: Id(id.to_string()),
@@ -471,6 +1108,8 @@ impl DashboardBuilder {
         }
     }
 
+    // TODO
+    // The name of the dashboard. The name must be between 1 and 255 characters. If you do not specify a name, one will be generated automatically.
     pub fn dashboard_name(self, dashboard_name: String) -> Self {
         Self {
             dashboard_name: Some(dashboard_name),
@@ -490,7 +1129,7 @@ impl DashboardBuilder {
                 dashboard_name: self.dashboard_name,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         DashboardRef::internal_new(resource_id)
     }
@@ -505,13 +1144,13 @@ pub struct InsightRuleBuilder {
 }
 
 impl InsightRuleBuilder {
-    pub fn new(id: &str, rule_name: String, rule_body: String, rule_state: String) -> Self {
+    pub fn new(id: &str, rule_name: String, rule_body: String, rule_state: RuleState) -> Self {
         Self {
             id: Id(id.to_string()),
             apply_on_transformed_logs: None,
             rule_name,
             rule_body,
-            rule_state,
+            rule_state: rule_state.into(),
         }
     }
 
@@ -536,7 +1175,7 @@ impl InsightRuleBuilder {
                 rule_state: self.rule_state,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         InsightRuleRef::internal_new(resource_id)
     }
@@ -597,9 +1236,9 @@ impl MetricStreamBuilder {
         }
     }
 
-    pub fn output_format(self, output_format: String) -> Self {
+    pub fn output_format(self, output_format: OutputFormat) -> Self {
         Self {
-            output_format: Some(output_format),
+            output_format: Some(output_format.into()),
             ..self
         }
     }
@@ -634,32 +1273,33 @@ impl MetricStreamBuilder {
                 firehose_arn: self.firehose_arn,
                 include_filters: self.include_filters,
                 role_arn: self.role_arn,
-                output_format: self.output_format,
+                output_format: self.output_format.into(),
                 name: self.name,
                 statistics_configurations: self.statistics_configurations,
                 exclude_filters: self.exclude_filters,
             },
         };
-        // stack_builder.add_resource(resource); // TODO add to Resource enum to activate!
+        stack_builder.add_resource(resource);
 
         MetricStreamRef::internal_new(resource_id)
     }
 }
 
 pub struct DimensionBuilder {
-    value: String, // The value for the dimension, from 1–255 characters in length., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">1024</code>
-    name: String, // The name of the dimension, from 1–255 characters in length. This dimension           name must have been included when           the metric was published., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
+    name: String,
+    value: Value,
 }
 
 impl DimensionBuilder {
-    pub fn new(value: String, name: String) -> Self {
-        Self { value, name }
+    // TODO name from 1–255 characters in length
+    pub fn new(name: String, value: Value) -> Self {
+        Self { name, value }
     }
 
     pub fn build(self) -> Dimension {
         Dimension {
-            value: self.value,
             name: self.name,
+            value: self.value,
         }
     }
 }
@@ -668,7 +1308,7 @@ pub struct MetricDataQueryBuilder {
     return_data: Option<bool>, // This option indicates whether to return the			timestamps and raw data values of this metric., When you create an alarm based on a metric math expression, specify <code class="code">True</code> for       this value for only the one math expression that the alarm is based on. You must specify        <code class="code">False</code> for <code class="code">ReturnData</code> for all the other metrics and expressions       used in the alarm., This field is required.
     expression: Option<String>, // The math expression to be performed on the returned data, if this object is performing a math expression. This expression			can use the <code class="code">Id</code> of the other metrics to refer to those metrics, and can also use the <code class="code">Id</code> of other 			expressions to use the result of those expressions. For more information about metric math expressions, see 			<a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/using-metric-math.html#metric-math-syntax">Metric Math Syntax and Functions</a> in the			Amazon CloudWatch User Guide., Within each MetricDataQuery object, you must specify either 			<code class="code">Expression</code> or <code class="code">MetricStat</code> but not both., Minimum: <code class="code">1</code>, Maximum: <code class="code">2048</code>
     id: String, // A short name used to tie this object to the results in the response. This name must be            unique within a single call to <code class="code">GetMetricData</code>. If you are performing math            expressions on this set of data, this name represents that data and can serve as a            variable in the mathematical expression. The valid characters are letters, numbers, and            underscore. The first character must be a lowercase letter., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    period: Option<u32>, // The granularity, in seconds, of the returned data points. For metrics with regular            resolution, a period can be as short as one minute (60 seconds) and must be a multiple            of 60. For high-resolution metrics that are collected at intervals of less than one            minute, the period can be 1, 5, 10, 20, 30, 60, or any multiple of 60. High-resolution            metrics are those metrics stored by a <code class="code">PutMetricData</code> operation that includes            a <code class="code">StorageResolution of 1 second</code>., Minimum: <code class="code">1</code>
+    period: Option<Period>, // The granularity, in seconds, of the returned data points. For metrics with regular            resolution, a period can be as short as one minute (60 seconds) and must be a multiple            of 60. For high-resolution metrics that are collected at intervals of less than one            minute, the period can be 1, 5, 10, 20, 30, 60, or any multiple of 60. High-resolution            metrics are those metrics stored by a <code class="code">PutMetricData</code> operation that includes            a <code class="code">StorageResolution of 1 second</code>., Minimum: <code class="code">1</code>
     label: Option<String>, // A human-readable label for this metric or expression. This is especially useful if this is an expression, so that you know			what the value represents. If the metric or expression is shown in a CloudWatch dashboard widget, the label is shown. If <code class="code">Label</code> is omitted, CloudWatch 			generates a default.
     account_id: Option<String>, // The ID of the account where the metrics are located, if this is a cross-account alarm.
     metric_stat: Option<MetricStat>, // The metric to be returned, along with statistics, period, and units. Use this            parameter only if this object is retrieving a metric and not performing a math            expression on returned data., Within one MetricDataQuery object, you must specify either <code class="code">Expression</code> or            <code class="code">MetricStat</code> but not both.
@@ -701,7 +1341,7 @@ impl MetricDataQueryBuilder {
         }
     }
 
-    pub fn period(self, period: u32) -> Self {
+    pub fn period(self, period: Period) -> Self {
         Self {
             period: Some(period),
             ..self
@@ -734,28 +1374,10 @@ impl MetricDataQueryBuilder {
             return_data: self.return_data,
             expression: self.expression,
             id: self.id,
-            period: self.period,
+            period: self.period.map(|p| p.0),
             label: self.label,
             account_id: self.account_id,
             metric_stat: self.metric_stat,
-        }
-    }
-}
-
-pub struct TagBuilder {
-    value: String, // The value for the specified tag key., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">256</code>
-    key: String, // A string that you can use to assign a value. The combination of tag keys and values            can help you organize and categorize your resources., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">128</code>
-}
-
-impl TagBuilder {
-    pub fn new(value: String, key: String) -> Self {
-        Self { value, key }
-    }
-
-    pub fn build(self) -> Tag {
-        Tag {
-            value: self.value,
-            key: self.key,
         }
     }
 }
@@ -953,14 +1575,14 @@ impl MetricStreamStatisticsConfigurationBuilder {
 }
 
 pub struct MetricStatBuilder {
-    period: u32, // The granularity, in seconds, of the returned data points. For metrics with regular            resolution, a period can be as short as one minute (60 seconds) and must be a multiple            of 60. For high-resolution metrics that are collected at intervals of less than one            minute, the period can be 1, 5, 10, 20, 30, 60, or any multiple of 60. High-resolution            metrics are those metrics stored by a <code class="code">PutMetricData</code> call that includes a            <code class="code">StorageResolution</code> of 1 second., If the <code class="code">StartTime</code> parameter specifies a time stamp that is greater than            3 hours ago, you must specify the period as follows or no data points in that time range            is returned:, Required: Yes, Minimum: <code class="code">1</code>
+    period: Period, // The granularity, in seconds, of the returned data points. For metrics with regular            resolution, a period can be as short as one minute (60 seconds) and must be a multiple            of 60. For high-resolution metrics that are collected at intervals of less than one            minute, the period can be 1, 5, 10, 20, 30, 60, or any multiple of 60. High-resolution            metrics are those metrics stored by a <code class="code">PutMetricData</code> call that includes a            <code class="code">StorageResolution</code> of 1 second., If the <code class="code">StartTime</code> parameter specifies a time stamp that is greater than            3 hours ago, you must specify the period as follows or no data points in that time range            is returned:, Required: Yes, Minimum: <code class="code">1</code>
     unit: Option<String>, // The unit to use for the returned data points., Valid values are: Seconds, Microseconds, Milliseconds, Bytes, Kilobytes,            Megabytes, Gigabytes, Terabytes, Bits, Kilobits, Megabits, Gigabits, Terabits, Percent, Count,            Bytes/Second, Kilobytes/Second, Megabytes/Second, Gigabytes/Second, Terabytes/Second, Bits/Second,            Kilobits/Second, Megabits/Second, Gigabits/Second, Terabits/Second, Count/Second, or None., Allowed values: <code class="code">Seconds | Microseconds | Milliseconds | Bytes | Kilobytes | Megabytes | Gigabytes | Terabytes | Bits | Kilobits | Megabits | Gigabits | Terabits | Percent | Count | Bytes/Second | Kilobytes/Second | Megabytes/Second | Gigabytes/Second | Terabytes/Second | Bits/Second | Kilobits/Second | Megabits/Second | Gigabits/Second | Terabits/Second | Count/Second | None</code>
     metric: Metric,       // The metric to return, including the metric name, namespace, and dimensions., Required: Yes
     stat: String, // The statistic to return. It can include any CloudWatch statistic or extended statistic.		           For a list of valid values, see the table in <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#Statistic">		               Statistics</a> in the Amazon CloudWatch User Guide., Required: Yes
 }
 
 impl MetricStatBuilder {
-    pub fn new(period: u32, metric: Metric, stat: String) -> Self {
+    pub fn new(period: Period, metric: Metric, stat: String) -> Self {
         Self {
             period,
             unit: None,
@@ -969,13 +1591,16 @@ impl MetricStatBuilder {
         }
     }
 
-    pub fn unit(self, unit: String) -> Self {
-        Self { unit: Some(unit), ..self }
+    pub fn unit(self, unit: Unit) -> Self {
+        Self {
+            unit: Some(unit.into()),
+            ..self
+        }
     }
 
     pub fn build(self) -> MetricStat {
         MetricStat {
-            period: self.period,
+            period: self.period.0,
             unit: self.unit,
             metric: self.metric,
             stat: self.stat,
@@ -984,11 +1609,13 @@ impl MetricStatBuilder {
 }
 
 pub struct RangeBuilder {
-    end_time: String, // The end time of the range to exclude. The format is <code class="code">yyyy-MM-dd'T'HH:mm:ss</code>. For example,                 <code class="code">2019-07-01T23:59:59</code>., Required: Yes
-    start_time: String, // The start time of the range to exclude. The format is <code class="code">yyyy-MM-dd'T'HH:mm:ss</code>. For example,                 <code class="code">2019-07-01T23:59:59</code>., Required: Yes
+    end_time: String,
+    start_time: String,
 }
 
 impl RangeBuilder {
+    // TODO The end time of the range to exclude. The format is <code class="code">yyyy-MM-dd'T'HH:mm:ss</code>. For example,                 <code class="code">2019-07-01T23:59:59</code>., Required: Yes
+    //  and probably start < end
     pub fn new(end_time: String, start_time: String) -> Self {
         Self { end_time, start_time }
     }
@@ -1002,11 +1629,12 @@ impl RangeBuilder {
 }
 
 pub struct MetricStreamStatisticsMetricBuilder {
-    metric_name: String, // The name of the metric., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    namespace: String, // The namespace of the metric., Required: Yes, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
+    metric_name: String,
+    namespace: String,
 }
 
 impl MetricStreamStatisticsMetricBuilder {
+    // TODO between 1 and 255
     pub fn new(metric_name: String, namespace: String) -> Self {
         Self { metric_name, namespace }
     }
@@ -1020,27 +1648,22 @@ impl MetricStreamStatisticsMetricBuilder {
 }
 
 pub struct MetricBuilder {
-    metric_name: Option<String>, // The name of the metric that you want the alarm to watch. This is a required field., Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
-    dimensions: Option<Vec<Dimension>>, // The metric dimensions that you want to be used for the metric that		           the alarm will watch., Maximum: <code class="code">30</code>
-    namespace: Option<String>, // The namespace of the metric that the alarm will watch., Pattern: <code class="code">[^:].*</code>, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
+    metric_name: String,
+    dimensions: Option<Vec<Dimension>>,
+    namespace: Option<String>,
 }
 
 impl MetricBuilder {
-    pub fn new() -> Self {
+    // TODO Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
+    pub fn new(metric_name: String) -> Self {
         Self {
-            metric_name: None,
+            metric_name,
             dimensions: None,
             namespace: None,
         }
     }
 
-    pub fn metric_name(self, metric_name: String) -> Self {
-        Self {
-            metric_name: Some(metric_name),
-            ..self
-        }
-    }
-
+    // TODO The metric dimensions that you want to be used for the metric that		           the alarm will watch., Maximum: <code class="code">30</code>
     pub fn dimensions(self, dimensions: Vec<Dimension>) -> Self {
         Self {
             dimensions: Some(dimensions),
@@ -1048,6 +1671,7 @@ impl MetricBuilder {
         }
     }
 
+    // TODO Pattern: <code class="code">[^:].*</code>, Minimum: <code class="code">1</code>, Maximum: <code class="code">255</code>
     pub fn namespace(self, namespace: String) -> Self {
         Self {
             namespace: Some(namespace),

@@ -29,6 +29,7 @@ mod iam_validation;
 mod instance_class;
 mod location_uri;
 mod object_sizes;
+mod period_validation;
 mod rate_expression;
 mod schedule_validation;
 mod strings;
@@ -41,6 +42,7 @@ use crate::iam_validation::{PermissionValidator, ValidationResponse};
 use crate::instance_class::validate_doc_db_instance_class;
 use crate::location_uri::LocationUri;
 use crate::object_sizes::ObjectSizes;
+use crate::period_validation::period_validator;
 use crate::rate_expression::RateExpression;
 use crate::schedule_validation::{validate_at, validate_cron};
 use crate::strings::{StringRequirements, validate_string};
@@ -136,6 +138,44 @@ pub fn doc_db_subscription_name(input: TokenStream) -> TokenStream {
     } else {
         quote!(
             DocDBSubscriptionName(#value.to_string())
+        )
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn cloudwatch_metric_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.is_empty() || value.len() >= 255 {
+        Error::new(
+            output.span(),
+            format!("metric name must be between 1 and 255 characters (was {})", value.len()),
+        )
+        .into_compile_error()
+    } else {
+        quote!(
+            CloudwatchMetricName(#value.to_string())
+        )
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn cloudwatch_alarm_name(input: TokenStream) -> TokenStream {
+    let output: LitStr = syn::parse(input).unwrap();
+    let value = output.value();
+
+    if value.is_empty() || value.len() >= 255 {
+        Error::new(
+            output.span(),
+            format!("metric name must be between 1 and 255 characters (was {})", value.len()),
+        )
+        .into_compile_error()
+    } else {
+        quote!(
+            CloudwatchAlarmName(#value.to_string())
         )
     }
     .into()
@@ -1385,6 +1425,19 @@ pub fn policy_name(input: TokenStream) -> TokenStream {
             PolicyName(#value.to_string())
         ),
         Err(e) => Error::new(output.span(), e).into_compile_error(),
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn period(input: TokenStream) -> TokenStream {
+    let input: LitInt = syn::parse(input).unwrap();
+    
+    match period_validator(&input) {
+        Ok(_) => quote!(
+            Period(#input)
+        ),
+        Err(e) => Error::new(input.span(), e).into_compile_error(),
     }
     .into()
 }

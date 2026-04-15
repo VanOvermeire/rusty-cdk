@@ -10,6 +10,7 @@ pub enum StackBuilderError {
     MissingPermissionsForRole(Vec<String>),
     DuplicateIds(Vec<String>),
     DuplicateResourceIds(Vec<String>),
+    ResourceSpecificIssues(Vec<String>),
 }
 
 impl Display for StackBuilderError {
@@ -29,10 +30,17 @@ impl Display for StackBuilderError {
                     gathered_info
                 ))
             }
+            StackBuilderError::ResourceSpecificIssues(info) => {
+                let gathered_info = info.join(";");
+                f.write_fmt(format_args!(
+                    "resource specific issues detected: `{}`",
+                    gathered_info
+                ))
+            }
             StackBuilderError::DuplicateResourceIds(info) => {
                 let gathered_info = info.join(";");
                 f.write_fmt(format_args!(
-                    "duplicate resource ids were detected (`{}`), rerunning this command should generate new ones",
+                    "duplicate resource ids detected (`{}`), rerunning this command should generate new ones",
                     gathered_info
                 ))
             }
@@ -114,7 +122,8 @@ impl StackBuilder {
     /// Might return an error if:
     /// - there are duplicate ids
     /// - IAM roles are missing permissions for AWS services they need to access (only when Cargo.toml dependencies were passed in)
-    pub fn build(self) -> Result<Stack, StackBuilderError> {
+    /// - Too many actions are specified for an alarm
+    pub fn build(self) -> Result<Stack, StackBuilderError> {    
         let (ids, resource_ids) = self
             .resources
             .iter()
@@ -138,6 +147,11 @@ impl StackBuilder {
                 roles_with_potentially_missing_services,
             ));
         }
+        
+        let resource_specific_issues = self.resource_specific_checks();
+        if !resource_specific_issues.is_empty() {
+            return Err(StackBuilderError::ResourceSpecificIssues(resource_specific_issues));
+        }
 
         let outputs = if self.outputs.is_empty() {
             None
@@ -159,6 +173,28 @@ impl StackBuilder {
             outputs,
             metadata,
         })
+    }
+    
+    fn resource_specific_checks(&self) -> Vec<String> {
+        self.resources.iter().flat_map(|r| match r {
+            Resource::Alarm(a) => {
+                let mut errors = vec![];
+                let props = &a.properties;
+                
+                if props.alarm_actions.iter().len() > 5 {
+                    errors.push(format!("alarm with id {} has too many alarm actions", a.id))
+                }
+                if props.ok_actions.iter().len() > 5 {
+                    errors.push(format!("alarm with id {} has too many ok actions", a.id))
+                }
+                if props.insufficient_data_actions.iter().len() > 5 {
+                    errors.push(format!("alarm with id {} has too many insufficient data actions", a.id))
+                }
+                
+                errors
+            }
+            _ => vec![],
+        }).collect()
     }
 
     fn check_for_roles_with_missing_permissions(&self) -> Vec<String> {

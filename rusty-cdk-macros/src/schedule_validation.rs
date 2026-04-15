@@ -20,6 +20,7 @@ const MONTH_NAMES: [&str; 12] = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL"
 pub(crate) fn validate_cron(value: &str) -> Result<(), String> {
     let value_parts: Vec<_> = value.split(" ").collect();
 
+    // TODO seems like only crons with 6 fields are actually accepted?
     if value_parts.len() < 5 {
         return Err(format!(
             "cron expression should consist of five or six fields (was {})",
