@@ -1,9 +1,8 @@
 # Rusty CDK
 
-***This is not an official AWS project.***
+**This is not an official AWS project.**
 
-Rather, it is an attempt to make Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
-
+It is an attempt to make Infrastructure as Code safer and easier to use by checking as much as possible at compile time.
 Think of it as a safe wrapper around `unsafe` CloudFormation. Also see [this blog post](https://medium.com/@sam.van.overmeire/rusty-cdk-an-infrastructure-as-code-experiment-c10ed7804a2a).
 
 ## Table of Contents
@@ -438,6 +437,10 @@ async fn tagging() {
 
 ## TODO
 
+- More documentation
+- Documentation for adding/modifying properties
+- Where possible, extract lists that might change into text files
+  - See permissions.csv
 - Allow 'retain' on DocDB resources
 - Improving naming
   - For wrappers probably a prefix of the mod for clarity, even if it makes the name longer...
